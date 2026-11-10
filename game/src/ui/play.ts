@@ -12,7 +12,7 @@ import { hero, sceneDef, thingName, traitName, TRAITS, TRAIT_HELP, safe, twoTap,
 import { sfx, buzz, toast, prefs, setMuted, speakQueued, stopSpeaking } from './feedback';
 import { momentView } from './moments';
 import { endingScreen } from './ending';
-import { buildTools } from './build';
+import { buildTools, propName } from './build';
 import { saveAdventure } from './adventures';
 
 type DragKind = 'hero' | 'foe' | 'token';
@@ -140,6 +140,7 @@ export function playScreen(ctx: Ctx) {
     if (a && a.t === 'guide' && a.op.k === 'say' && !a.op.text) { sayPrompt(a.op.who); return; }
     if (a) { sfx.tap(); dispatch(a); afterAction(opt); return; }
     if (opt.needs && opt.needs !== 'none') { enterPick(opt, selected ?? (hit.kind === 'hero' ? hit.id : '')); return; }
+    if (opt.id === 'g:build') { build.editHit(hit); return; }
     if (opt.id === 'select' && hit.kind === 'hero') { select(hit.id); return; }
     if (opt.id === 'deselect') { select(null); return; }
     if (opt.hint && !/^inspect|look/i.test(opt.id)) { inspect(hit, opt.hint); return; }
@@ -437,7 +438,8 @@ export function playScreen(ctx: Ctx) {
     const cx = Math.min(innerWidth - pad, Math.max(pad, at.x));
     const cy = Math.min(innerHeight - pad, Math.max(top + pad, at.y));
 
-    const name = hit.kind === 'ground' ? 'Here' : hit.kind === 'prop' ? 'This' : hit.kind === 'meter' ? 'Meter' : thingName(pack, s, hitThingId(hit)) || 'This';
+    const propModel = hit.kind === 'prop' ? sceneDef(pack, s)?.props[hit.index]?.model : undefined;
+    const name = hit.kind === 'ground' ? 'Here' : hit.kind === 'prop' ? (propModel ? propName(propModel) : 'This') : hit.kind === 'meter' ? 'Meter' : thingName(pack, s, hitThingId(hit)) || 'This';
     const ring = h('div', { class: 'ring-layer', role: 'menu', 'aria-label': `Choices for ${name}` });
     ring.addEventListener('pointerdown', (e) => { if (e.target === ring) { e.preventDefault(); closeRing(); } });
     ring.addEventListener('contextmenu', (e) => { e.preventDefault(); closeRing(); });
@@ -565,7 +567,7 @@ export function playScreen(ctx: Ctx) {
         item('gear', 'Settings', () => { settingsOpen = !settingsOpen; sayOpen = false; paintDrop(true); }, settingsOpen ? 'on' : ''),
         item('flag', 'Scene won', () => { closeMenus(); dispatch({ t: 'guide', op: { k: 'endScene', result: 'won' } }); }, 'good'),
         item('flag', 'Scene lost', () => { closeMenus(); dispatch({ t: 'guide', op: { k: 'endScene', result: 'lost' } }); }, 'bad')));
-      if (store.isHost() || s.players.find((p) => p.id === me)?.host) parts.push(h('div', { class: 'menu-grid' },
+      parts.push(h('div', { class: 'menu-grid' },
         item('build', build.on ? 'Stop building' : 'Build the scene', () => { closeMenus(); build.toggle(); }, build.on ? 'on' : ''),
         item('book', 'Save to my adventures', () => {
           closeMenus();

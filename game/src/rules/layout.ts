@@ -3,7 +3,7 @@
 // Pieces added here go into the scene's layout too; hidden ones are seen only by the Guide.
 import type { Adventure, Area, AreaKind, GameState, GuideOp, P, Pack, PackScene, SceneFoe, SceneToken, Token, TokenKind } from './types';
 import { clampToScene, isP, nearestFree, rp } from './geom';
-import { type Ctx, adventure, fail, foeByUid, foeDef, fx, isHost, itemDef, nav, setupScene, spawnFoe, tokenByUid } from './core';
+import { type Ctx, adventure, fail, foeByUid, foeDef, fx, isGuide, isHost, itemDef, nav, setupScene, spawnFoe, tokenByUid } from './core';
 
 const AREA_KINDS: AreaKind[] = ['floor', 'snow', 'ice', 'crack', 'water', 'gap', 'roof', 'wall'];
 export const GROUNDS: AreaKind[] = ['floor', 'snow', 'ice', 'roof'];
@@ -196,7 +196,7 @@ export function layoutOp(c: Ctx, op: GuideOp): boolean {
   const isLayout = op.k === 'add' || op.k === 'edit' || op.k === 'hideAll' || op.k === 'scene'
     || ((op.k === 'place' || op.k === 'remove') && op.what === 'prop');
   if (!isLayout) return false;
-  if (!isHost(s, c.by)) fail('Only the host can change the layout.');
+  if (!isHost(s, c.by) && !isGuide(s, c.by)) fail('Only the host or the Guide can change the layout.');
   if (s.phase === 'lobby' || s.phase === 'ending') fail('Not right now.');
   switch (op.k) {
     case 'add': addPiece(c, op); return true;

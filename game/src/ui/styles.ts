@@ -501,6 +501,7 @@ body[data-screen=play] .toasts{bottom:calc(var(--sab) + 42dvh)}
 .pc-texts textarea,.pc-texts input,.ed-field input,.ed-field textarea,.ed-field select,.adv-pick select{font:inherit;font-size:.9em;border:2px solid var(--ink);border-radius:8px;padding:4px 8px;background:#fffdf8;width:100%}
 .pc-texts .btn{align-self:flex-end}
 .btn.danger{color:var(--danger)}
+.btn.icon.confirm{width:auto;padding:0 10px;background:var(--rose);color:var(--ink);font-size:.85em;gap:4px}
 .ed-bar{position:absolute;top:calc(var(--sat) + 6px);left:calc(var(--sal) + 6px);right:calc(var(--sar) + 6px);z-index:7;display:flex;align-items:center;gap:6px}
 .ed-bar .btn{min-height:40px;background-color:rgba(247,243,236,.95)}
 .ed-bar .btn.primary{background-color:var(--sage)}

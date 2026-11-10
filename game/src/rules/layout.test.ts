@@ -85,12 +85,21 @@ group('layout in a live game', () => {
     expect(nope(s, G({ k: 'add', what: 'token', kind: 'start', at: { x: 0, z: 0 } }))).toMatch(/editor/);
   });
 
-  test('only the host changes the layout', () => {
+  test('only the host or the Guide changes the layout', () => {
     let s = game();
     s = must(s, G({ k: 'add', what: 'prop', model: 'prop:bench', at: { x: 0, z: 0 } }));
     expect(nope(s, G({ k: 'add', what: 'prop', model: 'char:grumpling', at: { x: 1, z: 0 } }))).toMatch(/Unknown/);
+    expect(nope(s, G({ k: 'add', what: 'prop', model: 'prop:bench', at: { x: 1, z: 0 } }), 'kid')).toMatch(/host or the Guide/);
     s = must(s, { t: 'setGuide', playerId: 'kid' });
-    expect(nope(s, G({ k: 'add', what: 'prop', model: 'prop:bench', at: { x: 1, z: 0 } }), 'kid')).toMatch(/host/);
+    s = must(s, G({ k: 'add', what: 'prop', model: 'prop:bench', at: { x: 1, z: 0 } }), 'kid');   // the Guide may
+    s = must(s, G({ k: 'add', what: 'prop', model: 'prop:bench', at: { x: 2, z: 0 } }), 'mum');   // and so may the host
+    const pl = sceneOf(s, PK)!.props.at(-1)!;
+    s = must(s, G({ k: 'edit', what: 'prop', id: pl.uid!, rot: 45 }), 'mum');
+    expect(sceneOf(s, PK)!.props.at(-1)!.rot).toBe(45);
+    // the ring menu offers Turn and Remove on a prop
+    const idx = sceneOf(s, PK)!.props.length - 1;
+    const ids = options(s, 'kid', null, { kind: 'prop', index: idx, at: { x: 2, z: 0 } }, PK).map((o) => o.id);
+    expect(ids).toEqual(expect.arrayContaining(['g:show', 'g:turn', 'g:remove', 'g:build']));
   });
 
   test('hide / show everything', () => {

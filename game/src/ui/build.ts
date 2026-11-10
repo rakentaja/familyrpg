@@ -70,7 +70,7 @@ export function buildTools(d: BuildDeps) {
   let textOpen = false;
 
   const editMode = () => d.state().mode === 'edit';
-  const isHost = () => !!d.state().players.find((p) => p.id === d.me)?.host;
+  const isHost = () => { const p = d.state().players.find((x) => x.id === d.me); return !!p?.host || !!p?.guide; };
 
   // ---------------------------------------------------------------- DOM
   const tabsEl = h('div', { class: 'lib-tabs', role: 'tablist' });
@@ -156,8 +156,21 @@ export function buildTools(d: BuildDeps) {
         p.what === 'prop' ? btn(icon('shrink'), () => edit({ scale: Math.max(0.25, +((x.scale ?? 1) - 0.25).toFixed(2)) }), 'icon small', { 'aria-label': 'Smaller' }) : null,
         p.what === 'prop' ? btn(icon('grow'), () => edit({ scale: Math.min(4, +((x.scale ?? 1) + 0.25).toFixed(2)) }), 'icon small', { 'aria-label': 'Bigger' }) : null,
         textual ? btn([icon('edit'), ' Text'], () => { textOpen = !textOpen; paintPanel(true); }, 'small' + (textOpen ? ' on' : '')) : null,
-        btn(icon('trash'), twoTap(() => { dispatch({ k: 'remove', what: p.what, id: p.id }); sel = null; paintPanel(); }, 'Tap the bin again to remove it', (m) => toast(m)), 'icon small danger', { 'aria-label': 'Remove' })),
+        removeBtn(() => { dispatch({ k: 'remove', what: p.what, id: p.id }); sel = null; paintPanel(); })),
       textual && textOpen ? h('div', { class: 'pc-texts' }, p.what === 'token' ? nameIn : null, txt, btn('Save text', saveText, 'small')) : null);
+  }
+
+  /** Bin button: the first tap turns it into “Remove?”, the second removes (no hidden toast to miss). */
+  function removeBtn(go: () => void): HTMLButtonElement {
+    let armedAt = 0, timer = 0;
+    const b = btn(icon('trash'), () => {
+      if (Date.now() - armedAt < 4000) { clearTimeout(timer); sfx.tap(); go(); return; }
+      armedAt = Date.now();
+      b.replaceChildren(icon('trash'), ' Remove?');
+      b.classList.add('confirm');
+      timer = setTimeout(() => { armedAt = 0; b.replaceChildren(icon('trash')); b.classList.remove('confirm'); }, 4000) as unknown as number;
+    }, 'icon small danger', { 'aria-label': 'Remove' });
+    return b;
   }
 
   // ---------------------------------------------------------------- scene editor bar + sheet
@@ -243,6 +256,14 @@ export function buildTools(d: BuildDeps) {
     d.onLayoutChange();
   }
 
+  /** Open the build tools with this piece picked (the Guide's "Edit" in the hold menu). */
+  function editHit(hit: Hit) {
+    setOn(true);
+    if (!on) return;
+    armed = null; paintStrip();
+    tap(hit);
+  }
+
   /** A tap on the table while building. Returns true if it was used. */
   function tap(hit: Hit): boolean {
     if (!on) return false;
@@ -289,7 +310,7 @@ export function buildTools(d: BuildDeps) {
   return {
     get on() { return on; },
     bar, drawer,
-    setOn, toggle: () => setOn(!on), tap, canDrag, dragEnd, update,
+    setOn, toggle: () => setOn(!on), tap, editHit, canDrag, dragEnd, update,
     destroy() { ro.disconnect(); clearTimeout(saveTimer); const s = d.state(); if (s.mode === 'edit' && s.adv && JSON.stringify(s.adv) !== baseline && baseline) saveAdventure(s.adv); },
   };
 }

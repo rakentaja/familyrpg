@@ -418,8 +418,8 @@ function apply(c: Ctx, a: Envelope) {
     case 'guide': {
       // the host's device may send a bare clock tick (step 0) so Midnight can strike with nobody acting
       const tick = a.op.k === 'clock' && a.op.op === 'step' && !a.op.delta && c.s.players.some((p) => p.id === c.by && p.host);
+      if (layoutOp(c, a.op)) return;              // host or Guide (checked inside)
       if (!tick) guideOnly(c);
-      if (layoutOp(c, a.op)) return;
       guideOp(c, a.op);
       mirrorLayout(c, a.op);
       return;

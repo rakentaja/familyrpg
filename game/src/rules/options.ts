@@ -2,7 +2,7 @@
 import type { Action, Effect, GameState, Hero, Hit, Option, Pack, PackItem, TargetKind, TargetRef, Trait } from './types';
 import { TRAITS } from './types';
 import { dist, groundOf, sceneOf } from './geom';
-import { isHost,
+import {
   bossPhaseFor, controlledIds, foeByUid, foeDef, heroById, isGuide, itemDef, itemName, midnight, roleDef,
   tokenByUid, tokenName, nOf,
 } from './core';
@@ -139,11 +139,13 @@ export function options(state: GameState, me: string, heroId: string | null, hit
         const f = foeByUid(s, hit.id);
         const d = f ? foeDef(pack, f.foe) : undefined;
         if (!f || !d) break;
-        if (!f.down && isHost(s, me)) {
+        if (!f.down) {
           const o: Option = f.hidden
             ? { id: 'g:show', label: 'Show', icon: 'eye', hint: 'Everyone sees it now', guideOnly: true, action: { t: 'guide', op: { k: 'edit', what: 'foe', id: f.uid, hidden: false } } }
             : { id: 'g:hide', label: 'Hide', icon: 'hide', hint: 'Only you see it', guideOnly: true, action: { t: 'guide', op: { k: 'edit', what: 'foe', id: f.uid, hidden: true } } };
           if (f.hidden && !h) primary(o); else add(o);
+          G({ id: 'g:turn', label: 'Turn', icon: 'rotr', action: { t: 'guide', op: { k: 'edit', what: 'foe', id: f.uid, rot: Math.round((f.facing * 180) / Math.PI) + 45 } } });
+          G({ id: 'g:build', label: 'Edit', icon: 'edit', hint: 'Move, turn, hide or remove it' });
         }
         if (!f.down) {
           G({ id: 'g:hit', label: `${L.hearts} −1`, icon: 'minus', action: { t: 'guide', op: { k: 'foeHearts', uid: f.uid, delta: -1 } } });
@@ -172,14 +174,20 @@ export function options(state: GameState, me: string, heroId: string | null, hit
         }
         G({ id: 'g:say', label: 'Say…', icon: 'say', hint: 'Type a line', action: { t: 'guide', op: { k: 'say', text: '', who: t.uid } } });
         G({ id: 'g:remove', label: 'Remove', icon: 'trash', action: { t: 'guide', op: { k: 'remove', what: 'token', id: t.uid } } });
+        G({ id: 'g:build', label: 'Edit', icon: 'edit', hint: 'Move, hide, change the text or remove it' });
         break;
       }
       case 'prop': {
         const pl = sc?.props[hit.index];
         const hidden = pl?.search ? tokenByUid(s, pl.search) : undefined;
-        if (pl?.uid && isHost(s, me)) G(pl.hidden
-          ? { id: 'g:show', label: 'Show', icon: 'eye', action: { t: 'guide', op: { k: 'edit', what: 'prop', id: pl.uid, hidden: false } } }
-          : { id: 'g:hide', label: 'Hide', icon: 'hide', action: { t: 'guide', op: { k: 'edit', what: 'prop', id: pl.uid, hidden: true } } });
+        if (pl?.uid) {
+          G(pl.hidden
+            ? { id: 'g:show', label: 'Show', icon: 'eye', action: { t: 'guide', op: { k: 'edit', what: 'prop', id: pl.uid, hidden: false } } }
+            : { id: 'g:hide', label: 'Hide', icon: 'hide', action: { t: 'guide', op: { k: 'edit', what: 'prop', id: pl.uid, hidden: true } } });
+          G({ id: 'g:turn', label: 'Turn', icon: 'rotr', action: { t: 'guide', op: { k: 'edit', what: 'prop', id: pl.uid, rot: (pl.rot ?? 0) + 45 } } });
+          G({ id: 'g:remove', label: 'Remove', icon: 'trash', action: { t: 'guide', op: { k: 'remove', what: 'prop', id: pl.uid } } });
+          G({ id: 'g:build', label: 'Edit', icon: 'edit', hint: 'Move, turn, resize, hide or remove it' });
+        }
         if (hidden?.hidden) G({ id: 'g:reveal', label: 'Reveal', icon: 'reveal', hint: tokenName(pack, hidden), action: { t: 'guide', op: { k: 'reveal', tokenUid: hidden.uid } } });
         break;
       }
