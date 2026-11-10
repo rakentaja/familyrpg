@@ -89,6 +89,8 @@ export class Actor {
   private realMats = new Map<THREE.Mesh, THREE.Material | THREE.Material[]>();
   private hop: { from: THREE.Vector3; to: THREE.Vector3; t: number } | null = null;
   lift = 0; private liftCur = 0;          // raised while dragged
+  /** The Guide's looks: size and height above the floor (m). */
+  size = 1; raise = 0;
   private baseDisc: THREE.Mesh | null = null;
   carriedBy: string | null = null;
   pickable = true;
@@ -266,7 +268,7 @@ export class Actor {
 
   /** Top of head in world space. */
   head(out: THREE.Vector3): THREE.Vector3 {
-    return out.copy(this.root.position).setY(this.root.position.y + this.pose.position.y + this.height * (1 - this.lie * 0.6) * this.pose.scale.y + 0.1);
+    return out.copy(this.root.position).setY(this.root.position.y + this.pose.position.y + this.height * this.size * (1 - this.lie * 0.6) * this.pose.scale.y + 0.1);
   }
 
   get busy(): boolean { return this.path.length > 0 || !!this.hop || Math.abs(this.liftCur - this.lift) > 1e-3 || !!this.oneShot || this.popT > 0 || this.leaveT >= 0 || this.hopT >= 0 || this.shakeT >= 0 || Math.abs(this.lie - this.lieGoal) > 0.01; }
@@ -310,7 +312,8 @@ export class Actor {
     if (this.spinT >= 0) { this.spinT += dt; const u = this.spinT / 0.6; if (u >= 1) this.spinT = -1; else ry += u * Math.PI * 2; }
     if (this.shakeT >= 0) { this.shakeT += dt; const u = this.shakeT / 0.45; if (u >= 1) this.shakeT = -1; else rz += Math.sin(u * 40) * 0.2 * (1 - u); }
     this.lie += (this.lieGoal - this.lie) * (1 - Math.exp(-dt * 6));
-    this.pose.position.y = y + this.lie * this.radius * 0.5 + this.liftCur;
+    this.pose.position.y = y + this.lie * this.radius * 0.5 + this.liftCur + this.raise;
+    if (this.yaw.scale.x !== this.size) this.yaw.scale.setScalar(this.size);
     this.pose.rotation.set(-this.lie * Math.PI * 0.48, ry, rz + this.lie * 0.15);
 
     // pop in / leave

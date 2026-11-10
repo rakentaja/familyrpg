@@ -305,7 +305,7 @@ class Scene3D implements SceneView {
     this.dirty = true;
   }
   /** Show a turn / size / height change on a piece while the Guide drags a dial (null = back to the state). */
-  previewPiece(what: 'prop' | 'foe', id: string, v: { rot?: number; scale?: number; y?: number } | null): void {
+  previewPiece(what: 'prop' | 'foe' | 'token', id: string, v: { rot?: number; scale?: number; y?: number } | null): void {
     this.dirty = true;
     if (what === 'prop') {
       const obj = this.table.props.find((p) => p.uid === id)?.obj;
@@ -316,12 +316,20 @@ class Scene3D implements SceneView {
       if (v.y !== undefined) obj.position.y = v.y;
       return;
     }
-    const a = this.actors.get('f:' + id);
-    const f = this.state?.foes.find((x) => x.uid === id);
+    const k: Key = (what === 'foe' ? 'f:' : 't:') + id;
+    const a = this.actors.get(k);
     if (!a) return;
-    if (!v) { this.dialing.delete('f:' + id); if (f) a.face(f.facing, true); return; }
-    this.dialing.add('f:' + id);
+    if (!v) {
+      this.dialing.delete(k);
+      const f = this.state?.foes.find((x) => x.uid === id), t = this.state?.tokens.find((x) => x.uid === id);
+      const lk = f ? { rot: (f.facing * 180) / Math.PI, scale: f.scale, y: f.y } : t ? { rot: t.rot ?? 0, scale: t.scale, y: t.y } : null;
+      if (lk) { a.face((lk.rot * Math.PI) / 180, true); a.size = lk.scale ?? 1; a.raise = lk.y ?? 0; }
+      return;
+    }
+    this.dialing.add(k);
     if (v.rot !== undefined) a.face((v.rot * Math.PI) / 180, true);
+    if (v.scale !== undefined) a.size = v.scale;
+    if (v.y !== undefined) a.raise = v.y;
   }
 
   /** A small picture of a model for the Guide's library (rendered once, cached as a data URL). */
@@ -584,6 +592,7 @@ class Scene3D implements SceneView {
         if (!fresh) this.puff(a, PALETTE.lavender, 12);
         this.add(a);
       } else if (!a.down) this.moveTo(a, k, foe.pos, foe.facing, paths, places, false);
+      if (!this.dialing.has(k)) { a.size = foe.scale ?? 1; a.raise = foe.y ?? 0; }
       const ghost = !!foe.hidden || k === this.previewKey;
       if (a.ghost && !ghost && !fresh) this.puff(a, PALETTE.lavender, 12);
       a.setGhost(ghost);
@@ -633,6 +642,7 @@ class Scene3D implements SceneView {
         if (a.carriedBy) { a.carriedBy = null; a.root.position.y = 0; }
         this.moveTo(a, k, t.pos, undefined, new Map(), places, false);
       }
+      if (!this.dialing.has(k)) { a.size = t.scale ?? 1; a.raise = t.y ?? 0; a.face(((t.rot ?? 0) * Math.PI) / 180, fresh); }
       const ghost = !!t.hidden || k === this.previewKey;
       if (a.ghost && !ghost) this.puff(a, PALETTE.gold, 10);
       a.setGhost(ghost);
@@ -944,7 +954,7 @@ class Scene3D implements SceneView {
       if (a.ghost && !this.local.isGuide && this.keyOf(a) !== this.previewKey) continue;
       const p = a.root.position, rad = Math.max(0.3, Math.min(0.6, a.radius * 0.85)) * grow;
       const top = (a.kind === 'token' ? Math.max(0.6, a.height) : a.tuckered ? Math.max(0.5, a.height * 0.45) : a.height) * (touch ? 1.1 : 1);
-      _box.min.set(p.x - rad, p.y, p.z - rad); _box.max.set(p.x + rad, p.y + top, p.z + rad);
+      _box.min.set(p.x - rad * a.size, p.y + a.raise, p.z - rad * a.size); _box.max.set(p.x + rad * a.size, p.y + a.raise + top * a.size, p.z + rad * a.size);
       if (_ray.ray.intersectBox(_box, _v)) { const d = _v.distanceToSquared(_ray.ray.origin); if (d < best) { best = d; hit = a; } }
     }
     if (hit || !touch) return hit;

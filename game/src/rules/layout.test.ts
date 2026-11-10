@@ -85,6 +85,22 @@ group('layout in a live game', () => {
     expect(nope(s, G({ k: 'add', what: 'token', kind: 'start', at: { x: 0, z: 0 } }))).toMatch(/editor/);
   });
 
+  test('foes and tokens can be turned, sized and lifted too; the layout keeps it', () => {
+    let s = game();
+    s = must(s, G({ k: 'add', what: 'token', kind: 'npc', model: 'char:polar-bear-baker', label: 'Baker', at: { x: 1, z: 1 } }));
+    const t = s.tokens.at(-1)!;
+    s = must(s, G({ k: 'edit', what: 'token', id: t.uid, rot: 90, scale: 1.5, y: 0.4 }));
+    expect(s.tokens.at(-1)).toMatchObject({ rot: 90, scale: 1.5, y: 0.4 });
+    expect(sceneOf(s, PK)!.tokens.find((x) => x.uid === t.uid)).toMatchObject({ rot: 90, scale: 1.5, y: 0.4 });
+    s = must(s, G({ k: 'edit', what: 'token', id: t.uid, scale: 1, y: 0 }));
+    expect(s.tokens.at(-1)!.scale).toBeUndefined();
+    expect(s.tokens.at(-1)!.y).toBeUndefined();
+    const f = s.foes[0]!;
+    s = must(s, G({ k: 'edit', what: 'foe', id: f.uid, scale: 2, y: 1, rot: 45 }));
+    expect(s.foes[0]).toMatchObject({ scale: 2, y: 1 });
+    expect(sceneOf(s, PK)!.foes.find((x) => x.uid === f.uid)).toMatchObject({ scale: 2, y: 1 });
+  });
+
   test('only the host or the Guide changes the layout', () => {
     let s = game();
     s = must(s, G({ k: 'add', what: 'prop', model: 'prop:bench', at: { x: 0, z: 0 } }));

@@ -392,6 +392,7 @@ export function setupScene(c: Ctx, index: number) {
     if (t.label) tok.label = t.label;
     if (t.text) tok.text = t.text;
     if (t.model) tok.model = t.model;
+    for (const k of ['rot', 'scale', 'y'] as const) if (t[k] !== undefined) tok[k] = t[k];
     return tok;
   });
   s.foes = [];
@@ -415,6 +416,8 @@ export function setupScene(c: Ctx, index: number) {
   for (const f of sc.foes) {
     const foe = spawnFoe(c, f.foe, { x: f.x, z: f.z }, { uid: f.uid, carrying: f.carrying, facing: f.rot !== undefined ? (f.rot * Math.PI) / 180 : 0 });
     if (foe && f.hidden) foe.hidden = true;
+    if (foe && f.scale !== undefined) foe.scale = f.scale;
+    if (foe && f.y !== undefined) foe.y = f.y;
   }
   s.phase = 'intro';
   fx(c, { k: 'scene', id: sc.id, text: sc.name });

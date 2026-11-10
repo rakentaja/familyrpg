@@ -52,8 +52,10 @@ export interface Area {                                              // ground r
 }
 export interface Placement { uid?: string; hidden?: boolean /* only the Guide sees it */; model: string; x: number; z: number; y?: number /* lifted off the floor, m */; rot?: number /* degrees */; scale?: number; block?: number /* blocking radius m, 0 = walk-through; default from footprint */; story?: string /* tap text */; search?: string /* token uid revealed by searching here */ }
 export type TokenKind = 'goal' | 'item' | 'star' | 'clue' | 'npc' | 'exit' | 'start';   // start = hero start spot (editor only)
-export interface SceneToken { uid: string; kind: TokenKind; x: number; z: number; item?: string; hidden?: boolean; label?: string; text?: string; model?: string }
-export interface SceneFoe { uid: string; foe: string; x: number; z: number; rot?: number; hidden?: boolean; carrying?: string /* token uid */ }
+/** How a piece looks on the table: turned (degrees), sized, lifted off the floor (m). */
+export interface Looks { rot?: number; scale?: number; y?: number }
+export interface SceneToken extends Looks { uid: string; kind: TokenKind; x: number; z: number; item?: string; hidden?: boolean; label?: string; text?: string; model?: string }
+export interface SceneFoe { scale?: number; y?: number; uid: string; foe: string; x: number; z: number; rot?: number; hidden?: boolean; carrying?: string /* token uid */ }
 export interface PackScene {
   id: string; name: string; type: 'explore' | 'challenge' | 'showdown' | 'boss';
   intro: string;
@@ -95,8 +97,8 @@ export interface Hero {
   pos: P; facing: number /* radians, 0 = +z */; pocket: string[]; knackUsed: boolean; visited: P[];
   status: { guardUntil?: number; bonus?: { trait: Trait | 'any'; n: number; rolls: number }; moveBonus?: number };
 }
-export interface Foe { uid: string; foe: string; pos: P; facing: number; hidden?: boolean; hearts: number; maxHearts: number; down: boolean; frozenUntil?: number; carrying?: string; phase?: number }
-export interface Token { uid: string; kind: SceneToken['kind']; pos: P | null; item?: string; hidden?: boolean; label?: string; text?: string; model?: string; carriedBy?: string }
+export interface Foe { scale?: number; y?: number; uid: string; foe: string; pos: P; facing: number; hidden?: boolean; hearts: number; maxHearts: number; down: boolean; frozenUntil?: number; carrying?: string; phase?: number }
+export interface Token extends Looks { uid: string; kind: SceneToken['kind']; pos: P | null; item?: string; hidden?: boolean; label?: string; text?: string; model?: string; carriedBy?: string }
 export type RollPurpose =
   | { kind: 'attack'; foeUid: string }
   | { kind: 'heal'; heroId: string }

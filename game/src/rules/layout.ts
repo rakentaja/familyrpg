@@ -26,6 +26,21 @@ const pt = (v: unknown, sc?: { w: number; d: number }): P | null => {
 const arr = (v: unknown, max: number): unknown[] => (Array.isArray(v) ? v.slice(0, max) : []);
 const slug = (v: unknown, d: string) => str(v, 40).replace(/[^\w-]/g, '') || d;
 
+/** Turn / size / height, clamped; defaults left out. */
+function looks(o: any): { rot?: number; scale?: number; y?: number } {
+  const out: { rot?: number; scale?: number; y?: number } = {};
+  if (typeof o?.rot === 'number') { const r = Math.round(num(o.rot, -360, 360, 0)); if (r) out.rot = r; }
+  if (typeof o?.scale === 'number') { const k = r2(num(o.scale, 0.25, 4, 1)); if (k !== 1) out.scale = k; }
+  if (typeof o?.y === 'number') { const y = r2(num(o.y, 0, MAX_Y, 0)); if (y > 0) out.y = y; }
+  return out;
+}
+/** Apply turn / size / height from an edit op to a piece (degrees for rot). */
+function setLooks(t: { rot?: number; scale?: number; y?: number }, op: { rot?: number; scale?: number; y?: number }) {
+  if (op.rot !== undefined) { const r = deg(op.rot); if (r) t.rot = r; else delete t.rot; }
+  if (op.scale !== undefined) { const k = r2(num(op.scale, 0.25, 4, 1)); if (k !== 1) t.scale = k; else delete t.scale; }
+  if (op.y !== undefined) { const y = r2(num(op.y, 0, MAX_Y, 0)); if (y > 0) t.y = y; else delete t.y; }
+}
+
 function cleanScene(x: unknown, pack: Pack, i: number): PackScene | null {
   if (!x || typeof x !== 'object') return null;
   const o = x as Record<string, any>;
@@ -58,6 +73,7 @@ function cleanScene(x: unknown, pack: Pack, i: number): PackScene | null {
     const label = str(t.label, 40); if (label) tok.label = label;
     const text = str(t.text, 300); if (text) tok.text = text;
     if (typeof t.model === 'string' && pack.models[t.model]) tok.model = t.model;
+    Object.assign(tok, looks(t));
     return [tok];
   });
   const foes = arr(o.foes, MAX_FOES).flatMap((f: any) => {
@@ -66,6 +82,7 @@ function cleanScene(x: unknown, pack: Pack, i: number): PackScene | null {
     const sf: SceneFoe = { uid: uid(f.uid, 'f'), foe: f.foe, ...at };
     if (typeof f.rot === 'number') sf.rot = Math.round(num(f.rot, -360, 360, 0));
     if (f.hidden) sf.hidden = true;
+    const lk = looks(f); if (lk.scale !== undefined) sf.scale = lk.scale; if (lk.y !== undefined) sf.y = lk.y;
     if (typeof f.carrying === 'string' && tokens.some((t) => t.uid === f.carrying)) sf.carrying = f.carrying;
     return [sf];
   });
@@ -184,12 +201,17 @@ function syncFoeDef(c: Ctx, uid: string) {
   if (!f || !d) return;
   d.x = f.pos.x; d.z = f.pos.z; d.rot = Math.round((f.facing * 180) / Math.PI);
   if (f.hidden) d.hidden = true; else delete d.hidden;
+  syncLooks(d, f);
+}
+function syncLooks(d: { scale?: number; y?: number; rot?: number }, t: { scale?: number; y?: number; rot?: number }, rot = false) {
+  for (const k of (rot ? ['rot', 'scale', 'y'] : ['scale', 'y']) as ('rot' | 'scale' | 'y')[]) { if (t[k] !== undefined) d[k] = t[k]; else delete d[k]; }
 }
 function syncTokenDef(c: Ctx, uid: string) {
   const sc = defScene(c), t = tokenByUid(c.s, uid), d = sc.tokens.find((x) => x.uid === uid);
   if (!t || !d) return;
   if (t.pos) { d.x = t.pos.x; d.z = t.pos.z; }
   for (const k of ['hidden', 'label', 'text'] as const) { if (t[k]) (d as any)[k] = t[k]; else delete d[k]; }
+  syncLooks(d, t, true);
 }
 
 /** Layout ops (the host only). Returns false if `op` is not a layout op. */
@@ -314,6 +336,7 @@ function editPiece(c: Ctx, op: Extract<GuideOp, { k: 'edit' }>) {
     const f = foeByUid(s, op.id);
     if (!f) fail('No such foe.');
     if (op.rot !== undefined) f!.facing = Math.round(((deg(op.rot) * Math.PI) / 180) * 100) / 100;
+    setLooks(f!, { scale: op.scale, y: op.y });
     if (op.hidden !== undefined) {
       if (op.hidden) f!.hidden = true; else delete f!.hidden;
       if (!op.hidden) fx(c, { k: 'spawn', id: f!.uid, at: f!.pos });
@@ -321,7 +344,10 @@ function editPiece(c: Ctx, op: Extract<GuideOp, { k: 'edit' }>) {
     // a live game keeps the layout's start positions; the editor moves them
     const d = sc.foes.find((x) => x.uid === op.id);
     if (d && editing(s)) syncFoeDef(c, f!.uid);
-    else if (d && op.hidden !== undefined) { if (op.hidden) d.hidden = true; else delete d.hidden; }
+    else if (d) {
+      if (op.hidden !== undefined) { if (op.hidden) d.hidden = true; else delete d.hidden; }
+      syncLooks(d, f!);
+    }
     return;
   }
   const t = tokenByUid(s, op.id);
@@ -332,11 +358,13 @@ function editPiece(c: Ctx, op: Extract<GuideOp, { k: 'edit' }>) {
   }
   if (op.label !== undefined && t!.kind !== 'start') { const l = str(op.label, 40); if (l) t!.label = l; else delete t!.label; }
   if (op.text !== undefined) { const x = str(op.text, 300); if (x) t!.text = x; else delete t!.text; }
+  if (t!.kind !== 'start') setLooks(t!, op);
   if (sc.tokens.some((x) => x.uid === op.id)) {
     if (editing(s)) syncTokenDef(c, t!.uid);
     else {
       const d = sc.tokens.find((x) => x.uid === op.id)!;
       for (const k of ['hidden', 'label', 'text'] as const) { if (t![k]) (d as any)[k] = t![k]; else delete d[k]; }
+      syncLooks(d, t!, true);
     }
   }
 }

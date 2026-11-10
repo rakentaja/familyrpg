@@ -118,10 +118,10 @@ export function buildTools(d: BuildDeps) {
     }
     if (p.what === 'foe') {
       const f = s.foes.find((x) => x.uid === p.id);
-      return f && !f.down ? { name: thingName(pack, s, f.uid), hidden: !!f.hidden, rot: Math.round((f.facing * 180) / Math.PI) } : null;
+      return f && !f.down ? { name: thingName(pack, s, f.uid), hidden: !!f.hidden, rot: Math.round((f.facing * 180) / Math.PI), scale: f.scale ?? 1, y: f.y ?? 0 } : null;
     }
     const t = s.tokens.find((x) => x.uid === p.id);
-    return t && t.pos ? { name: t.kind === 'start' ? (t.label ?? 'Hero start') : thingName(pack, s, t.uid), hidden: !!t.hidden, text: t.text ?? '', label: t.label ?? '', kind: t.kind } : null;
+    return t && t.pos ? { name: t.kind === 'start' ? (t.label ?? 'Hero start') : thingName(pack, s, t.uid), hidden: !!t.hidden, rot: t.rot ?? 0, scale: t.scale ?? 1, y: t.y ?? 0, text: t.text ?? '', label: t.label ?? '', kind: t.kind } : null;
   }
   let panelKey = '';
   let dialActive = false;
@@ -137,26 +137,24 @@ export function buildTools(d: BuildDeps) {
     const start = x.kind === 'start';
     const textual = (p.what === 'prop' || (p.what === 'token' && !start));
     const dials: HTMLElement[] = [];
-    if (p.what !== 'token') {
-      const what = p.what as 'prop' | 'foe';
+    if (!start) {
+      const what = p.what;
       dials.push(dial({
         label: 'Turn', ic: 'rotr', value: (((x.rot ?? 0) % 360) + 360) % 360, wrap: 360, step: 15, perPx: -1.2,
         fmt: (v) => `${Math.round(v)}°`,
         preview: (v) => scene.previewPiece(what, p.id, v === null ? null : { rot: v }),
         commit: (v) => edit({ rot: v }),
       }));
-    }
-    if (p.what === 'prop') {
       dials.push(dial({
         label: 'Size', ic: 'grow', value: x.scale ?? 1, min: 0.25, max: 4, step: 0.05, perPx: 0.01,
         fmt: (v) => `${v.toFixed(2).replace(/0$/, '')}×`,
-        preview: (v) => scene.previewPiece('prop', p.id, v === null ? null : { scale: v }),
+        preview: (v) => scene.previewPiece(what, p.id, v === null ? null : { scale: v }),
         commit: (v) => edit({ scale: v }),
       }));
       dials.push(dial({
         label: 'Height', ic: 'up', value: x.y ?? 0, min: 0, max: MAX_Y, step: 0.05, perPx: 0.008,
         fmt: (v) => v < 0.025 ? 'floor' : `${v.toFixed(2).replace(/0$/, '')} m`,
-        preview: (v) => scene.previewPiece('prop', p.id, v === null ? null : { y: v }),
+        preview: (v) => scene.previewPiece(what, p.id, v === null ? null : { y: v }),
         commit: (v) => edit({ y: v }),
       }));
     }
