@@ -4,14 +4,14 @@ import { TRAITS } from './types';
 import { pick } from './rng';
 import { clampToScene, isP, nearestFree, rp } from './geom';
 import {
-  MAX_HEROES, RuleError, type Ctx, addSparks, adventure, anim, approach, bubble, buildDecks, calmFoe, checkMidnight,
-  checkProgress, clockPause, clockResume, controls, endScene, ensureChoice, fail, foeByUid, foeDef, fx, grumpFoe, guideOf,
+  MAX_HEROES, RuleError, type Ctx, addSparks, adventure, anim, approach, bubble, buildDecks, knockOutFoe, checkMidnight,
+  checkProgress, clockPause, clockResume, controls, endScene, ensureChoice, fail, foeByUid, foeDef, fx, hitFoe, guideOf,
   heroById, isGuide, isHost, itemDef, itemName, log, nav, nextScene, passAndPlay, pickupToken, playerById,
   pruneBubbles, reachOf, revealToken, roleDef, sceneDef, setupScene, spawnFoe, tell, tokenByUid, tuck, wake, advanceClock,
-  tokenName,
+  tokenName, nOf,
 } from './core';
 import { applyEffects, flipEvent, hasRoll, walkFoeTo, walkHero } from './effects';
-import { drawTwist, readyRoll, resolveRoll, rollFor, setHelp, sparkRoll, throwRoll } from './rolls';
+import { readyRoll, resolveRoll, rollFor, setHelp, sparkRoll, throwRoll } from './rolls';
 
 export function reduce(state: GameState, env: Envelope, pack: Pack): { ok: boolean; error?: string; state: GameState } {
   if (!state || !pack || !env || typeof env !== 'object' || typeof env.t !== 'string' || typeof env.by !== 'string') {
@@ -240,6 +240,7 @@ function apply(c: Ctx, a: Envelope) {
       const r = rollFor(c, a.rollId, ['ready']);
       if (r.thrower !== by && !isGuide(s, by)) fail(`That's not your roll.`);
       if (!TRAITS.includes(a.trait)) fail('Pick Brave, Clever or Kind.');
+      if (r.purpose.kind !== 'free') fail('This roll always uses the same trait.');
       r.trait = a.trait;
       return;
     }
@@ -272,7 +273,7 @@ function apply(c: Ctx, a: Envelope) {
       const it = id ? itemDef(pack, id) : undefined;
       if (!it) fail('No item there.');
       if (hasRoll(it!.effects) !== undefined) {
-        readyRoll(c, h, 'brave', { kind: 'item', item: it!.id, ...(a.target ? { target: a.target } : {}) });
+        readyRoll(c, h, 'clever', { kind: 'item', item: it!.id, ...(a.target ? { target: a.target } : {}) });
         return;
       }
       h.pocket.splice(a.index, 1);
@@ -313,7 +314,7 @@ function apply(c: Ctx, a: Envelope) {
       if (!approach(c, h, t!.pos)) { bubble(c, `Can't reach ${t!.name} from here!`, 'hint', h.id); return; }
       wake(c, t!, 1);
       anim(c, h.id, 'cheer');
-      tell(c, `${h.name} helps ${t!.name} back up with 1 ${L.hearts}!`, 'result', t!.id, 'good');
+      tell(c, `${h.name} helps ${t!.name} back up with ${nOf(1, L.hearts)}!`, 'result', t!.id, 'good');
       return;
     }
     case 'choose': {
@@ -443,17 +444,17 @@ function guideOp(c: Ctx, op: GuideOp) {
       walkFoeTo(c, f!, clampToScene(sceneDef(s, pack)!, op.to, 0.05));
       return;
     }
-    case 'grump': {
+    case 'foeHearts': {
       const f = foeByUid(s, op.uid);
-      if (!f || f.calmed) fail('No such foe.');
+      if (!f || f.down) fail('No such foe.');
       if (typeof op.delta !== 'number' || !Number.isFinite(op.delta)) fail('How much?');
-      grumpFoe(c, f!, Math.round(op.delta));
+      hitFoe(c, f!, Math.round(op.delta));
       return;
     }
-    case 'calm': {
+    case 'ko': {
       const f = foeByUid(s, op.uid);
-      if (!f || f.calmed) fail('No such foe.');
-      calmFoe(c, f!);
+      if (!f || f.down) fail('No such foe.');
+      knockOutFoe(c, f!);
       return;
     }
     case 'remove': {
@@ -526,18 +527,9 @@ function guideOp(c: Ctx, op: GuideOp) {
     }
     case 'outcome': {
       const r = rollFor(c, op.rollId, ['thrown'], 'guide');
-      if (!['success', 'twist', 'trouble'].includes(op.outcome)) fail('Unknown outcome.');
+      if (!['strong', 'success', 'trouble'].includes(op.outcome)) fail('Unknown outcome.');
       r.outcome = op.outcome;
-      if (r.outcome === 'twist' && !r.twist) r.twist = drawTwist(c);
-      if (r.outcome !== 'twist') delete r.twist;
       fx(c, { k: 'outcome', id: r.heroId, text: r.outcome, n: r.total });
-      return;
-    }
-    case 'twist': {
-      const r = rollFor(c, op.rollId, ['ready', 'thrown'], 'guide');
-      const text = str(op.text, 160);
-      if (!text) fail('Write a twist!');
-      r.twist = text;
       return;
     }
     case 'flipEvent':

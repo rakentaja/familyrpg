@@ -4,7 +4,7 @@ import { TRAITS } from './types';
 import { dist, groundOf, sceneOf } from './geom';
 import {
   bossPhaseFor, controlledIds, foeByUid, foeDef, heroById, isGuide, itemDef, itemName, midnight, roleDef,
-  tokenByUid, tokenName,
+  tokenByUid, tokenName, nOf,
 } from './core';
 
 const bestTrait = (h: Hero): Trait => TRAITS.reduce((a, b) => (h.traits[b] > h.traits[a] ? b : a), TRAITS[0]);
@@ -67,12 +67,8 @@ export function options(state: GameState, me: string, heroId: string | null, hit
       const f = foeByUid(s, hit.id);
       const d = f ? foeDef(pack, f.foe) : undefined;
       if (!f || !d || !awake || !playing) break;
-      if (f.calmed) {
-        if (d.boss?.kindFinish && !s.scene.flags.invited) primary({ id: 'invite', label: 'Invite them!', icon: 'calm', hint: `A ${L.traits.kind} word…`, action: { t: 'readyRoll', heroId: h!.id, trait: 'kind', purpose: { kind: 'calm', foeUid: f.uid } } });
-        break;
-      }
-      primary({ id: 'calm', label: `Calm (${L.traits[d.weak]})`, icon: 'calm', hint: `${f.grump} Grump left. Try being ${L.traits[d.weak]}!`, action: { t: 'readyRoll', heroId: h!.id, trait: d.weak, purpose: { kind: 'calm', foeUid: f.uid } } });
-      for (const t of TRAITS) add({ id: `calm:${t}`, label: `Calm: ${L.traits[t]}`, icon: 'calm', action: { t: 'readyRoll', heroId: h!.id, trait: t, purpose: { kind: 'calm', foeUid: f.uid } } });
+      if (f.down) break;
+      primary({ id: 'attack', label: `Attack (${L.traits.brave})`, icon: 'attack', hint: `${nOf(f.hearts, L.hearts)} left.`, action: { t: 'readyRoll', heroId: h!.id, trait: 'brave', purpose: { kind: 'attack', foeUid: f.uid } } });
       h!.pocket.forEach((id, i) => { const it = itemDef(pack, id); if (it && accepts(it.target, 'foe')) add(itemOption(h!, i, it, { foeUid: f.uid })); });
       const role = roleDef(pack, h!.roleId);
       if (role && !h!.knackUsed && accepts(role.knack.target, 'foe')) add({ id: 'knack', label: role.knack.name, icon: 'knack', hint: role.knack.text, action: { t: 'useKnack', heroId: h!.id, target: { foeUid: f.uid } } });
@@ -112,13 +108,15 @@ export function options(state: GameState, me: string, heroId: string | null, hit
           const k = role.knack;
           add({ id: 'knack', label: k.name, icon: 'knack', hint: k.text, ...(needsTarget(k.target) ? { needs: k.target } : { action: { t: 'useKnack', heroId: me2.id } as Action }) });
         }
+        if (me2.hearts < me2.maxHearts) add({ id: 'heal', label: `Heal (${L.traits.kind})`, icon: 'heal', hint: `A ${L.traits.kind} roll to get ${L.hearts} back.`, action: { t: 'readyRoll', heroId: me2.id, trait: 'kind', purpose: { kind: 'heal', heroId: me2.id } } });
         if (s.heroes.length > 1) me2.pocket.forEach((id, i) => add({ id: `give:${i}`, label: `Give ${itemName(pack, id)}`, icon: 'give', needs: 'hero' }));
         add({ id: 'roll', label: 'Roll dice', icon: 'roll', hint: 'Say what you try, then roll!', action: { t: 'readyRoll', heroId: me2.id, trait: bestTrait(me2), purpose: { kind: 'free' } } });
         break;
       }
       if (!h) break;
       if (!awake || target.id === h!.id) break;
-      if (target.tuckered) primary({ id: 'revive', label: `Wake ${target.name}`, icon: 'revive', hint: `They get 1 ${L.hearts}.`, action: { t: 'revive', heroId: h!.id, targetId: target.id } });
+      if (target.tuckered) primary({ id: 'revive', label: `Wake ${target.name}`, icon: 'revive', hint: `They get ${nOf(1, L.hearts)}.`, action: { t: 'revive', heroId: h!.id, targetId: target.id } });
+      else if (target.hearts < target.maxHearts) primary({ id: 'heal', label: `Heal ${target.name} (${L.traits.kind})`, icon: 'heal', hint: `A ${L.traits.kind} roll: ${target.name} gets ${L.hearts} back.`, action: { t: 'readyRoll', heroId: h!.id, trait: 'kind', purpose: { kind: 'heal', heroId: target.id } } });
       h!.pocket.forEach((id, i) => {
         const it = itemDef(pack, id);
         if (!it) return;
@@ -141,10 +139,10 @@ export function options(state: GameState, me: string, heroId: string | null, hit
         const f = foeByUid(s, hit.id);
         const d = f ? foeDef(pack, f.foe) : undefined;
         if (!f || !d) break;
-        if (!f.calmed) {
-          G({ id: 'g:grump-', label: 'Grump −1', icon: 'minus', action: { t: 'guide', op: { k: 'grump', uid: f.uid, delta: -1 } } });
-          G({ id: 'g:grump+', label: 'Grump +1', icon: 'plus', action: { t: 'guide', op: { k: 'grump', uid: f.uid, delta: 1 } } });
-          G({ id: 'g:calm', label: 'Calm now', icon: 'calm', action: { t: 'guide', op: { k: 'calm', uid: f.uid } } });
+        if (!f.down) {
+          G({ id: 'g:hit', label: `${L.hearts} −1`, icon: 'minus', action: { t: 'guide', op: { k: 'foeHearts', uid: f.uid, delta: -1 } } });
+          G({ id: 'g:heal', label: `${L.hearts} +1`, icon: 'plus', action: { t: 'guide', op: { k: 'foeHearts', uid: f.uid, delta: 1 } } });
+          G({ id: 'g:ko', label: 'Knock out', icon: 'ko', action: { t: 'guide', op: { k: 'ko', uid: f.uid } } });
         }
         G({ id: 'g:hint', label: 'Hint', icon: 'inspect', hint: foeHint(pack, f.foe, f) });
         G({ id: 'g:say', label: 'Say…', icon: 'say', hint: 'Type a line', action: { t: 'guide', op: { k: 'say', text: '', who: f.uid } } });
@@ -210,7 +208,7 @@ export function options(state: GameState, me: string, heroId: string | null, hit
   return out;
 }
 
-export function foeHint(pack: Pack, foeId: string, f?: { grump: number; maxGrump: number; foe: string; phase?: number }): string {
+export function foeHint(pack: Pack, foeId: string, f?: { hearts: number; maxHearts: number; foe: string; phase?: number }): string {
   const d = foeDef(pack, foeId);
   if (!d) return '';
   if (d.boss && f) {
@@ -251,7 +249,7 @@ export function describe(state: GameState, hit: Hit, pack: Pack, asGuide: boolea
       const parts = [`${h.name} the ${role?.name ?? h.roleId}`];
       parts.push(h.tuckered ? L.tuckered : `${h.hearts} of ${h.maxHearts} ${L.hearts}`);
       if (h.pocket.length) parts.push(`Pocket: ${h.pocket.map((i) => itemName(pack, i)).join(', ')}`);
-      if (role) parts.push(`Special trick ${role.knack.name} (${h.knackUsed ? "used — back next scene" : "once per scene"}): ${role.knack.text}`);
+      if (role) parts.push(`Special move ${role.knack.name} (${h.knackUsed ? "used — back next scene" : "once per scene"}): ${role.knack.text}`);
       if ((h.status.guardUntil ?? 0) > s.now) parts.push('Standing guard');
       return parts.join(' · ');
     }
@@ -260,11 +258,10 @@ export function describe(state: GameState, hit: Hit, pack: Pack, asGuide: boolea
       const d = f ? foeDef(pack, f.foe) : undefined;
       if (!f || !d) break;
       const parts = [`${d.name} — ${d.blurb}`];
-      parts.push(f.calmed ? L.calmed : `Grump ${f.grump} of ${f.maxGrump} — each calm success takes 1 away; at 0 it cheers up`);
-      if (!f.calmed) parts.push(`Soft spot: ${L.traits[d.weak]} (a 9+ takes 2)`);
+      parts.push(f.down ? cap(L.down) : `${f.hearts} of ${f.maxHearts} ${L.hearts} — tap to attack (${L.traits.brave})`);
       if ((f.frozenUntil ?? 0) > s.now) parts.push('frozen');
       if (f.carrying) { const t = tokenByUid(s, f.carrying); if (t) parts.push(`carrying ${tokenName(pack, t)}`); }
-      if (asGuide && !f.calmed) parts.push(`Hint: ${foeHint(pack, f.foe, f)}`);
+      if (asGuide && !f.down) parts.push(`Hint: ${foeHint(pack, f.foe, f)}`);
       return parts.join(' · ');
     }
     case 'token': {
@@ -293,7 +290,7 @@ export function describe(state: GameState, hit: Hit, pack: Pack, asGuide: boolea
         return `${L.clock}: ${clockFace(m)} · about ${left} minute${left === 1 ? '' : 's'} left${s.clock.runningSince == null ? ' · paused' : ''}`;
       }
       if (hit.meter === 'goal') return `${L.goal}: ${s.meters.goal} of ${s.meters.goalMax}`;
-      return `${L.sparks}: ${s.meters.sparks} — spend one to reroll, add +2 or skip a twist`;
+      return `${L.sparks}: ${s.meters.sparks} — spend one to reroll or add +2`;
     }
     case 'ground': {
       if (!sc) break;

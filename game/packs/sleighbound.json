@@ -8,7 +8,7 @@
     "author": "Tolga"
   },
   "labels": {
-    "hearts": "Cheer",
+    "hearts": "Hearts",
     "sparks": "Twinkles",
     "goal": "Presents",
     "clock": "Midnight",
@@ -18,9 +18,9 @@
       "kind": "Kind"
     },
     "heroes": "Heroes",
-    "foes": "Troublemakers",
-    "tuckered": "Tuckered Out",
-    "calmed": "all cheered up",
+    "foes": "Foes",
+    "tuckered": "Knocked Out",
+    "down": "knocked out",
     "guide": "Guide"
   },
   "theme": {
@@ -439,7 +439,7 @@
       "knack": {
         "id": "fly",
         "name": "Fly",
-        "text": "Fly up to 8 big steps over anything. A friend next to you who is Tuckered Out comes along.",
+        "text": "Fly up to 8 big steps over anything. A friend next to you who is Knocked Out comes along.",
         "target": "point",
         "effects": [
           {
@@ -520,7 +520,7 @@
       "knack": {
         "id": "stand-guard",
         "name": "Stand Guard",
-        "text": "Friends next to you can’t lose Cheer for a little while.",
+        "text": "Friends next to you can’t lose Hearts for a little while.",
         "effects": [
           {
             "do": "guard",
@@ -543,7 +543,7 @@
       "knack": {
         "id": "sing",
         "name": "Sing",
-        "text": "Every friend within 3 big steps gets 1 Cheer back.",
+        "text": "Every friend within 3 big steps gets 1 Heart back.",
         "effects": [
           {
             "do": "heal",
@@ -594,14 +594,14 @@
       "knack": {
         "id": "shine",
         "name": "Shine",
-        "text": "Reveal hidden things within 4 big steps; foes within 4 lose 1 Grump.",
+        "text": "Reveal hidden things within 4 big steps; foes within 4 lose 1 Heart.",
         "effects": [
           {
             "do": "reveal",
             "range": 4
           },
           {
-            "do": "removeGrump",
+            "do": "hitFoes",
             "n": 1,
             "who": "foesInRange",
             "range": 4
@@ -620,7 +620,7 @@
     {
       "id": "hot-cocoa",
       "name": "Hot Cocoa",
-      "text": "Sip it: get 2 Cheer back.",
+      "text": "Sip it: get 2 Hearts back.",
       "count": 4,
       "effects": [
         {
@@ -635,7 +635,7 @@
     {
       "id": "cookie",
       "name": "Cookie",
-      "text": "Get 1 Cheer back — or give it to a friend next to you.",
+      "text": "Get 1 Heart back — or give it to a friend next to you.",
       "count": 4,
       "target": "hero",
       "effects": [
@@ -651,12 +651,12 @@
     {
       "id": "snowball",
       "name": "Snowball",
-      "text": "Throw it at a foe up to 4 big steps away. On 6 or more they lose 1 Grump.",
+      "text": "Throw it at a foe up to 4 big steps away. On 6 or more they lose 1 Heart.",
       "count": 5,
       "target": "foe",
       "effects": [
         {
-          "do": "removeGrump",
+          "do": "hitFoes",
           "n": 1,
           "who": "target",
           "range": 4,
@@ -761,7 +761,7 @@
     {
       "id": "gumdrop",
       "name": "Gumdrop",
-      "text": "Chewy! You or a friend next to you gets 1 Cheer back.",
+      "text": "Chewy! You or a friend next to you gets 1 Heart back.",
       "count": 0,
       "target": "hero",
       "effects": [
@@ -836,39 +836,35 @@
     {
       "id": "grumpling",
       "name": "Grumpling",
-      "blurb": "Grabs presents and runs. Secretly just wants a hug.",
-      "grump": 1,
-      "weak": "kind",
+      "blurb": "Grabs presents and runs off with them.",
+      "hearts": 1,
       "model": "char:grumpling",
-      "hint": "Grabs the nearest present and runs away from the heroes (about 4 m). Calm it to get the present back.",
+      "hint": "Grabs the nearest present and runs away from the heroes (about 4 m). Knock it out to get the present back.",
       "speed": 1.6
     },
     {
       "id": "coal-imp",
       "name": "Coal Imp",
       "blurb": "Throws lumps of coal from 3 big steps away.",
-      "grump": 2,
-      "weak": "brave",
+      "hearts": 2,
       "model": "char:coal-imp",
-      "hint": "Throws coal at a hero within 3 m: −1 Cheer. Likes to stay by its chimney and guard the present.",
+      "hint": "Throws coal at a hero within 3 m: −1 Heart. Likes to stay by its chimney and guard the present.",
       "speed": 1
     },
     {
       "id": "wind-up-rat",
       "name": "Wind-up Rat",
       "blurb": "Zips around in packs of three. Bumps into everything.",
-      "grump": 1,
-      "weak": "clever",
+      "hearts": 1,
       "model": "char:wind-up-rat",
-      "hint": "Zips up to 6 m and bumps into a hero: −1 Cheer. The rats always move together.",
+      "hint": "Zips up to 6 m and bumps into a hero: −1 Heart. The rats always move together.",
       "speed": 2.2
     },
     {
       "id": "blizzard-wisp",
       "name": "Blizzard Wisp",
       "blurb": "A puff of storm that blows heroes 2 big steps away.",
-      "grump": 2,
-      "weak": "brave",
+      "hearts": 2,
       "model": "char:blizzard-wisp",
       "hint": "Floats up to 3 m and blows a hero next to it 2 m away — drag the hero to show the gust.",
       "speed": 1,
@@ -878,8 +874,7 @@
       "id": "snow-golem",
       "name": "Snow Golem",
       "blurb": "Huge, slow, and very good at standing in the way.",
-      "grump": 4,
-      "weak": "clever",
+      "hearts": 4,
       "model": "char:snow-golem",
       "hint": "Slow (2 m at a time). Plants itself in the narrow spot so nobody can get past.",
       "speed": 0.6
@@ -887,34 +882,32 @@
     {
       "id": "grumbleweed",
       "name": "Grumbleweed",
-      "blurb": "The Winter Troll. Grumpy on the outside, lonely on the inside.",
-      "grump": 8,
-      "weak": "kind",
+      "blurb": "The Winter Troll. Big, mean and cold. He stole the Star.",
+      "hearts": 8,
       "model": "char:grumbleweed",
       "boss": {
-        "kindFinish": true,
         "phases": [
           {
             "name": "Snowball Storm",
             "text": "Grumbleweed scoops up snow and throws big snowballs!",
-            "atGrump": 8,
-            "hint": "Throws a big snowball at a hero within 4 m: −1 Cheer. Then stomps 2 m closer."
+            "atHearts": 8,
+            "hint": "Throws a big snowball at a hero within 4 m: −1 Heart. Then stomps 2 m closer."
           },
           {
             "name": "Grumpling Call",
             "text": "Grumbleweed whistles — Grumplings come running to help him!",
-            "atGrump": 5,
+            "atHearts": 5,
             "hint": "Whistles for help: spawn a Grumpling next to him (up to 2 at a time), or throw a snowball."
           },
           {
             "name": "The Big Sulk",
-            "text": "Grumbleweed hides behind a wall of ice and sulks. Something Clever could crack it…",
-            "atGrump": 2,
-            "hint": "Hides behind a wall of ice and sulks. Only something Clever — or a Kind word — gets through to him now."
+            "text": "Grumbleweed hides behind a wall of ice. Break through and finish him!",
+            "atHearts": 2,
+            "hint": "Hides behind a wall of ice. Heroes have to get past the wall (or throw things over it) to hit him."
           }
         ]
       },
-      "hint": "Big and slow (2 m). Grumpy on the outside — lonely on the inside.",
+      "hint": "Big and slow (2 m). Hits hard.",
       "speed": 0.8
     }
   ],
@@ -985,7 +978,7 @@
     {
       "id": "snow-angel",
       "name": "Snow Angel",
-      "text": "The next hero who gets Tuckered Out pops right back up.",
+      "text": "The next hero who gets Knocked Out pops right back up.",
       "count": 2,
       "effects": [
         {
@@ -1005,23 +998,6 @@
       ]
     }
   ],
-  "twists": [
-    "Your hat flies off and you have to chase it!",
-    "You let out a big, loud, silly sneeze.",
-    "Snow tumbles off a branch right onto your head.",
-    "Your boots squeak so loudly that everyone giggles.",
-    "A snowflake lands right on the tip of your nose.",
-    "Your scarf gets tangled around your arms.",
-    "You slip and land on your bottom — luckily the snow is soft.",
-    "Something rustles nearby… it was only the wind.",
-    "Your mittens are soggy now. Brrr!",
-    "You drop something and have to scramble to pick it up.",
-    "A gust of wind spins you right round.",
-    "Faraway jingling makes you lose your place.",
-    "A curious snow bunny starts following you.",
-    "Your tummy rumbles — very loudly.",
-    "Icicles tinkle overhead and make you jump."
-  ],
   "adventures": [
     {
       "id": "the-night-before",
@@ -1036,11 +1012,6 @@
           "type": "explore",
           "intro": "The Toy Workshop is where every toy in the world is built — but tonight three Wind-up Rats are zooming between the workbenches! Two presents are lost in the mess. Find them, and find out where the Troll went.",
           "win": "Both presents are safe! Dapple points the way: across the Frozen Lake.",
-          "twists": [
-            "A wind-up toy marches across your feet.",
-            "A jack-in-the-box springs open — boing!",
-            "A stack of blocks wobbles and falls over."
-          ],
           "tableMomentAfter": "wrap-it",
           "size": {
             "w": 9,
@@ -1249,11 +1220,6 @@
           "intro": "The lake is frozen, shiny and very slippery — walk onto the ice and you slide a little further than you meant to! The ice is cracking in two long lines. Test the ice carefully: 4 steady tries before it wobbles 3 times. One present sits on the little island.",
           "win": "The cracks freeze solid behind you and everyone slides safely to the far shore. Wheee!",
           "lose": "The ice is too wobbly! Everyone takes the long, chilly way round — the night is getting late.",
-          "twists": [
-            "A fish blinks up at you through the ice.",
-            "Your feet slide in two different directions!",
-            "The ice makes a long, low creak."
-          ],
           "tableMomentAfter": "draw-ornament",
           "size": {
             "w": 9,
@@ -1545,11 +1511,6 @@
           "type": "showdown",
           "intro": "Over the Gingerbread Village roofs! Coal Imps sit by the chimneys, guarding two presents — and a Grumpling is sneaking about. Some gaps are too wide to walk across: fly, leap, or find the narrow ridge.",
           "win": "Both presents are back! From the top of the roofs you can see a glow coming from an ice cave…",
-          "twists": [
-            "A puff of chimney smoke makes you cough.",
-            "A roof tile wobbles under your foot.",
-            "Someone inside a gingerbread house waves at you."
-          ],
           "tableMomentAfter": "hum-a-tune",
           "size": {
             "w": 9,
@@ -1806,13 +1767,8 @@
           "id": "ice-cave",
           "name": "The Ice Cave",
           "type": "boss",
-          "intro": "Deep in the Ice Cave sits Grumbleweed the Winter Troll, hugging the Star. A Snow Golem stands in the way. Calm him down — and maybe, just maybe, a Kind word is what he really needs. His own little present is hidden somewhere in here too.",
+          "intro": "Deep in the Ice Cave sits Grumbleweed the Winter Troll, clutching the Star. A Snow Golem stands in the way. Knock him out and take the Star back! A present is hidden somewhere in here too.",
           "win": "The Star is back in your hands, glowing warm and bright. Time to fly!",
-          "twists": [
-            "Grumbleweed’s grumble echoes around the cave.",
-            "An icicle drops — plink! — right beside you.",
-            "The Star flickers as if it’s saying hello."
-          ],
           "size": {
             "w": 9,
             "d": 11
@@ -2099,27 +2055,17 @@
             }
           },
           "goal": {
-            "text": "Calm Grumbleweed and bring back the Star. (A Kind word at the very end might make a new friend!)",
-            "bossKindFinish": true
+            "text": "Knock out Grumbleweed and take back the Star.",
+            "beatBoss": true
           },
           "troubleClock": 1
         }
       ],
       "endings": [
         {
-          "id": "best-night",
-          "when": "invited && star && goal>=5",
-          "text": "The Star shines on the great tree, the sleigh is full, and Grumbleweed — wearing a paper crown — waves everyone off. Next year he’ll pull the sleigh himself! The best Christmas Eve ever."
-        },
-        {
-          "id": "new-friend",
-          "when": "invited && star",
-          "text": "The sleigh lifts off under the Star with a new friend aboard: Grumbleweed, who has never smiled so much. Some homes will get their presents a little late, but nobody will forget this night."
-        },
-        {
           "id": "full-sleigh",
           "when": "star && goal>=5",
-          "text": "The Star blazes on the tree, the sleigh is packed with presents, and off it flies. Almost every home gets its gifts by morning!"
+          "text": "The Star blazes on the tree, the sleigh is packed with presents, and off it flies. Almost every home gets its gifts by morning! The best Christmas Eve ever."
         },
         {
           "id": "sleigh-flies",

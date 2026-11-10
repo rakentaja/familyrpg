@@ -61,7 +61,7 @@ export const ICONS: Record<string, string> = {
 
 /** Icon names the rules use → our drawings. */
 const ALIAS: Record<string, string> = {
-  calm: 'kind', event: 'card', give: 'gift', grab: 'hand', inspect: 'eye', item: 'pocket', knack: 'sparkle', reveal: 'twinkle',
+  calm: 'kind', attack: 'brave', heal: 'heart', ko: 'sleep', event: 'card', give: 'gift', grab: 'hand', inspect: 'eye', item: 'pocket', knack: 'sparkle', reveal: 'twinkle',
   revive: 'heart', roll: 'dice', present: 'gift', goal: 'gift', spark: 'twinkle', sparks: 'twinkle', time: 'clock',
 };
 

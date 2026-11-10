@@ -23,7 +23,6 @@ export function endingScreen(ctx: Ctx) {
     if (k === key) return;
     const first = !key;
     key = k;
-    const boss = pack.foes.find((f) => f.boss)?.name ?? 'the boss';
     const text = e?.text ?? 'The night is over.';
     const lines = recap(s);
     const goal = e?.goal ?? s.meters.goal;
@@ -31,7 +30,7 @@ export function endingScreen(ctx: Ctx) {
     for (let i = 0; i < s.meters.goalMax; i++) gifts.appendChild(icon(i < goal ? 'gift' : 'giftEmpty'));
     const share = async () => {
       const msg = `We played ${pack.theme.title}! ${goal}/${s.meters.goalMax} ${pack.labels.goal.toLowerCase()} delivered` +
-        (e?.star ? ', the Star is back on the tree' : '') + (e?.invited ? ` — and ${boss} got invited to Christmas!` : '.') +
+        (e?.star ? ', the Star is back on the tree.' : '.') +
         `\nHeroes: ${s.heroes.map((x) => x.name).join(', ')}`;
       if (navigator.share) { try { await navigator.share({ title: pack.theme.title, text: msg }); } catch { /* cancelled */ } return; }
       try { await navigator.clipboard.writeText(msg); toast('Copied the story — paste it anywhere!', 'good'); } catch { toast(msg, 'info', 6000); }
@@ -43,7 +42,7 @@ export function endingScreen(ctx: Ctx) {
       h('div', { class: 'end-stats' },
         h('div', null, h('span', { class: 'lbl' }, pack.labels.goal), gifts),
         h('div', { class: 'stat' + (e?.star ? ' yes' : '') }, icon('star', 'ic big'), e?.star ? 'The Star is home!' : 'The Star is still lost'),
-        e?.invited ? h('div', { class: 'stat yes' }, icon('kind', 'ic big'), `${boss} was invited to Christmas!`) : null),
+        ),
       h('div', { class: 'end-heroes' }, s.heroes.map((x) => h('span', { class: 'end-hero' }, avatar(pack, x.roleId, heroColor(s, x)), x.name))),
       lines.length ? h('div', { class: 'recap' }, h('h3', null, 'Tonight’s story'), h('ol', null, lines.map((l) => h('li', null, l)))) : null,
       h('div', { class: 'row end-btns' },

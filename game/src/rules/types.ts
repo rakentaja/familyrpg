@@ -15,7 +15,7 @@ export type Effect =
   | { do: 'addSpark'; n: number }
   | { do: 'addGoal'; n: number }
   | { do: 'advanceClock'; n: number }                                // n Midnight steps (1 step = 1/12 of the night)
-  | { do: 'removeGrump'; n: number; who: 'target' | 'foesInRange' | 'allFoes'; range?: number; on?: number }
+  | { do: 'hitFoes'; n: number; who: 'target' | 'foesInRange' | 'allFoes'; range?: number; on?: number }
   | { do: 'pull'; n: number; range: number }
   | { do: 'push'; n: number; who: 'target' | 'heroesInRange'; range?: number }
   | { do: 'slideAll'; n: number }
@@ -39,11 +39,11 @@ export interface PackRole {
 }
 export interface PackItem { id: string; name: string; text: string; count: number; target?: TargetKind; effects: Effect[]; icon?: string; model?: string }
 export interface PackFoe {
-  id: string; name: string; blurb: string; grump: number; weak: Trait; model: string; scale?: number;
+  id: string; name: string; blurb: string; hearts: number; model: string; scale?: number;
   hint: string;                                                      // what it would do — shown to the Guide on hold
   speed?: number;                                                    // walk speed m/s when the Guide moves it
   flies?: boolean;                                                   // paths ignore 'gap' areas
-  boss?: { phases: { name: string; text: string; atGrump: number; hint: string }[]; kindFinish: boolean };
+  boss?: { phases: { name: string; text: string; atHearts: number; hint: string }[] };
 }
 export type AreaKind = 'floor' | 'snow' | 'ice' | 'crack' | 'water' | 'gap' | 'roof' | 'wall';
 export interface Area {                                              // ground regions; later areas win where they overlap
@@ -65,21 +65,21 @@ export interface PackScene {
   tokens: SceneToken[];
   edges?: P[];                                                       // spawn spots for events
   meters?: { clock?: P; presents?: P; jar?: P };                      // where the in-scene meters stand (defaults: back edge)
-  goal: { text: string; collectGoal?: number; reachExit?: boolean; calmAll?: boolean; challenge?: { need: number; maxTrouble: number; text: string }; bossKindFinish?: boolean };
-  win: string; lose?: string; twists?: string[]; tableMomentAfter?: string;
-  troubleClock?: number;                                             // extra Midnight steps on Trouble here
+  goal: { text: string; collectGoal?: number; reachExit?: boolean; beatAll?: boolean; challenge?: { need: number; maxTrouble: number; text: string }; beatBoss?: boolean };
+  win: string; lose?: string; tableMomentAfter?: string;
+  troubleClock?: number;                                             // extra Midnight steps on a miss here
 }
 export interface PackTableMoment { id: string; name: string; kind: 'charades' | 'draw' | 'hum'; text: string; prompts: string[]; seconds: number; reward: number }
 export interface PackEvent { id: string; name: string; text: string; count: number; effects: Effect[] }
 export interface Pack {
   meta: { id: string; name: string; version: string; engine: 'hearthside@2' };
-  labels: { hearts: string; sparks: string; goal: string; clock: string; traits: Record<Trait, string>; heroes: string; foes: string; tuckered: string; calmed: string; guide: string };
+  labels: { hearts: string; sparks: string; goal: string; clock: string; traits: Record<Trait, string>; heroes: string; foes: string; tuckered: string; down: string; guide: string };
   theme: { title: string; subtitle: string; premise: string; palette: Record<string, string> };
   models: Record<string, { url: string; scale?: number; rot?: number; anim?: Record<string, string>; block?: number /* default blocking radius m for props */ }>;
-  roles: PackRole[]; items: PackItem[]; foes: PackFoe[]; events: PackEvent[]; twists: string[];
+  roles: PackRole[]; items: PackItem[]; foes: PackFoe[]; events: PackEvent[];
   adventures: { id: string; name: string; blurb: string; goalMax: number; minutes: number; scenes: PackScene[]; endings: { id: string; when: string; text: string }[] }[];
   tableMoments: PackTableMoment[];
-  ranges: { move: number; reach: number; help: number };             // metres: move ring (4), interact/calm reach (~1.5), etc.
+  ranges: { move: number; reach: number; help: number };             // metres: move ring (4), interact/attack reach (~1.5), etc.
 }
 
 // ---------------------------------------------------------------- live state (host-authoritative, synced)
@@ -93,10 +93,11 @@ export interface Hero {
   pos: P; facing: number /* radians, 0 = +z */; pocket: string[]; knackUsed: boolean; visited: P[];
   status: { guardUntil?: number; bonus?: { trait: Trait | 'any'; n: number; rolls: number }; moveBonus?: number };
 }
-export interface Foe { uid: string; foe: string; pos: P; facing: number; grump: number; maxGrump: number; calmed: boolean; frozenUntil?: number; carrying?: string; phase?: number }
+export interface Foe { uid: string; foe: string; pos: P; facing: number; hearts: number; maxHearts: number; down: boolean; frozenUntil?: number; carrying?: string; phase?: number }
 export interface Token { uid: string; kind: SceneToken['kind']; pos: P | null; item?: string; hidden?: boolean; label?: string; text?: string; model?: string; carriedBy?: string }
 export type RollPurpose =
-  | { kind: 'calm'; foeUid: string }
+  | { kind: 'attack'; foeUid: string }
+  | { kind: 'heal'; heroId: string }
   | { kind: 'challenge'; areaId?: string }
   | { kind: 'search'; at: P; propIndex?: number }
   | { kind: 'item'; item: string; target?: TargetRef }
@@ -106,14 +107,16 @@ export interface Roll {
   id: string; heroId: string; thrower: string /* player id */; trait: Trait; purpose: RollPurpose;
   help: number;                                                      // 0..2, added by the Guide
   stage: 'ready' | 'thrown' | 'done';
-  dice?: [number, number]; total?: number; outcome?: 'success' | 'twist' | 'trouble';
-  sparkUsed: ('reroll' | 'plus2' | 'ignoreTwist')[]; twist?: string; land?: P;
+  dice?: [number, number]; total?: number; outcome?: Outcome;
+  sparkUsed: ('reroll' | 'plus2')[]; land?: P;
 }
+/** 10+ strong (attacks: 2 Hearts) · 7–9 success · 6 or less trouble (a miss). */
+export type Outcome = 'strong' | 'success' | 'trouble';
 export interface Bubble { id: string; who?: string /* hero id / foe uid / token uid, or undefined = narrator note */; text: string; at: number; kind: 'say' | 'story' | 'event' | 'result' | 'hint'; ttl: number /* ms */ }
 export interface Clock { totalMs: number; elapsedMs: number; runningSince: number | null; steps: number /* extra Midnight steps from Trouble/events */ }
 export interface TableMomentState { id: string; performer: string; prompt?: string; endsAt?: number; votes: Record<string, string>; winner?: string; stage: 'ready' | 'performing' | 'voting' | 'done' }
 export interface FxEvent {
-  k: 'move' | 'place' | 'dice' | 'anim' | 'say' | 'grump' | 'calm' | 'pickup' | 'reveal' | 'spawn' | 'event' | 'scene' | 'heal' | 'hurt' | 'tuck' | 'revive' | 'spark' | 'clock' | 'goal' | 'push' | 'outcome' | 'camera';
+  k: 'move' | 'place' | 'dice' | 'anim' | 'say' | 'foeHearts' | 'ko' | 'pickup' | 'reveal' | 'spawn' | 'event' | 'scene' | 'heal' | 'hurt' | 'tuck' | 'revive' | 'spark' | 'clock' | 'goal' | 'push' | 'outcome' | 'camera';
   id?: string; path?: P[]; at?: P; dice?: [number, number]; clip?: string; text?: string; n?: number;
 }
 export interface GameState {
@@ -125,7 +128,7 @@ export interface GameState {
     index: number; id: string;
     solid: string[];                                                 // crack/water area ids made walkable (frozen / mended)
     challenge?: { success: number; trouble: number; need: number; maxTrouble: number };
-    flags: Record<string, number | boolean | string>;                // star, invited, bossWall, read:<uid>, …
+    flags: Record<string, number | boolean | string>;                // star, bossWall, read:<uid>, …
     result?: 'won' | 'lost';
   };
   meters: { sparks: number; goal: number; goalMax: number };
@@ -138,7 +141,7 @@ export interface GameState {
   cameraCall?: { at: P; seq: number };
   tableMoment?: TableMomentState;
   freeRevive?: boolean;
-  ending?: { id: string; text: string; goal: number; star: boolean; invited: boolean };
+  ending?: { id: string; text: string; goal: number; star: boolean };
   log: { n: number; text: string; kind?: string }[];
   fx: { seq: number; list: FxEvent[] };
 }
@@ -166,7 +169,7 @@ export type Action =
   | { t: 'setRollTrait'; rollId: string; trait: Trait }
   | { t: 'cancelRoll'; rollId: string }
   | { t: 'throw'; rollId: string; dice: [number, number]; land?: P; target?: TargetRef } // values from the thrower's physics
-  | { t: 'spark'; rollId: string; use: 'reroll' | 'plus2' | 'ignoreTwist'; dice?: [number, number] }
+  | { t: 'spark'; rollId: string; use: 'reroll' | 'plus2'; dice?: [number, number] }
   | { t: 'resolve'; rollId: string }
   | { t: 'choose'; choiceId: string; value: string }
   | { t: 'next' }
@@ -176,8 +179,8 @@ export type Action =
 export type GuideOp =
   | { k: 'place'; what: 'hero' | 'foe' | 'token'; id: string; to: P; facing?: number }   // drag anything (teleport)
   | { k: 'walkFoe'; uid: string; to: P }                                                  // foe walks (pathing, animated)
-  | { k: 'grump'; uid: string; delta: number }
-  | { k: 'calm'; uid: string }
+  | { k: 'foeHearts'; uid: string; delta: number }
+  | { k: 'ko'; uid: string }
   | { k: 'remove'; what: 'foe' | 'token'; id: string }
   | { k: 'spawn'; foe: string; at: P }
   | { k: 'hearts'; heroId: string; delta: number }
@@ -185,8 +188,7 @@ export type GuideOp =
   | { k: 'clock'; op: 'pause' | 'resume' | 'step'; delta?: number }                        // step: ± Midnight steps
   | { k: 'reveal'; tokenUid: string }
   | { k: 'help'; rollId: string; delta: number }
-  | { k: 'outcome'; rollId: string; outcome: 'success' | 'twist' | 'trouble' }
-  | { k: 'twist'; rollId: string; text: string }
+  | { k: 'outcome'; rollId: string; outcome: Outcome }
   | { k: 'flipEvent' }
   | { k: 'say'; text: string; who?: string }
   | { k: 'camera'; at: P }

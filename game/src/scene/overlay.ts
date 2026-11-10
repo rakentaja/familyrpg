@@ -1,4 +1,4 @@
-// Crisp DOM layer over the canvas: Cheer hearts / Grump pips over minis, comic speech bubbles anchored to minis,
+// Crisp DOM layer over the canvas: heart pips over minis, comic speech bubbles anchored to minis,
 // paper notes at the top for narrator lines and event cards, and the charging ring under a held finger.
 // Everything is positioned in client (viewport) pixels; pointer-events are off so the canvas gets every touch.
 
@@ -10,7 +10,8 @@ const CSS = `
 .sb-chip.sel{background:#fff8e6;border-color:#8a4a4e}
 .sb-chip svg{display:block}
 .sb-chip .z{font-size:12px;line-height:12px;font-weight:700;color:#6b6077;padding:0 2px}
-.sb-chip.foe{background:rgba(58,49,64,.82);border-color:#2a2328;padding:3px 4px}
+.sb-chip.foe{background:rgba(58,49,64,.86);border-color:#2a2328;padding:2px 4px 1px}
+.sb-chip .n{font-size:12px;line-height:12px;font-weight:700;color:#f2eadb;padding:0 2px}
 .sb-chip.dim{opacity:.35}
 .sb-pip{width:8px;height:8px;border-radius:50%;border:1.5px solid #2a2328;background:#f7f3ec;margin:0 1px}
 .sb-pip.on{background:#d8a7a7;box-shadow:inset -1px -1px 0 rgba(138,74,78,.7)}
@@ -97,7 +98,8 @@ export class Overlay {
     if (spec.kind === 'hero') {
       for (let i = 0; i < spec.max; i++) h += HEART(i < spec.filled);
       if (spec.tuckered) h += '<span class="z">z<small>z</small></span>';
-    } else for (let i = 0; i < spec.max; i++) h += `<i class="sb-pip ${i < spec.filled ? 'on' : ''}"></i>`;
+    } else if (spec.max <= 6) for (let i = 0; i < spec.max; i++) h += HEART(i < spec.filled);
+    else h += HEART(true) + `<b class="n">${spec.filled}</b>`;
     inner.innerHTML = h;
     c.w = 0;
   }

@@ -1,4 +1,4 @@
-// Hearthside rules core: lookups, permissions, bubbles/log/fx, Cheer, meters, Midnight clock, tokens, foes,
+// Hearthside rules core: lookups, permissions, bubbles/log/fx, Hearts, meters, Midnight clock, tokens, foes,
 // scenes and endings. Everything theme-specific comes from the Pack; texts are built from pack labels and names.
 import type {
   Bubble, Foe, FxEvent, GameState, Hero, Pack, PackFoe, PackItem, PackScene, P, Token, Trait,
@@ -11,13 +11,16 @@ export const fail = (msg: string): never => { throw new RuleError(msg); };
 
 export interface Ctx { s: GameState; pack: Pack; by: string; at: number; fx: FxEvent[]; bseq: number }
 
+/** "1 Heart" / "2 Hearts": drops a plural label's trailing s for one. */
+export const nOf = (n: number, label: string) => `${n} ${n === 1 && /s$/.test(label) ? label.slice(0, -1) : label}`;
+
 export const POCKET = 3;
 export const MAX_HEROES = 8;
 const LOG_MAX = 60;
 export const BUBBLES_MAX = 12;
 export const TTL: Record<Bubble['kind'] | 'intro', number> = { say: 5000, result: 4000, hint: 6000, event: 8000, story: 9000, intro: 15000 };
 /** Adventure-wide flags that survive scene changes. */
-const KEEP_FLAGS = ['star', 'invited'];
+const KEEP_FLAGS = ['star'];
 
 // ---------------------------------------------------------------- lookups
 export const adventure = (s: GameState, pack: Pack) => pack.adventures.find((a) => a.id === s.adventureId) ?? pack.adventures[0];
@@ -30,7 +33,7 @@ export const foeByUid = (s: GameState, uid: string | undefined) => s.foes.find((
 export const tokenByUid = (s: GameState, uid: string | undefined) => s.tokens.find((t) => t.uid === uid);
 export const foeName = (pack: Pack, f: Foe) => foeDef(pack, f.foe)?.name ?? f.foe;
 export const itemName = (pack: Pack, id: string) => itemDef(pack, id)?.name ?? id;
-export const activeFoes = (s: GameState) => s.foes.filter((f) => !f.calmed);
+export const activeFoes = (s: GameState) => s.foes.filter((f) => !f.down);
 export const awakeHeroes = (s: GameState) => s.heroes.filter((h) => !h.tuckered);
 export const isBoss = (pack: Pack, f: Foe) => !!foeDef(pack, f.foe)?.boss;
 export const heroFlies = (pack: Pack, h: Hero) => !!roleDef(pack, h.roleId)?.flies;
@@ -107,10 +110,10 @@ export function drawEvent(c: Ctx): string | undefined {
 }
 
 // ---------------------------------------------------------------- scaling
-export function grumpFactor(heroCount: number): number {
+export function toughFactor(heroCount: number): number {
   return heroCount <= 2 ? 1 : heroCount <= 5 ? 1.5 : 2;
 }
-const scaled = (base: number, s: GameState) => Math.max(1, Math.ceil(base * grumpFactor(s.heroes.length)));
+const scaled = (base: number, s: GameState) => Math.max(1, Math.ceil(base * toughFactor(s.heroes.length)));
 
 // ---------------------------------------------------------------- Midnight clock
 export function midnight(s: GameState, now: number): number {
@@ -134,7 +137,7 @@ export function advanceClock(c: Ctx, steps: number) {
   if (steps > 0) tell(c, `${c.pack.labels.clock} creeps closer…`, 'event');
 }
 
-// ---------------------------------------------------------------- heroes: Cheer, Tuckered Out, waking up
+// ---------------------------------------------------------------- heroes: Hearts, knocked out, waking up
 export function guarded(c: Ctx, hero: Hero): boolean {
   const R = reachOf(c.pack);
   return c.s.heroes.some((g) => (g.status.guardUntil ?? 0) > c.at && !g.tuckered && dist(g.pos, hero.pos) <= R);
@@ -146,7 +149,7 @@ export function hurt(c: Ctx, hero: Hero, n: number, why?: string): boolean {
   hero.hearts = Math.max(0, hero.hearts - n);
   fx(c, { k: 'hurt', id: hero.id, n });
   anim(c, hero.id, 'hit');
-  log(c, `${why ? why + ' ' : ''}${hero.name} loses ${n} ${L.hearts}.`, 'bad');
+  log(c, `${why ? why + ' ' : ''}${hero.name} loses ${nOf(n, L.hearts)}.`, 'bad');
   if (hero.hearts === 0) tuck(c, hero);
   return true;
 }
@@ -165,7 +168,7 @@ export function tuck(c: Ctx, hero: Hero) {
   }
   if (c.s.heroes.length && c.s.heroes.every((h) => h.tuckered)) {
     for (const h of c.s.heroes) wake(c, h, 1);
-    tell(c, `Everyone has a little nap and wakes up with 1 ${L.hearts}.`, 'story', undefined, 'good');
+    tell(c, `Everyone has a little nap and wakes up with ${nOf(1, L.hearts)}.`, 'story', undefined, 'good');
     advanceClock(c, 1);
   }
 }
@@ -177,12 +180,12 @@ export function wake(c: Ctx, hero: Hero, hearts: number) {
 }
 export function healHero(c: Ctx, hero: Hero, n: number): boolean {
   const L = c.pack.labels;
-  if (hero.tuckered) { wake(c, hero, n); tell(c, `${hero.name} wakes up with ${hero.hearts} ${L.hearts}.`, 'result', hero.id, 'good'); return true; }
+  if (hero.tuckered) { wake(c, hero, n); tell(c, `${hero.name} wakes up with ${nOf(hero.hearts, L.hearts)}.`, 'result', hero.id, 'good'); return true; }
   const before = hero.hearts;
   hero.hearts = Math.min(hero.maxHearts, hero.hearts + n);
   if (hero.hearts === before) return false;
   fx(c, { k: 'heal', id: hero.id, n: hero.hearts - before });
-  tell(c, `+${hero.hearts - before} ${L.hearts}`, 'result', hero.id, 'good');
+  tell(c, `+${nOf(hero.hearts - before, L.hearts)}`, 'result', hero.id, 'good');
   return true;
 }
 export function addSparks(c: Ctx, n: number) {
@@ -316,8 +319,8 @@ export function spawnFoe(c: Ctx, foeId: string, at: P, o: { uid?: string; carryi
     c.s.scene.flags.foeSeq = n;
     uid = `f${c.s.scene.index}-${n}`;
   }
-  const g = scaled(d.grump, c.s);
-  const f: Foe = { uid, foe: foeId, pos: spot, facing: o.facing ?? 0, grump: g, maxGrump: g, calmed: false };
+  const g = scaled(d.hearts, c.s);
+  const f: Foe = { uid, foe: foeId, pos: spot, facing: o.facing ?? 0, hearts: g, maxHearts: g, down: false };
   if (d.boss) f.phase = 0;
   if (o.carrying) {
     const t = tokenByUid(c.s, o.carrying);
@@ -327,57 +330,41 @@ export function spawnFoe(c: Ctx, foeId: string, at: P, o: { uid?: string; carryi
   fx(c, { k: 'spawn', id: f.uid, at: f.pos });
   return f;
 }
-export function grumpFoe(c: Ctx, f: Foe, delta: number, src: { hero?: Hero; trait?: Trait } = {}) {
-  if (f.calmed || !delta) return;
-  const before = f.grump;
-  f.grump = Math.max(0, Math.min(f.maxGrump, f.grump + delta));
-  if (f.grump !== before) fx(c, { k: 'grump', id: f.uid, n: f.grump - before });
+export function hitFoe(c: Ctx, f: Foe, delta: number, src: { hero?: Hero } = {}) {
+  if (f.down || !delta) return;
+  const before = f.hearts;
+  f.hearts = Math.max(0, Math.min(f.maxHearts, f.hearts + delta));
+  if (f.hearts !== before) fx(c, { k: 'foeHearts', id: f.uid, n: f.hearts - before });
   if (delta < 0) {
     anim(c, f.uid, 'hit');
-    bubble(c, f.grump ? `−${-delta} Grump` : undefined, 'result', f.uid);
-    log(c, `${foeName(c.pack, f)} loses ${-delta} Grump${f.grump ? ` (${f.grump} left)` : ''}.`, 'good');
+    log(c, `${foeName(c.pack, f)} loses ${nOf(-delta, c.pack.labels.hearts)}${f.hearts ? ` (${f.hearts} left)` : ''}.`, 'good');
   }
   if (isBoss(c.pack, f)) updateBossPhase(c, f);
-  if (f.grump === 0) calmFoe(c, f, src);
+  if (f.hearts === 0) knockOutFoe(c, f, src);
 }
-export function calmFoe(c: Ctx, f: Foe, src: { hero?: Hero; trait?: Trait } = {}) {
+export function knockOutFoe(c: Ctx, f: Foe, src: { hero?: Hero } = {}) {
   const d = foeDef(c.pack, f.foe);
   const L = c.pack.labels;
-  f.grump = 0;
-  f.calmed = true;
+  f.hearts = 0;
+  f.down = true;
   f.frozenUntil = undefined;
-  fx(c, { k: 'calm', id: f.uid });
-  if (d?.boss) {
-    if (d.boss.kindFinish && src.trait === 'kind' && src.hero) invite(c, f, src.hero);
-    else {
-      anim(c, f.uid, 'sleep');
-      tell(c, `${d.name} is all out of Grump and sits down with a huff.`, 'result', f.uid, 'good');
-    }
-  } else {
-    anim(c, f.uid, 'wave');
-    tell(c, `${d?.name ?? 'It'} is ${L.calmed}!`, 'result', f.uid, 'good');
-  }
+  fx(c, { k: 'ko', id: f.uid });
+  anim(c, f.uid, 'sleep');
+  tell(c, `${d?.name ?? 'It'} is ${L.down}!`, 'result', f.uid, 'good');
   if (f.carrying) dropCarried(c, f, src.hero);
 }
-export function invite(c: Ctx, f: Foe, hero: Hero) {
-  const d = foeDef(c.pack, f.foe);
-  c.s.scene.flags.invited = true;
-  anim(c, f.uid, 'wave');
-  anim(c, hero.id, 'cheer');
-  tell(c, `${hero.name} invites ${d?.name ?? 'them'} to celebrate with everyone. ${d?.name ?? 'They'} smiles for the first time in years!`, 'story', f.uid, 'good');
-}
-/** Boss phase from Grump thresholds (scaled like the Grump itself). */
+/** Boss phase from Heart thresholds (scaled like the Hearts themselves). */
 export function bossPhaseFor(pack: Pack, f: Foe): number {
   const d = foeDef(pack, f.foe);
   if (!d?.boss) return 0;
-  const factor = f.maxGrump / Math.max(1, d.grump);
+  const factor = f.maxHearts / Math.max(1, d.hearts);
   let idx = 0;
-  d.boss.phases.forEach((p, i) => { if (f.grump <= Math.ceil(p.atGrump * factor)) idx = i; });
+  d.boss.phases.forEach((p, i) => { if (f.hearts <= Math.ceil(p.atHearts * factor)) idx = i; });
   return idx;
 }
 export function updateBossPhase(c: Ctx, f: Foe) {
   const d = foeDef(c.pack, f.foe);
-  if (!d?.boss || f.calmed) return;
+  if (!d?.boss || f.down) return;
   const idx = bossPhaseFor(c.pack, f);
   if (idx <= (f.phase ?? 0)) return;
   f.phase = idx;
@@ -445,11 +432,11 @@ export function goalMet(c: Ctx): boolean {
     const awake = awakeHeroes(s);
     if (!awake.length || !awake.every((h) => exits.some((t) => dist(t.pos!, h.pos) <= reachOf(c.pack)))) return false;
   }
-  if (g.calmAll) { any = true; if (activeFoes(s).length) return false; }
+  if (g.beatAll) { any = true; if (activeFoes(s).length) return false; }
   if (g.challenge) { any = true; if (!s.scene.challenge || s.scene.challenge.success < s.scene.challenge.need) return false; }
-  if (g.bossKindFinish) {
+  if (g.beatBoss) {
     any = true;
-    if (s.foes.some((f) => !f.calmed && isBoss(c.pack, f))) return false;
+    if (s.foes.some((f) => !f.down && isBoss(c.pack, f))) return false;
     if (s.tokens.some((t) => t.kind === 'star') && !s.scene.flags.star) return false;
   }
   return any;
@@ -472,15 +459,13 @@ export function checkProgress(c: Ctx) {
 }
 
 /** Tiny condition language for endings: clauses joined by '&&':
- *  star | !star | invited | !invited | goal>=N | goal<=N | goal==N | goal>N | goal<N | always */
-export function endingMatches(when: string, v: { goal: number; star: boolean; invited: boolean }): boolean {
+ *  star | !star | goal>=N | goal<=N | goal==N | goal>N | goal<N | always */
+export function endingMatches(when: string, v: { goal: number; star: boolean }): boolean {
   const parts = when.split('&&').map((p) => p.trim()).filter(Boolean);
   return parts.every((p) => {
     if (p === 'always' || p === 'default' || p === '*') return true;
     if (p === 'star') return v.star;
     if (p === '!star') return !v.star;
-    if (p === 'invited') return v.invited;
-    if (p === '!invited') return !v.invited;
     const m = p.match(/^goal\s*(>=|<=|==|>|<)\s*(\d+)$/);
     if (m) {
       const n = Number(m[2]);
@@ -493,14 +478,14 @@ export function finishAdventure(c: Ctx) {
   const s = c.s;
   if (s.phase === 'ending' || s.phase === 'lobby') return;
   const adv = adventure(s, c.pack);
-  const v = { goal: s.meters.goal, star: !!s.scene.flags.star, invited: !!s.scene.flags.invited };
+  const v = { goal: s.meters.goal, star: !!s.scene.flags.star };
   const e = adv.endings.find((x) => endingMatches(x.when, v)) ?? adv.endings[adv.endings.length - 1];
   clockPause(s, c.at);
   s.phase = 'ending';
   s.roll = undefined;
   s.choice = undefined;
   s.tableMoment = undefined;
-  s.ending = { id: e?.id ?? 'end', text: e?.text ?? 'The end.', goal: v.goal, star: v.star, invited: v.invited };
+  s.ending = { id: e?.id ?? 'end', text: e?.text ?? 'The end.', goal: v.goal, star: v.star };
   fx(c, { k: 'scene', id: 'ending', text: s.ending.id });
   for (const h of s.heroes) anim(c, h.id, 'victory');
   bubble(c, s.ending.text, 'story', undefined, TTL.intro);

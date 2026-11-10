@@ -17,7 +17,7 @@ export interface SavedSession {
   at: number;
 }
 
-const SESSION_KEY = 'sb2.session';
+const SESSION_KEY = 'sb2.session.hearts';   // bumped when the saved state shape changes
 const MAX_AGE = 1000 * 60 * 60 * 18;   // a table older than this is not resumed automatically
 
 export function loadSession(): SavedSession | null {

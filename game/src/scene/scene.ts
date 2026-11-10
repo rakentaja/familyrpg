@@ -1,5 +1,5 @@
 // The v2 main screen: the 3D table IS the game. Builds the diorama from the pack scene, keeps the minis in step with
-// the state (walking along fx paths, hops, clips), shows hearts / Grump pips / bubbles / notes over the scene, the
+// the state (walking along fx paths, hops, clips), shows hearts over heroes and foes / bubbles / notes over the scene, the
 // in-scene meters, the selection ring + path preview, and turns touches into tap / hold / drag / camera gestures.
 import * as THREE from 'three';
 import type { CreateScene, DiceThrow, LocalView, SceneCallbacks, SceneView } from '../contracts';
@@ -465,7 +465,7 @@ class Scene3D implements SceneView {
     state.foes.forEach((foe, i) => {
       const k = 'f:' + foe.uid;
       let a = this.actors.get(k);
-      if (!a && foe.calmed) return;
+      if (!a && foe.down) return;
       seen.add(k);
       const def = this.pack!.foes.find((f) => f.id === foe.foe);
       if (!a) {
@@ -478,9 +478,9 @@ class Scene3D implements SceneView {
         a.popIn(fresh ? 0.3 + i * 0.07 : 0);
         if (!fresh) this.puff(a, PALETTE.lavender, 12);
         this.add(a);
-      } else if (!a.calmed) this.moveTo(a, k, foe.pos, foe.facing, paths, places, false);
-      this.setFrozen(a, !!foe.frozenUntil && foe.frozenUntil > now && !foe.calmed);
-      if (foe.calmed && !a.calmed) a.calm((x) => this.puff(x, PALETTE.cream, 16));
+      } else if (!a.down) this.moveTo(a, k, foe.pos, foe.facing, paths, places, false);
+      this.setFrozen(a, !!foe.frozenUntil && foe.frozenUntil > now && !foe.down);
+      if (foe.down && !a.down) a.knockOut((x) => this.puff(x, PALETTE.lavender, 16));
     });
     for (const a of this.list) if (a.kind === 'foe' && !seen.has('f:' + a.id) && !a.leaving) a.leave((x) => this.puff(x, PALETTE.cream, 14));
   }
@@ -532,7 +532,7 @@ class Scene3D implements SceneView {
     for (const a of this.list) if (a.kind === 'token' && !seen.has('t:' + a.id) && !a.leaving) a.leave((x) => this.puff(x, PALETTE.gold, 10), 0.15);
   }
 
-  /** Hearts over heroes, Grump pips over foes (DOM chips, placed every frame). */
+  /** Hearts over heroes, heart pips over foes (DOM chips, placed every frame). */
   private syncChips(): void {
     const s = this.state; if (!s) return;
     const want = new Set<string>();
@@ -541,9 +541,9 @@ class Scene3D implements SceneView {
       this.overlay.chip(k, { kind: 'hero', filled: Math.max(0, h.hearts), max: Math.max(1, h.maxHearts), tuckered: h.tuckered, selected: this.local.selectedHeroId === h.id });
     }
     for (const f of s.foes) {
-      if (f.calmed) continue;
+      if (f.down) continue;
       const k = 'f:' + f.uid; want.add(k);
-      this.overlay.chip(k, { kind: 'foe', filled: Math.max(0, f.grump), max: Math.max(1, f.maxGrump) });
+      this.overlay.chip(k, { kind: 'foe', filled: Math.max(0, f.hearts), max: Math.max(1, f.maxHearts) });
     }
     for (const k of this.overlay.chipKeys()) if (!want.has(k)) this.overlay.dropChip(k);
   }
@@ -646,7 +646,6 @@ class Scene3D implements SceneView {
       case 'anim': {
         const clip = (e.clip ?? '').toLowerCase();
         if (!a || clip === 'tuck' || clip === 'revive' || clip === 'sleep') break;
-        if (clip === 'calm') { a.playOnce('happy'); this.puff(a, PALETTE.cream, 12); break; }
         a.playOnce(clip === 'hurt' ? 'hit' : clip === 'pickup' ? 'pick_up' : clip);
         break;
       }
@@ -656,8 +655,8 @@ class Scene3D implements SceneView {
           else this.overlay.note(`fx:${state.fx.seq}:${e.text}`, e.text, Math.min(9000, 3000 + e.text.length * 60), performance.now());
         }
         break;
-      case 'grump': if (a) { this.fx.text(`${n < 0 ? '−' : '+'}${abs}`, this.anchor(a), n < 0 ? 'good' : 'bad'); if (n < 0) a.playOnce('hit'); } break;
-      case 'calm': if (a) this.fx.text(L.calmed || 'Calm!', this.anchor(a), 'good', 0.3); break;
+      case 'foeHearts': if (a) { this.fx.text(`${n < 0 ? '−' : '+'}${abs}`, this.anchor(a), n < 0 ? 'good' : 'bad'); if (n < 0) a.playOnce('hit'); } break;
+      case 'ko': if (a) this.fx.text('K.O.!', this.anchor(a), 'good', 0.3); break;
       case 'pickup': {
         let hero = a?.kind === 'hero' ? a : undefined;
         if (!hero && a) { // nearest hero to the token
@@ -670,8 +669,8 @@ class Scene3D implements SceneView {
       }
       case 'reveal': if (a) this.puff(a, PALETTE.gold, 14); else if (e.at) this.fx.puff(at(e.at), PALETTE.gold, 14, 0.6); break;
       case 'spawn': if (a) this.puff(a, PALETTE.lavender, 12); break;
-      case 'heal': if (a) { this.fx.text(plus(L.hearts), this.anchor(a), 'good'); this.puff(a, PALETTE.rose, 8); } break;
-      case 'hurt': if (a) { a.playOnce('hit'); this.fx.text(`−${abs} ${L.hearts}`, this.anchor(a), 'bad'); } break;
+      case 'heal': if (a) { this.fx.text(`+${abs} ${abs === 1 ? L.hearts.replace(/s$/, '') : L.hearts}`, this.anchor(a), 'good'); this.puff(a, PALETTE.rose, 8); } break;
+      case 'hurt': if (a) { a.playOnce('hit'); this.fx.text(`−${abs} ${abs === 1 ? L.hearts.replace(/s$/, '') : L.hearts}`, this.anchor(a), 'bad'); } break;
       case 'tuck': if (a) this.fx.text(L.tuckered, this.anchor(a), 'info', 1.0); break;
       case 'revive': if (a) { this.puff(a, PALETTE.gold, 12); a.playOnce('jump'); } break;
       case 'spark': this.meters.poke('sparks'); this.fx.text(n < 0 ? `−${abs} ${L.sparks}` : plus(L.sparks), this.meterAnchor('sparks'), 'gold'); break;
@@ -679,10 +678,9 @@ class Scene3D implements SceneView {
       case 'clock': this.meters.poke('clock'); this.fx.text(`${n < 0 ? '−' : '+'}${abs} ${L.clock}`, this.meterAnchor('clock'), 'bad'); break;
       case 'outcome': {
         const o = (e.text ?? '').toLowerCase();
-        const style: TextStyle = o === 'success' ? 'good' : o === 'trouble' ? 'bad' : 'gold';
-        const word = o === 'success' ? 'Hooray!' : o === 'trouble' ? 'Uh-oh!' : o === 'twist' ? 'But…' : e.text ?? '';
+        const style: TextStyle = o === 'strong' ? 'gold' : o === 'success' ? 'good' : 'bad';
+        const word = o === 'strong' ? 'Strong!' : o === 'success' ? 'Yes!' : o === 'trouble' ? 'Miss!' : e.text ?? '';
         if (word) this.fx.text(word, this.anchor(a), style);
-        if (a && o === 'success') a.playOnce('cheer');
         break;
       }
       case 'camera': if (e.at) this.glide(e.at); break;
@@ -726,7 +724,7 @@ class Scene3D implements SceneView {
 
   private syncBossWall(state: GameState): void {
     const want = state.scene.flags?.bossWall === true;
-    const boss = state.foes.find((f) => !f.calmed && this.pack!.foes.find((d) => d.id === f.foe)?.boss);
+    const boss = state.foes.find((f) => !f.down && this.pack!.foes.find((d) => d.id === f.foe)?.boss);
     const key = this.assets.pick('fx:boss_wall', 'prop:boss_ice_wall');
     if (want && boss && key && (!this.wall || this.wall.boss !== boss.uid)) {
       if (this.wall) this.wall.obj.removeFromParent();
@@ -1076,7 +1074,7 @@ class Scene3D implements SceneView {
       this.lastSecond = now;
       this.meters.setMidnight(midnightOf(this.state, Date.now()));
       const t = Date.now();
-      for (const f of this.state.foes) { const a = this.actors.get('f:' + f.uid); if (a && !a.dead) this.setFrozen(a, !!f.frozenUntil && f.frozenUntil > t && !f.calmed); }
+      for (const f of this.state.foes) { const a = this.actors.get('f:' + f.uid); if (a && !a.dead) this.setFrozen(a, !!f.frozenUntil && f.frozenUntil > t && !f.down); }
     }
     if (this.rig.update(dt)) this.dirty = true;
     for (let i = this.list.length - 1; i >= 0; i--) {

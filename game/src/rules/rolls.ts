@@ -1,34 +1,43 @@
-// Rolls: ready → (Guide help / trait change) → throw (dice from the thrower's physics) → Twinkle options → resolve.
-// 2d6 + trait + help + status bonus: 9+ success · 6–8 success with a twist · ≤5 trouble (+1 Twinkle).
-import type { Area, GameState, Hero, P, Pack, Roll, RollPurpose, TargetRef, Trait } from './types';
+// Rolls: ready → (Guide help) → throw (dice from the thrower's physics) → Twinkle options → resolve.
+// 2d6 + trait + help + status bonus: 10+ strong · 7–9 success · 6 or less a miss (+1 Twinkle).
+// The trait is fixed by what you do: attack / leap = Brave, search / items = Clever, heal = Kind; free rolls pick.
+import type { Area, GameState, Hero, Outcome, P, Pack, Roll, RollPurpose, TargetRef, Trait } from './types';
 import { TRAITS } from './types';
-import { d6, pick } from './rng';
+import { d6 } from './rng';
 import { areaAt, areaDist, dist, isP, nearestFree, rp } from './geom';
 import {
-  type Ctx, addSparks, advanceClock, anim, approach, bubble, endScene, fail, foeByUid, foeDef, fx, grumpFoe,
-  heroById, hurt, invite, isBoss, isGuide, itemDef, itemName, log, moveHero, nav, reachOf, revealToken, sceneDef, tell,
+  type Ctx, addSparks, advanceClock, anim, approach, bubble, endScene, fail, foeByUid, foeDef, fx, hitFoe,
+  heroById, healHero, hurt, nOf, isGuide, itemDef, itemName, log, moveHero, nav, reachOf, revealToken, sceneDef, tell,
   controls,
 } from './core';
 import { applyEffects, effectRange, hasRoll, makeSolid } from './effects';
 
-const OUT_TEXT = { success: 'Success!', twist: 'Success… with a twist!', trouble: 'Uh-oh, trouble!' } as const;
+const OUT_TEXT = { strong: 'Strong hit!', success: 'Hit!', trouble: 'Miss!' } as const;
+const OUT_PLAIN = { strong: 'Great!', success: 'It works!', trouble: 'No luck!' } as const;
+const outText = (r: Roll) => (r.purpose.kind === 'attack' || r.purpose.kind === 'item' ? OUT_TEXT : OUT_PLAIN)[r.outcome!];
+export const STRONG = 10, HIT = 7;
+/** Which trait a roll uses. Free rolls keep the one picked. */
+export function traitFor(p: RollPurpose, picked: Trait): Trait {
+  switch (p.kind) {
+    case 'attack': case 'challenge': return 'brave';
+    case 'search': case 'item': return 'clever';
+    case 'heal': return 'kind';
+    default: return picked;
+  }
+}
 const str = (v: unknown, max = 120): string => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 
 export function statusBonus(h: Hero, trait: Trait): number {
   const b = h.status.bonus;
   return b && b.rolls > 0 && (b.trait === 'any' || b.trait === trait) ? b.n : 0;
 }
-export function outcomeFor(total: number, itemOn?: number, ignoreTwist = false): NonNullable<Roll['outcome']> {
+export function outcomeFor(total: number, itemOn?: number): NonNullable<Roll['outcome']> {
   if (itemOn !== undefined) return total >= itemOn ? 'success' : 'trouble';
-  if (total >= 9) return 'success';
-  if (total >= 6) return ignoreTwist ? 'success' : 'twist';
+  if (total >= STRONG) return 'strong';
+  if (total >= HIT) return 'success';
   return 'trouble';
 }
 const itemOnOf = (c: Ctx, r: Roll) => (r.purpose.kind === 'item' ? hasRoll(itemDef(c.pack, r.purpose.item)?.effects ?? []) : undefined);
-export function drawTwist(c: Ctx): string {
-  const lines = [...(sceneDef(c.s, c.pack)?.twists ?? []), ...c.pack.twists];
-  return pick(c.s, lines) ?? 'Something small and silly happens!';
-}
 const validDie = (n: unknown) => typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= 6;
 function diceFrom(c: Ctx, dice: unknown): [number, number] {
   if (Array.isArray(dice) && dice.length === 2 && validDie(dice[0]) && validDie(dice[1])) return [dice[0], dice[1]];
@@ -75,14 +84,22 @@ export function readyRoll(c: Ctx, h: Hero, trait: Trait, purpose: RollPurpose) {
   if (!purpose || typeof purpose !== 'object') fail('What are you trying to do?');
   let pur: RollPurpose;
   switch (purpose.kind) {
-    case 'calm': {
+    case 'attack': {
       const f = foeByUid(s, purpose.foeUid);
       const d = f ? foeDef(pack, f.foe) : undefined;
       if (!f || !d) fail('Pick a foe.');
-      const inviteOnly = f!.calmed && !!d!.boss?.kindFinish && !s.scene.flags.invited;
-      if (f!.calmed && !inviteOnly) fail(`${d!.name} is already ${pack.labels.calmed}.`);
+      if (f!.down) fail(`${d!.name} is already ${pack.labels.down}.`);
       if (!approach(c, h, f!.pos, R)) { bubble(c, `Can't reach ${d!.name} from here!`, 'hint', h.id); return; }
-      pur = { kind: 'calm', foeUid: f!.uid };
+      pur = { kind: 'attack', foeUid: f!.uid };
+      break;
+    }
+    case 'heal': {
+      const t = heroById(s, purpose.heroId);
+      if (!t) fail('Pick a friend.');
+      if (t!.tuckered) fail(`${t!.name} is ${pack.labels.tuckered} — wake them instead.`);
+      if (t!.hearts >= t!.maxHearts) fail(`${t!.name} has all their ${pack.labels.hearts}.`);
+      if (t!.id !== h.id && !approach(c, h, t!.pos, R)) { bubble(c, `Can't reach ${t!.name} from here!`, 'hint', h.id); return; }
+      pur = { kind: 'heal', heroId: t!.id };
       break;
     }
     case 'challenge': {
@@ -112,7 +129,7 @@ export function readyRoll(c: Ctx, h: Hero, trait: Trait, purpose: RollPurpose) {
       if (!it || !h.pocket.includes(it.id) || hasRoll(it.effects) === undefined) fail('No item for that.');
       const t = purpose.target;
       const f = foeByUid(s, t?.foeUid);
-      if (it!.target === 'foe' && (!f || f.calmed)) fail('Pick a foe.');
+      if (it!.target === 'foe' && (!f || f.down)) fail('Pick a foe.');
       if (f && !approach(c, h, f.pos, effectRange(it!.effects))) { bubble(c, `Too far to throw!`, 'hint', h.id); return; }
       pur = { kind: 'item', item: it!.id, ...(t ? { target: cleanTarget(t) } : {}) };
       break;
@@ -124,7 +141,7 @@ export function readyRoll(c: Ctx, h: Hero, trait: Trait, purpose: RollPurpose) {
       fail('What are you trying to do?');
       return;
   }
-  s.roll = { id: `r${(s.v ?? 0) + 1}`, heroId: h.id, thrower: c.by, trait, purpose: pur, help: 0, stage: 'ready', sparkUsed: [] };
+  s.roll = { id: `r${(s.v ?? 0) + 1}`, heroId: h.id, thrower: c.by, trait: traitFor(pur, trait), purpose: pur, help: 0, stage: 'ready', sparkUsed: [] };
   fx(c, { k: 'dice', id: h.id, text: 'ready' });
 }
 export function cleanTarget(t: TargetRef): TargetRef {
@@ -151,15 +168,13 @@ export function mayThrow(c: { s: Ctx['s']; by: string }, r: Roll): boolean {
   return !!h && controls(c.s, c.by, h);
 }
 function finishTotal(c: Ctx, r: Roll) {
-  r.outcome = outcomeFor(r.total!, itemOnOf(c, r), r.sparkUsed.includes('ignoreTwist'));
-  if (r.outcome === 'twist') { if (!r.twist) r.twist = drawTwist(c); }
-  else delete r.twist;
+  r.outcome = outcomeFor(r.total!, itemOnOf(c, r));
 }
 function announce(c: Ctx, r: Roll) {
   const h = heroById(c.s, r.heroId);
   fx(c, { k: 'outcome', id: r.heroId, text: r.outcome, n: r.total });
-  bubble(c, `${r.total}! ${OUT_TEXT[r.outcome!]}`, 'result', r.heroId);
-  log(c, `${h?.name ?? 'Someone'} rolls ${r.dice![0]} + ${r.dice![1]} → ${r.total}. ${OUT_TEXT[r.outcome!]}`, 'roll');
+  bubble(c, `${r.total}! ${outText(r)}`, 'result', r.heroId);
+  log(c, `${h?.name ?? 'Someone'} rolls ${r.dice![0]} + ${r.dice![1]} → ${r.total}. ${outText(r)}`, 'roll');
 }
 
 /** throwAt mode: whatever the dice landed on becomes what the roll is for. */
@@ -168,7 +183,9 @@ export function purposeFromTarget(c: Ctx, r: Roll, t: TargetRef | undefined): Ro
   if (!t) return { kind: 'free' };
   const s = c.s;
   const f = foeByUid(s, t.foeUid);
-  if (f && (!f.calmed || (isBoss(c.pack, f) && !s.scene.flags.invited))) return { kind: 'calm', foeUid: f.uid };
+  if (f && !f.down) return { kind: 'attack', foeUid: f.uid };
+  const ally = heroById(s, t.heroId);
+  if (ally && !ally.tuckered && ally.hearts < ally.maxHearts) return { kind: 'heal', heroId: ally.id };
   if (t.at) {
     const sc = sceneDef(s, c.pack);
     const a = sc ? areaAt(sc, t.at) : undefined;
@@ -183,7 +200,7 @@ export function throwRoll(c: Ctx, rollId: string, dice: unknown, land?: P, targe
   const r = rollFor(c, rollId, ['ready']);
   const h = heroById(c.s, r.heroId);
   if (!h) fail('No such hero.');
-  if (c.s.settings.diceMode === 'throwAt') r.purpose = purposeFromTarget(c, r, target ? cleanTarget(target) : undefined);
+  if (c.s.settings.diceMode === 'throwAt') { r.purpose = purposeFromTarget(c, r, target ? cleanTarget(target) : undefined); r.trait = traitFor(r.purpose, r.trait); }
   if (r.purpose.kind === 'item') {
     const idx = h!.pocket.indexOf(r.purpose.item);
     if (idx < 0) fail('That item is gone.');
@@ -204,10 +221,9 @@ export function throwRoll(c: Ctx, rollId: string, dice: unknown, land?: P, targe
 export function sparkRoll(c: Ctx, rollId: string, use: Roll['sparkUsed'][number], dice?: unknown) {
   const r = rollFor(c, rollId, ['thrown']);
   const L = c.pack.labels;
-  if (!['reroll', 'plus2', 'ignoreTwist'].includes(use)) fail('Unknown use.');
+  if (!['reroll', 'plus2'].includes(use)) fail('Unknown use.');
   if (c.s.meters.sparks < 1) fail(`No ${L.sparks} left.`);
   if (r.sparkUsed.includes(use)) fail('Already used that on this roll.');
-  if (use === 'ignoreTwist' && r.outcome !== 'twist') fail('There is no twist to cancel.');
   c.s.meters.sparks--;
   r.sparkUsed.push(use);
   fx(c, { k: 'spark', n: -1, text: use });
@@ -215,7 +231,6 @@ export function sparkRoll(c: Ctx, rollId: string, use: Roll['sparkUsed'][number]
     const mods = r.total! - r.dice![0] - r.dice![1];
     r.dice = diceFrom(c, dice);
     r.total = r.dice[0] + r.dice[1] + mods;
-    delete r.twist;
     fx(c, { k: 'dice', id: r.heroId, dice: r.dice, n: r.total });
   } else if (use === 'plus2') r.total = r.total! + 2;
   finishTotal(c, r);
@@ -232,32 +247,32 @@ export function setHelp(c: Ctx, r: Roll, delta: number) {
 
 // ---------------------------------------------------------------- resolve
 export function resolveRoll(c: Ctx, r: Roll) {
-  const s = c.s, pack = c.pack;
+  const s = c.s, pack = c.pack, L = pack.labels;
   const hero = heroById(s, r.heroId);
   r.stage = 'done';
   if (!hero) return;
   const outcome = r.outcome!;
   const ok = outcome !== 'trouble';
-  if (outcome === 'trouble') addSparks(c, 1);
-  if (s.settings.diceMode === 'free') {
-    if (outcome === 'twist' && r.twist) tell(c, `Twist: ${r.twist}`, 'story', hero.id, 'twist');
-    return;
-  }
-  let troubleHurts = true;
+  const n = outcome === 'strong' ? 2 : 1;
+  if (!ok) addSparks(c, 1);
+  if (s.settings.diceMode === 'free') return;
+  let hurtBy: string | null = null;                 // a miss that costs the hero a Heart (and why)
   switch (r.purpose.kind) {
-    case 'calm': {
+    case 'attack': {
       const f = foeByUid(s, r.purpose.foeUid);
       const d = f ? foeDef(pack, f.foe) : undefined;
-      if (!f || !d) break;
-      if (f.calmed) {
-        if (ok && r.trait === 'kind' && d.boss?.kindFinish && !s.scene.flags.invited) invite(c, f, hero);
-        else if (ok) bubble(c, `${d.name} is already ${pack.labels.calmed}.`, 'result', f.uid);
-        break;
-      }
-      if (!ok) { anim(c, f.uid, 'cheer'); break; }
-      const n = r.total! >= 9 && r.trait === d.weak ? 2 : 1;
-      anim(c, hero.id, r.trait === 'kind' ? 'wave' : r.trait === 'brave' ? 'throw' : 'clap');
-      grumpFoe(c, f, -n, { hero, trait: r.trait });
+      if (!f || !d || f.down) break;
+      if (!ok) { anim(c, f.uid, 'throw'); hurtBy = `${d.name} hits back!`; break; }
+      anim(c, hero.id, 'throw');
+      hitFoe(c, f, -n, { hero });
+      break;
+    }
+    case 'heal': {
+      const t = heroById(s, r.purpose.heroId);
+      if (!t) break;
+      if (!ok) { tell(c, `It doesn't help this time.`, 'result', hero.id, 'info'); break; }
+      anim(c, hero.id, 'wave');
+      if (healHero(c, t, n)) tell(c, `${t.name} gets ${nOf(n, L.hearts)} back.`, 'result', t.id, 'good');
       break;
     }
     case 'challenge': {
@@ -275,14 +290,15 @@ export function resolveRoll(c: Ctx, r: Roll) {
         } else {
           ch.trouble++;
           fx(c, { k: 'event', text: 'crack', at: rp(hero.pos) });
-          tell(c, `Crrrack! The ice groans. (${ch.trouble} of ${ch.maxTrouble} wobbles)`, 'result', hero.id, 'bad');
+          tell(c, `Crrrack! The ice gives way. (${ch.trouble} of ${ch.maxTrouble} cracks)`, 'result', hero.id, 'bad');
+          hurtBy = 'Splash!';
         }
       } else if (area) {
         if (ok) {
           makeSolid(c, area.id, 'solid');
           anim(c, hero.id, 'jump');
-          tell(c, `${hero.name} finds a way across!`, 'result', hero.id, 'good');
-        } else tell(c, `${hero.name} wobbles at the edge and steps back.`, 'result', hero.id, 'info');
+          tell(c, `${hero.name} gets across!`, 'result', hero.id, 'good');
+        } else { tell(c, `${hero.name} slips at the edge.`, 'result', hero.id, 'bad'); hurtBy = 'Ouch!'; }
       }
       break;
     }
@@ -291,17 +307,16 @@ export function resolveRoll(c: Ctx, r: Roll) {
       const sc = sceneDef(s, pack);
       const at = r.purpose.at;
       const pl = typeof r.purpose.propIndex === 'number' ? sc?.props[r.purpose.propIndex] : undefined;
-      let n = 0;
-      for (const t of s.tokens) if (t.hidden && t.pos && (dist(t.pos, at) <= 2 || (pl?.search && t.uid === pl.search)) && revealToken(c, t)) n++;
-      anim(c, hero.id, n ? 'cheer' : 'pick_up');
-      tell(c, n ? `${hero.name} found something hidden!` : 'Nothing hidden here.', 'result', hero.id, n ? 'good' : 'info');
+      let found = 0;
+      for (const t of s.tokens) if (t.hidden && t.pos && (dist(t.pos, at) <= 2 || (pl?.search && t.uid === pl.search)) && revealToken(c, t)) found++;
+      anim(c, hero.id, found ? 'cheer' : 'pick_up');
+      tell(c, found ? `${hero.name} found something hidden!` : 'Nothing hidden here.', 'result', hero.id, found ? 'good' : 'info');
       break;
     }
     case 'free':
       anim(c, hero.id, ok ? 'cheer' : 'hit');
       break;
     case 'item': {
-      troubleHurts = false;
       const it = itemDef(pack, r.purpose.item);
       anim(c, hero.id, 'throw');
       if (ok && it) applyEffects(c, hero, it.effects, r.purpose.target, { strict: false, fromRoll: true });
@@ -310,9 +325,8 @@ export function resolveRoll(c: Ctx, r: Roll) {
     }
   }
   if (s.phase !== 'play') return;
-  if (outcome === 'twist' && r.twist) tell(c, `Twist: ${r.twist}`, 'story', hero.id, 'twist');
-  if (outcome === 'trouble') {
-    if (troubleHurts) hurt(c, hero, 1);
+  if (!ok) {
+    if (hurtBy) hurt(c, hero, 1, hurtBy);
     const sc = sceneDef(s, pack);
     if (sc?.troubleClock) advanceClock(c, sc.troubleClock);
     const ch = s.scene.challenge;
@@ -338,8 +352,8 @@ export function loseChallenge(c: Ctx) {
 }
 
 // ---------------------------------------------------------------- stakes (what this roll will do — for the roll card)
-export interface RollStake { k: 'success' | 'twist' | 'trouble'; range: string; text: string }
-export interface RollStakes { best?: Trait; bestWhy?: string; bands: RollStake[] }
+export interface RollStake { k: Outcome; range: string; text: string }
+export interface RollStakes { bands: RollStake[] }
 
 /** Plain-words preview of what each outcome of the pending roll does (same numbers resolveRoll uses). */
 export function rollStakes(state: GameState, pack: Pack, now = state.now): RollStakes | null {
@@ -351,59 +365,50 @@ export function rollStakes(state: GameState, pack: Pack, now = state.now): RollS
   const R = pack.ranges?.reach ?? 1.5;
   const safe = s.heroes.some((g) => (g.status.guardUntil ?? 0) > now && !g.tuckered && Math.hypot(g.pos.x - hero.pos.x, g.pos.z - hero.pos.z) <= R);
   const sc = pack.adventures.find((a) => a.id === s.adventureId)?.scenes[s.scene.index];
-  const extra: string[] = [];
-  const troubleTail = (hurts: boolean) => {
-    const bits = [hurts ? (safe ? `nobody loses ${L.hearts} (on guard)` : `${hero.name} loses 1 ${L.hearts}`) : null, `+1 ${L.sparks}`, ...extra];
+  const ouch = safe ? 'nobody gets hurt (on guard)' : `${hero.name} loses ${nOf(1, L.hearts)}`;
+  const miss = (text: string, hurts: boolean) => {
+    const bits = [text, hurts ? ouch : null, `+${nOf(1, L.sparks)}`];
     if (sc?.troubleClock) bits.push(`${L.clock} creeps closer`);
     return bits.filter(Boolean).join(' · ');
   };
-  const bands = (win: string, twist: string, lose: string, hurts = true): RollStake[] => [
-    { k: 'success', range: '9+', text: win },
-    { k: 'twist', range: '6–8', text: twist },
-    { k: 'trouble', range: '5 or less', text: lose ? `${lose} · ${troubleTail(hurts)}` : troubleTail(hurts) },
+  const three = (strong: string, hit: string, lose: string, hurts: boolean): RollStake[] => strong === hit ? two(hit, lose, hurts) : [
+    { k: 'strong', range: `${STRONG}+`, text: strong },
+    { k: 'success', range: `${HIT}–${STRONG - 1}`, text: hit },
+    { k: 'trouble', range: `${HIT - 1} or less`, text: miss(lose, hurts) },
   ];
-  if (s.settings.diceMode === 'free') {
-    return { bands: bands(`It works — the ${L.guide} says how`, 'It works, with a twist', `The ${L.guide} says what goes wrong`, false) };
-  }
+  const two = (hit: string, lose: string, hurts: boolean, on = HIT): RollStake[] => [
+    { k: 'success', range: `${on}+`, text: hit },
+    { k: 'trouble', range: `${on - 1} or less`, text: miss(lose, hurts) },
+  ];
+  if (s.settings.diceMode === 'free') return { bands: two(`It works — the ${L.guide} says how`, `The ${L.guide} says what goes wrong`, false) };
   const p = r.purpose;
   switch (p.kind) {
-    case 'calm': {
+    case 'attack': {
       const f = s.foes.find((x) => x.uid === p.foeUid);
       const d = f ? pack.foes.find((x) => x.id === f.foe) : undefined;
       if (!f || !d) break;
-      if (f.calmed) {
-        const can = r.trait === 'kind';
-        return { best: 'kind', bestWhy: `Only ${L.traits.kind} can invite`, bands: bands(can ? `${d.name} is invited!` : `Nothing — try ${L.traits.kind}`, can ? `${d.name} is invited, with a twist` : 'Nothing happens', '') };
-      }
-      const big = r.trait === d.weak ? 2 : 1;
-      const takes = (n: number) => (n >= f.grump ? `${d.name} cheers up` : `${d.name} loses ${n} Grump (${f.grump - n} left)`);
-      return {
-        best: d.weak, bestWhy: f.grump > 1 ? `${d.name}'s soft spot: a 9+ takes 2 Grump` : `${d.name}'s soft spot`,
-        bands: bands(takes(big) + '!' + (big > 1 && f.grump > 1 ? ` (${L.traits[d.weak]} soft spot)` : ''), `${takes(1)}, plus a twist`, `${d.name} stays grumpy`),
-      };
+      const hit = (n: number) => (n >= f.hearts ? `${d.name} is ${L.down}` : `${d.name} loses ${nOf(n, L.hearts)} (${f.hearts - n} left)`);
+      return { bands: three(hit(2), hit(1), `${d.name} hits back`, true) };
+    }
+    case 'heal': {
+      const t = s.heroes.find((x) => x.id === p.heroId);
+      const who = t?.name ?? 'Your friend';
+      return { bands: three(`${who} gets ${nOf(2, L.hearts)}`, `${who} gets ${nOf(1, L.hearts)}`, `It doesn't help`, false) };
     }
     case 'challenge': {
       const ch = s.scene.challenge;
-      if (ch) {
-        return { best: 'brave', bestWhy: 'Brave suits leaping and balancing',
-          bands: bands(`The ice holds (${Math.min(ch.need, ch.success + 1)} of ${ch.need})`, `The ice holds, plus a twist`, `The ice wobbles (${ch.trouble + 1} of ${ch.maxTrouble})`) };
-      }
-      return { best: 'brave', bestWhy: 'Brave suits leaping and balancing', bands: bands(`${hero.name} gets across`, `${hero.name} gets across, plus a twist`, `${hero.name} steps back`) };
+      if (ch) return { bands: two(`The ice holds (${Math.min(ch.need, ch.success + 1)} of ${ch.need})`, `The ice cracks (${ch.trouble + 1} of ${ch.maxTrouble})`, true) };
+      return { bands: two(`${hero.name} gets across`, `${hero.name} slips`, true) };
     }
     case 'search':
-      return { best: 'clever', bestWhy: 'Clever suits spotting things', bands: bands('Finds anything hidden nearby', 'Finds it, plus a twist', 'Nothing turns up') };
+      return { bands: two('Finds anything hidden nearby', 'Nothing turns up', false) };
     case 'item': {
       const it = pack.items.find((i) => i.id === p.item);
       const on = it ? hasRoll(it.effects) : undefined;
-      if (it && on !== undefined) {
-        return { bands: [
-          { k: 'success', range: `${on}+`, text: it.text },
-          { k: 'trouble', range: `${on - 1} or less`, text: `A miss · ${troubleTail(false)}` },
-        ] };
-      }
+      if (it && on !== undefined) return { bands: two(it.text, 'A miss', false, on) };
       break;
     }
     default: break;
   }
-  return { bands: bands('It works!', 'It works, with a twist', '') };
+  return { bands: two('It works!', 'No luck', false) };
 }

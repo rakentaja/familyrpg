@@ -371,7 +371,7 @@ body[data-screen=home] .toasts,body[data-screen=lobby] .toasts{bottom:calc(var(-
 .rc-help{display:inline-flex;align-items:center;gap:4px;font-weight:700}
 .rc-hint{margin:0;text-align:center}
 .rc-result{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;border:2px solid var(--ink);border-radius:var(--r)}
-.o-success .rc-result{background:var(--sage)}.o-twist .rc-result{background:var(--butter)}.o-trouble .rc-result{background:var(--rose)}
+.o-strong .rc-result{background:var(--sage)}.o-success .rc-result{background:#cddcc6}.o-trouble .rc-result{background:var(--rose)}
 .rc-word{font-size:1.25em}
 .rc-sum{font-variant-numeric:tabular-nums;white-space:nowrap}
 .rc-sum b{font-size:1.3em}
@@ -385,8 +385,8 @@ body[data-screen=home] .toasts,body[data-screen=lobby] .toasts{bottom:calc(var(-
 .rc-guide{display:flex;align-items:center;gap:5px;flex-wrap:nowrap;padding:4px 6px;border:1.6px solid var(--lavInk);border-radius:var(--r);background:#f1eef6}
 .rc-out{display:flex;gap:4px}
 .rc-out .chip{min-height:40px;min-width:40px;padding:0 10px;font-weight:700;justify-content:center}
-.chip.o-success,.chip.o-twist,.chip.o-trouble{background:var(--paper)}
-.chip.o-success.on{background:var(--sage)}.chip.o-twist.on{background:var(--butter)}.chip.o-trouble.on{background:var(--rose)}
+.chip.o-strong,.chip.o-success,.chip.o-trouble{background:var(--paper)}
+.chip.o-strong.on{background:var(--sage)}.chip.o-success.on{background:#cddcc6}.chip.o-trouble.on{background:var(--rose)}
 .rc-guide .btn.small{min-height:38px}
 .rc-guide .btn.small.icon,.rc-guide .rc-out .chip{width:38px;min-width:38px;min-height:38px;padding:0}
 .rc-twist-btn{margin-left:auto}
@@ -441,13 +441,13 @@ body[data-screen=play] .toasts{bottom:calc(var(--sab) + 42dvh)}
 
 /* roll card: what each outcome does */
 .rc-traits .chip{position:relative}
-.rc-traits .chip.best{box-shadow:0 0 0 2.5px var(--butter),0 2px 0 var(--ink)}
-.rc-star{position:absolute;top:-9px;right:-5px;font-style:normal;font-size:15px;line-height:1;color:#b8860b;text-shadow:0 0 2px #fff}
 .rc-tn{font-size:.82em}
 .rc-how{margin:0;font-size:.9em;color:var(--mute)}
+.rc-trait{display:inline-flex;align-items:center;gap:5px;min-height:40px;padding:2px 12px;border:2px solid var(--ink);border-radius:999px;background:var(--lav)}
+.rc-trait .ic{width:22px;height:22px}
 .rc-stakes{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;font-size:.84em;line-height:1.2}
 .rc-stakes li{display:flex;gap:8px;align-items:baseline;padding:2px 8px;border-radius:8px;border:1.4px solid var(--ink)}
-.rc-stakes .o-success{background:#dfe8da}.rc-stakes .o-twist{background:#f7edcd}.rc-stakes .o-trouble{background:#efd9d9}
+.rc-stakes .o-strong{background:#cfe0c6}.rc-stakes .o-success{background:#e4ece0}.rc-stakes .o-trouble{background:#efd9d9}
 .rc-band{flex:none;min-width:4.4em;font-weight:700;font-variant-numeric:tabular-nums}
 .rc-stakes.one{font-size:1em}.rc-stakes.one li{border-width:2px}.rc-stakes.one .rc-band{min-width:0}
 @media (max-width:380px){.rc-tn{display:none}}

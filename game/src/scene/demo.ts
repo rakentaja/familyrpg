@@ -54,10 +54,10 @@ function demoPack(real: Pack | null): Pack {
   const v2 = real?.adventures?.[0]?.scenes?.[0]?.size;
   return {
     meta: { id: 'sleighbound', name: 'Sleighbound', version: 'demo', engine: 'hearthside@2' },
-    labels: base.labels ?? { hearts: 'Cheer', sparks: 'Twinkles', goal: 'Presents', clock: 'Midnight', traits: { brave: 'Brave', clever: 'Clever', kind: 'Kind' }, heroes: 'Heroes', foes: 'Foes', tuckered: 'Tuckered Out', calmed: 'all cheered up', guide: 'Guide' },
+    labels: base.labels ?? { hearts: 'Hearts', sparks: 'Twinkles', goal: 'Presents', clock: 'Midnight', traits: { brave: 'Brave', clever: 'Clever', kind: 'Kind' }, heroes: 'Heroes', foes: 'Foes', tuckered: 'Knocked Out', down: 'knocked out', guide: 'Guide' },
     theme: base.theme ?? { title: 'Sleighbound', subtitle: '', premise: '', palette: {} },
     models: base.models ?? {},
-    roles: base.roles ?? [], items: base.items ?? [], foes: base.foes ?? [], events: base.events ?? [], twists: [],
+    roles: base.roles ?? [], items: base.items ?? [], foes: base.foes ?? [], events: base.events ?? [],
     adventures: v2 ? real!.adventures : [{ id: 'demo', name: 'Demo', blurb: '', goalMax: 6, minutes: 40, scenes: SCENES, endings: [] }],
     tableMoments: [], ranges: real?.ranges ?? { move: 4, reach: 1.5, help: 3 },
   } as Pack;
@@ -78,12 +78,12 @@ function demoState(pack: Pack, sceneIndex = 0): GameState {
     : [['wind-up-rat', 2, 1.2], ['grumpling', -1.2, -2]] as const;
   const fromPack = sc.foes.map((f, i) => {
     const d = pack.foes.find((y) => y.id === f.foe);
-    return { uid: f.uid, foe: f.foe, pos: { x: f.x, z: f.z }, facing: f.rot ?? 0, grump: Math.max(1, (d?.grump ?? 2) - (i % 2)), maxGrump: d?.grump ?? 2, calmed: false };
+    return { uid: f.uid, foe: f.foe, pos: { x: f.x, z: f.z }, facing: f.rot ?? 0, hearts: Math.max(1, (d?.hearts ?? 2) - (i % 2)), maxHearts: d?.hearts ?? 2, down: false };
   });
   const tokens = sc.tokens.map((t) => ({ uid: t.uid, kind: t.kind, pos: { x: t.x, z: t.z }, item: t.item, hidden: t.hidden, label: t.label, text: t.text, model: t.model }));
   const demoFoes = foeSpots.filter(([f]) => pack.foes.some((x) => x.id === f)).map(([f, x, z], i) => {
     const d = pack.foes.find((y) => y.id === f)!;
-    return { uid: 'f' + i, foe: f, pos: { x, z }, facing: 0, grump: Math.max(1, d.grump - (i % 2)), maxGrump: d.grump, calmed: false };
+    return { uid: 'f' + i, foe: f, pos: { x, z }, facing: 0, hearts: Math.max(1, d.hearts - (i % 2)), maxHearts: d.hearts, down: false };
   });
   const now = Date.now();
   return {
@@ -147,13 +147,13 @@ async function main(): Promise<void> {
     walk: (id: string, x: number, z: number) => walkTo(id, x, z),
     talk: () => apply((s) => {
       s.bubbles.push(bubble('h1', 'Look! A present on the little island!'));
-      s.bubbles.push(bubble('f0', 'Hmph. Nobody ever invites ME skating.', 'say'));
+      s.bubbles.push(bubble('f0', 'Hmph. Nobody gets past ME.', 'say'));
       s.bubbles.push(bubble(undefined, 'The ice creaks under your boots. Something glitters on the island…', 'story', 12000));
     }, [{ k: 'anim', id: 'h1', clip: 'wave' }]),
     event: () => apply((s) => { s.event = { id: 'snow-squall', name: 'Snow Squall', text: 'A gust of snow whirls across the table! Everyone slides 1 metre towards the lake.', at: Date.now() }; }, [{ k: 'event' }]),
     cheer: () => apply((s) => { s.meters.sparks += 1; s.meters.goal += 1; }, [{ k: 'anim', id: 'h0', clip: 'cheer' }, { k: 'spark', n: 1 }, { k: 'goal', n: 1 }]),
-    grump: () => apply((s) => { s.foes[0]!.grump = Math.max(0, s.foes[0]!.grump - 1); }, [{ k: 'grump', id: 'f0', n: -1 }]),
-    calm: () => apply((s) => { s.foes[0]!.grump = 0; s.foes[0]!.calmed = true; }, [{ k: 'calm', id: 'f0' }]),
+    hearts: () => apply((s) => { s.foes[0]!.hearts = Math.max(0, s.foes[0]!.hearts - 1); }, [{ k: 'foeHearts', id: 'f0', n: -1 }]),
+    calm: () => apply((s) => { s.foes[0]!.hearts = 0; s.foes[0]!.down = true; }, [{ k: 'ko', id: 'f0' }]),
     hurt: () => apply((s) => { s.heroes[2]!.hearts = 0; s.heroes[2]!.tuckered = true; }, [{ k: 'hurt', id: 'h2' }, { k: 'tuck', id: 'h2' }]),
     solid: () => apply((s) => { s.scene.solid = ['crack-a', 'crack-b', 'hole']; }, [{ k: 'event', text: 'solid', path: [{ x: -1.8, z: -2.4 }, { x: 1.9, z: 1.4 }] }]),
     select: (id: string | null) => { local = { ...local, selectedHeroId: id }; scene.setLocal(local); },

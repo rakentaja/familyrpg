@@ -26,22 +26,29 @@ A light, co-op tabletop RPG for 2–8 players (ages 6+), built for a browser VTT
 
 ### Rolling
 
-Roll **2d6 + trait**.
+Roll **2d6 + trait**. The trait is fixed by what you do — no choosing:
+
+| Action | Trait |
+| --- | --- |
+| Attack a foe, leap a gap, cross cracked ice | Brave |
+| Search, use a rolled item | Clever |
+| Heal a hurt friend (or yourself) | Kind |
+| Free roll (anything else the Guide allows) | pick one |
 
 | Result | Outcome |
 | --- | --- |
-| 9+ | Success |
-| 6–8 | Success, but with a twist (Guide adds a small complication) |
-| 5 or less | Trouble — something goes wrong; team gains 1 **Spark** |
+| 10+ | Strong hit — 2 damage / 2 Hearts healed |
+| 7–9 | Hit — 1 damage / 1 Heart healed / it works |
+| 6 or less | Miss — an attacked foe hits back (−1 Heart), a missed leap hurts (−1 Heart); a missed search or heal costs nothing. Team gains 1 **Spark** |
 
-- **Help:** another hero describes how they help → +1. Max 2 helpers.
-- **Sparks:** shared team pool (start with 1 per hero). Spend 1 to reroll, add +2, or ignore a twist. Failing *feeds* the pool, so bad rolls still feel useful.
+- **Help:** the Guide can add +1 per helping hero. Max 2.
+- **Sparks:** shared team pool. Spend 1 to reroll or add +2. Missing *feeds* the pool, so bad rolls still feel useful.
 
 ### Turns on the grid
 
 - Each round: every hero takes a turn (any order the table agrees on), then the Guide's foes act, then flip 1 **Event card**.
 - Turn = **Move 4 squares + 1 Action** (roll, use item, help, revive, interact).
-- No attack-damage math: foes have **Grump** points. Each success removes 1 (2 on a 9+ with the right trait). At 0 Grump the foe is calmed, outwitted or tagged out — never killed.
+- Foes have **Hearts**, like heroes. A hit takes 1, a strong hit 2. At 0 the foe is **knocked out**: it falls over and vanishes, dropping anything it carried.
 
 ### Meters (shown on the VTT HUD)
 
@@ -51,7 +58,7 @@ Roll **2d6 + trait**.
 
 ### Scaling for 2–8 players
 
-| Heroes | Spark pool start | Foe Grump | Clock advance |
+| Heroes | Spark pool start | Foe Hearts | Clock advance |
 | --- | --- | --- | --- |
 | 1–2 | +2 bonus | ×1 | 1 per round |
 | 3–5 | standard | ×1.5 (round up) | 1 per round |
@@ -61,7 +68,7 @@ Roll **2d6 + trait**.
 
 - **Explore** — move around a map, find things, talk to characters.
 - **Challenge** — a puzzle or hazard with a mini-meter (e.g. 4 successes to cross the ice).
-- **Showdown** — foes + Grump. Boss showdowns have phases.
+- **Showdown** — foes to knock out. Boss showdowns have phases.
 - **Table moment** (optional, between scenes) — a real-world mini-game: charades, draw-it, hum-a-tune. Winning grants Sparks.
 
 ## 3. Theme pack architecture
@@ -74,7 +81,7 @@ A pack is a versioned JSON manifest + assets. The engine reads only the manifest
 | `labels` | Optional renames for traits, Hearts, Sparks, Goal, Clock |
 | `roles[]` | Name, description, Knack, starting item, mini model |
 | `items[]` | Item deck: name, effect, count |
-| `foes[]` | Name, Grump, move, behaviour, weak trait, model |
+| `foes[]` | Name, Hearts, move, behaviour, model |
 | `tiles[]` | Map tiles / locations, terrain rules, models |
 | `events[]` | Event deck cards |
 | `adventures[]` | Ordered scenes, each with map, setup, goal, win/lose text |
@@ -84,13 +91,13 @@ A pack is a versioned JSON manifest + assets. The engine reads only the manifest
 ```json
 {
   "meta": { "id": "sleighbound", "version": "0.1.0", "engine": "hearthside@1" },
-  "labels": { "hearts": "Cheer", "sparks": "Twinkles", "goal": "Presents", "clock": "Midnight" },
+  "labels": { "hearts": "Hearts", "sparks": "Twinkles", "goal": "Presents", "clock": "Midnight" },
   "roles": [{ "id": "reindeer-flyer", "knack": "fly", "start": "harness-bell", "model": "sha256:…" }],
-  "foes": [{ "id": "grumpling", "grump": 1, "move": 4, "weak": "kind" }]
+  "foes": [{ "id": "grumpling", "hearts": 1, "move": 4 }]
 }
 ```
 
-**Effects DSL:** Knacks, items and events use a small set of verbs — `move`, `heal`, `addSpark`, `addGoal`, `advanceClock`, `removeGrump`, `pull`, `push`, `reveal`, `spawn`, `bonus(trait,n)`. A new theme should need zero engine code; only new verbs need an engine release.
+**Effects DSL:** Knacks, items and events use a small set of verbs — `move`, `heal`, `addSpark`, `addGoal`, `advanceClock`, `hitFoes`, `pull`, `push`, `reveal`, `spawn`, `bonus(trait,n)`. A new theme should need zero engine code; only new verbs need an engine release.
 
 **VTT fit:** pack manifest published as a Nostr event, assets on Blossom by hash; table state (positions, meters, decks) syncs over relays. Load a pack by pasting its event id.
 
@@ -102,7 +109,7 @@ It's Christmas Eve. **Grumbleweed, the Winter Troll**, snatched the Star from th
 
 ### Labels
 
-Hearts → **Cheer** · Sparks → **Twinkles** · Goal → **Presents** (0–6) · Clock → **Midnight**
+Hearts → **Hearts** · Sparks → **Twinkles** · Goal → **Presents** (0–6) · Clock → **Midnight**
 
 ### Roles (7)
 
@@ -111,29 +118,29 @@ Hearts → **Cheer** · Sparks → **Twinkles** · Goal → **Presents** (0–6)
 | Reindeer Flyer | **Fly:** move 8, over anything, carrying one ally | Harness bell |
 | Snow Sprite | **Freeze:** turn water to ice or stop a foe for a round | Snowflake charm |
 | Gingerbread Scout | **Crumb trail:** teleport back to any square you've visited this scene | Gumdrop |
-| Toy Soldier | **Stand guard:** allies next to you can't lose Cheer this round | Drum |
-| Carol Singer | **Sing:** every ally in 3 squares regains 1 Cheer | Songbook |
+| Toy Soldier | **Stand guard:** allies next to you can't lose Hearts this round | Drum |
+| Carol Singer | **Sing:** every ally in 3 squares regains 1 Heart | Songbook |
 | Polar Bear Baker | **Cookie break:** hand out 2 Cookie items | Rolling pin |
-| Star Keeper | **Shine:** reveal hidden things in 4 squares; foes lose 1 Grump | Lantern |
+| Star Keeper | **Shine:** reveal hidden things in 4 squares; foes lose 1 Heart | Lantern |
 
 ### Foes
 
-| Foe | Grump | Behaviour | Weak to |
-| --- | --- | --- | --- |
-| Grumpling | 1 | Grabs presents, runs away | Kind (they just want a hug) |
-| Coal Imp | 2 | Throws coal: −1 Cheer at range 3 | Brave |
-| Wind-up Rat | 1 | Moves 6, always in packs of 3 | Clever |
-| Blizzard Wisp | 2 | Pushes heroes 2 squares | Brave |
-| Snow Golem | 4 | Slow (move 2), blocks paths | Clever |
-| **Grumbleweed** (boss) | 8 | 3 phases: throws snowballs → summons Grumplings → sulks behind ice wall | Kind finishes him |
+| Foe | Hearts | Behaviour |
+| --- | --- | --- |
+| Grumpling | 1 | Grabs presents, runs away |
+| Coal Imp | 2 | Throws coal: −1 Heart at range 3 |
+| Wind-up Rat | 1 | Moves 6, always in packs of 3 |
+| Blizzard Wisp | 2 | Pushes heroes 2 squares |
+| Snow Golem | 4 | Slow (move 2), blocks paths |
+| **Grumbleweed** (boss) | 8 | 3 phases: throws snowballs → summons Grumplings → hides behind an ice wall |
 
-Grumbleweed's twist: he's lonely because no one ever invited him to Christmas. A Kind success at 0 Grump lets the heroes invite him — the best ending.
+Knock out Grumbleweed to take back the Star.
 
 ### Items (sample deck)
 
-- **Hot Cocoa** ×4 — regain 2 Cheer.
-- **Cookie** ×4 — regain 1 Cheer, give it to an adjacent ally if you like.
-- **Snowball** ×5 — tag a foe at range 4: remove 1 Grump on a 6+.
+- **Hot Cocoa** ×4 — regain 2 Hearts.
+- **Cookie** ×4 — regain 1 Heart, give it to an adjacent ally if you like.
+- **Snowball** ×5 — tag a foe at range 4: 1 damage on a 6+.
 - **Candy Cane Hook** ×2 — pull a hero, foe or present 3 squares toward you.
 - **Jingle Bell** ×2 — all allies move +2 this round.
 - **Mystery Present** ×3 — draw 2 items, keep one.
@@ -180,7 +187,7 @@ Each pack only needs: 6–8 roles, 4–6 foes + a boss, ~20 items, ~15 events, 4
 
 ## 6. VTT build notes
 
-- **Mobile-first HUD:** Goal meter, Clock, Twinkle pool, and each hero's Cheer always visible; dice button big enough for kids.
+- **Mobile-first HUD:** Goal meter, Clock, Twinkle pool, and each hero's Hearts always visible; dice button big enough for kids.
 - **Grid:** square grid, 1 square ≈ 1 mini base. Tap-to-move with move range highlighted.
 - **Auto-rules:** engine applies item/event effects from the DSL; Guide can override anything.
 - **Kid mode:** read-aloud card text, icon-only traits, no negative numbers shown.

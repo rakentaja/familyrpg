@@ -4,6 +4,7 @@
 import type { DiceThrow, LocalView } from '../contracts';
 import type { GameState, Hit, Option, P, Roll, TargetKind, TargetRef, Trait } from '../rules/types';
 import { rules } from '../rules';
+import { HIT, STRONG } from '../rules/rolls';
 import type { Ctx } from './ctx';
 import { h, btn, replaceKids } from './dom';
 import { icon } from './icons';
@@ -15,8 +16,8 @@ import { endingScreen } from './ending';
 type DragKind = 'hero' | 'foe' | 'token';
 interface DragMsg { kind: DragKind; id: string; at: P; end?: boolean }
 
-const TWIST_OK = 'Success, with a twist';
-const OUTCOME_WORD: Record<string, string> = { success: 'Success!', twist: TWIST_OK, trouble: 'Trouble!' };
+const HIT_WORD: Record<string, string> = { strong: 'Strong hit!', success: 'Hit!', trouble: 'Miss!' };
+const PLAIN_WORD: Record<string, string> = { strong: 'Great!', success: 'It works!', trouble: 'No luck!' };
 
 export function playScreen(ctx: Ctx) {
   const store = ctx.store!;
@@ -185,7 +186,7 @@ export function playScreen(ctx: Ctx) {
   }
   function useKnack(id: string) {
     const k = knackOf(id);
-    if (!k) { toast('Special tricks work once per scene'); return; }
+    if (!k) { toast('Special moves work once per scene'); return; }
     closeSheet();
     if (selected !== id) select(id);
     run(k.opt, k.hit);
@@ -231,12 +232,12 @@ export function playScreen(ctx: Ctx) {
         h('span', { class: 'grow' }, h('b', null, x.name), h('small', null, ro?.name ?? '')),
         btn(icon('close'), closeSheet, 'icon small round', { 'aria-label': 'Close' })),
       h('section', null, h('h4', null, L.hearts, ' ', hearts),
-        h('p', null, x.tuckered ? `${L.tuckered} — a friend next to ${x.name} can wake them.` : `Trouble on a roll costs 1 ${L.hearts}. At 0 you're ${L.tuckered} until a friend wakes you.`)),
+        h('p', null, x.tuckered ? `${L.tuckered} — a friend next to ${x.name} can wake them.` : `A miss on an attack or a leap costs 1 ${L.hearts}. At 0 you're ${L.tuckered} until a friend wakes you.`)),
       h('section', null, h('h4', null, 'Good at'),
-        h('p', { class: 'hs-note' }, 'Every roll is 2 dice + one of these. Bigger number = better chance.'),
+        h('p', { class: 'hs-note' }, 'Each action rolls 2 dice + one of these. Bigger number = better chance.'),
         h('ul', { class: 'hs-traits' }, TRAITS.map((t: Trait) => h('li', null, traitBadge(pack, t, x.traits[t], kid),
           h('span', null, h('b', null, traitName(pack, t)), ' ', TRAIT_HELP[t]))))),
-      k ? h('section', null, h('h4', null, icon('sparkle'), ' Special trick: ', k.name),
+      k ? h('section', null, h('h4', null, icon('sparkle'), ' Special move: ', k.name),
         h('p', null, k.text),
         h('p', { class: 'hs-note' }, x.knackUsed ? 'Used — it comes back next scene.' : 'Works once per scene, no dice needed.'),
         isMine && kn && !x.tuckered ? btn([icon('sparkle'), `Use ${k.name}`], () => useKnack(x.id), 'primary small') : null) : null,
@@ -322,7 +323,7 @@ export function playScreen(ctx: Ctx) {
   function nearestTarget(land: P, within = 1.5): TargetRef | undefined {
     let best: TargetRef | undefined, bd = within;
     for (const f of s.foes) {
-      if (f.calmed) continue;
+      if (f.down) continue;
       const d = Math.hypot(f.pos.x - land.x, f.pos.z - land.z);
       if (d <= bd) { bd = d; best = { foeUid: f.uid }; }
     }
@@ -552,7 +553,7 @@ export function playScreen(ctx: Ctx) {
     const sel = h('select', { class: 'small', 'aria-label': 'Who says it' },
       h('option', { value: '' }, 'Narrator (paper note)'),
       s.heroes.map((x) => h('option', { value: x.id, selected: x.id === lastThing }, x.name)),
-      s.foes.filter((f) => !f.calmed).map((f) => h('option', { value: f.uid, selected: f.uid === lastThing }, thingName(pack, s, f.uid))));
+      s.foes.filter((f) => !f.down).map((f) => h('option', { value: f.uid, selected: f.uid === lastThing }, thingName(pack, s, f.uid))));
     const txt = h('input', { class: 'say-in', placeholder: 'What do they say?', maxlength: '160', enterkeyhint: 'send', 'aria-label': 'Line to say' });
     const go = () => {
       const text = txt.value.trim();
@@ -587,15 +588,17 @@ export function playScreen(ctx: Ctx) {
   }
 
   function howTo(): HTMLElement {
-    const L = pack.labels;
+    const L = pack.labels, T = L.traits;
     return h('div', { class: 'howto' },
-      h('p', null, h('b', null, 'Tap'), ' your hero to pick them, then tap the ground to walk there.'),
-      h('p', null, h('b', null, 'Tap'), ` one of the ${L.foes?.toLowerCase() || 'foes'} to get ready to calm it. `, h('b', null, 'Flick the dice up'), ' to throw!'),
+      h('p', null, h('b', null, 'Move:'), ' tap your hero, then tap the ground.'),
+      h('p', null, h('b', null, 'Attack:'), ` tap a foe, then flick the dice up. Uses ${T.brave}.`),
+      h('p', null, h('b', null, 'Heal:'), ` tap a hurt friend (or hold your hero). Uses ${T.kind}.`),
+      h('p', null, h('b', null, 'Search / use items:'), ` uses ${T.clever}.`),
+      h('p', null, h('b', null, 'Rolls:'), ` 2 dice + the trait. ${STRONG}+ strong hit (2 damage) · ${HIT}–${STRONG - 1} hit (1 damage) · ${HIT - 1} or less miss — the foe hits back (−1 ${L.hearts}) and the team gets +1 ${L.sparks}.`),
+      h('p', null, h('b', null, L.hearts + ':'), ` everyone has them. A foe at 0 is ${L.down}. A hero at 0 is ${L.tuckered} until a friend taps them to wake them.`),
+      h('p', null, h('b', null, 'Special move'), ' (✦ button by your hero): once per scene, no dice.'),
+      h('p', null, h('b', null, L.sparks + ':'), ' spend one to reroll or add +2.'),
       h('p', null, h('b', null, 'Hold'), ' anything for more choices. Tap your own hero again to see their card.'),
-      h('p', null, h('b', null, 'Rolls:'), ' 2 dice + a trait (', traitName(pack, 'brave'), ', ', traitName(pack, 'clever'), ' or ', traitName(pack, 'kind'), '). 9 or more: it works! · 6–8: it works, with a twist · 5 or less: trouble — you lose 1 ', L.hearts, ' and the team gets +1 ', L.sparks, '.'),
-      h('p', null, h('b', null, 'Grump'), ` is how grumpy a ${singular(L.foes?.toLowerCase() || 'foe')} is. Nobody gets hurt: each calm success takes 1 Grump away (2 with its soft spot ★ on a 9+). At 0 it cheers up.`),
-      h('p', null, h('b', null, 'Special trick'), ' (✦ button by your hero): once per scene, no dice.'),
-      h('p', null, 'Spend ', L.sparks, ' to roll again, add +2, or skip a twist.'),
       h('p', null, 'Find the ', L.goal.toLowerCase(), ' before ', L.clock, '!'));
   }
 
@@ -635,7 +638,8 @@ export function playScreen(ctx: Ctx) {
   function purposeLabel(r: Roll): string {
     const p = r.purpose;
     switch (p.kind) {
-      case 'calm': return `Calm ${thingName(pack, s, p.foeUid) || 'it'}`;
+      case 'attack': return `Attack ${thingName(pack, s, p.foeUid) || 'it'}`;
+      case 'heal': return `Heal ${hero(s, p.heroId)?.name ?? 'a friend'}`;
       case 'search': return 'Search';
       case 'challenge': return 'Challenge';
       case 'item': return pack.items.find((i) => i.id === p.item)?.name ?? 'Use';
@@ -663,12 +667,11 @@ export function playScreen(ctx: Ctx) {
   }
 
   let rollKey = '';
-  let twistOpen = false;
-  function paintRoll() {
+    function paintRoll() {
     const r = s.roll;
     const g = guide();
-    if (!r || s.phase !== 'play' || r.stage === 'done') { if (rollKey) { rollKey = ''; twistOpen = false; rollBox.replaceChildren(); } return; }
-    const key = JSON.stringify([r, s.meters.sparks, reroll, g, twistOpen, s.settings.kidMode, safe(() => rules.stakes(s, pack), null)]);
+    if (!r || s.phase !== 'play' || r.stage === 'done') { if (rollKey) { rollKey = ''; rollBox.replaceChildren(); } return; }
+    const key = JSON.stringify([r, s.meters.sparks, reroll, g, s.settings.kidMode, safe(() => rules.stakes(s, pack), null)]);
     if (key === rollKey) return;
     rollKey = key;
     const x = hero(s, r.heroId);
@@ -676,7 +679,7 @@ export function playScreen(ctx: Ctx) {
     const canAct = g || r.thrower === me || mine().includes(r.heroId);
     const throwerName = s.players.find((p) => p.id === r.thrower)?.name ?? x?.name ?? 'someone';
     const st = safe(() => rules.stakes(s, pack), null);
-    const MARK: Record<string, string> = { success: '✓', twist: '~', trouble: '✗' };
+    const MARK: Record<string, string> = { strong: '✓✓', success: '✓', trouble: '✗' };
     const stakesList = (only?: string) => st ? h('ul', { class: 'rc-stakes' + (only ? ' one' : '') },
       st.bands.filter((b) => !only || b.k === only).map((b) => h('li', { class: 'o-' + b.k },
         h('span', { class: 'rc-band' }, only ? '→' : `${MARK[b.k]} ${b.range}`), h('span', null, b.text)))) : null;
@@ -691,15 +694,15 @@ export function playScreen(ctx: Ctx) {
       : r.help ? h('span', { class: 'rc-help' }, icon('hand'), `+${r.help} help`) : null;
 
     if (r.stage === 'ready') {
-      const traits = h('div', { class: 'rc-traits' }, TRAITS.map((t: Trait) => h('button', {
-        type: 'button', class: 'chip t-' + t + (r.trait === t ? ' on' : '') + (st?.best === t ? ' best' : ''), disabled: !canAct, 'aria-pressed': String(r.trait === t),
-        title: `${traitName(pack, t)}: ${TRAIT_HELP[t]}`,
-        onclick: () => { if (r.trait !== t) { sfx.tap(); dispatch({ t: 'setRollTrait', rollId: r.id, trait: t }); } },
-      }, st?.best === t ? h('i', { class: 'rc-star', 'aria-label': 'best choice' }, '★') : null, icon(t),
-        h('span', { class: 'rc-tn' }, traitName(pack, t)), kid ? null : h('b', null, '+' + String(x?.traits[t] ?? 0)))));
-      const bonus = rollBonus(r);
-      const how = h('p', { class: 'rc-how' }, `2 dice + ${traitName(pack, r.trait)} ${bonus - (r.help ?? 0)}`, r.help ? ` + ${r.help} help` : '',
-        st?.bestWhy ? h('small', null, ' · ★ ', st.bestWhy) : null);
+      // only a free roll lets you pick the trait; everything else always uses the same one
+      const traits = r.purpose.kind === 'free'
+        ? h('div', { class: 'rc-traits' }, TRAITS.map((t: Trait) => h('button', {
+          type: 'button', class: 'chip t-' + t + (r.trait === t ? ' on' : ''), disabled: !canAct, 'aria-pressed': String(r.trait === t),
+          title: `${traitName(pack, t)}: ${TRAIT_HELP[t]}`,
+          onclick: () => { if (r.trait !== t) { sfx.tap(); dispatch({ t: 'setRollTrait', rollId: r.id, trait: t }); } },
+        }, icon(t), h('span', { class: 'rc-tn' }, traitName(pack, t)), kid ? null : h('b', null, '+' + String(x?.traits[t] ?? 0)))))
+        : h('span', { class: 'rc-trait t-' + r.trait }, icon(r.trait), h('b', null, traitName(pack, r.trait)), kid ? null : ` +${x?.traits[r.trait] ?? 0}`);
+      const how = h('p', { class: 'rc-how' }, `Roll 2 dice + ${traitName(pack, r.trait)}`, r.help ? ` + ${r.help} help` : '');
       rollBox.replaceChildren(h('div', { class: 'roll-card paper ready' }, head, h('div', { class: 'rc-row' }, traits, helpCtl), how, stakesList(),
         h('p', { class: 'rc-hint' }, r.thrower === me ? h('b', null, 'Flick the dice up to throw!') : `Waiting for ${throwerName} to throw…`)));
       return;
@@ -711,7 +714,8 @@ export function playScreen(ctx: Ctx) {
         btn('Never mind', () => { reroll = null; syncDice(); paintRoll(); }, 'ghost small')));
       return;
     }
-    const o = r.outcome ?? 'twist';
+    const o = r.outcome ?? 'success';
+    const WORD = r.purpose.kind === 'attack' || r.purpose.kind === 'item' ? HIT_WORD : PLAIN_WORD;
     const d = r.dice ?? [0, 0];
     const bonus = (r.total ?? d[0] + d[1]) - d[0] - d[1];
     const sum = kid ? h('span', { class: 'rc-dice' }, pips(d[0]), pips(d[1]))
@@ -721,33 +725,20 @@ export function playScreen(ctx: Ctx) {
     const tw: HTMLElement[] = [];
     if (canAct && sparks > 0) {
       if (!used.has('reroll')) tw.push(btn([icon('dice'), 'Reroll'], () => { sfx.twinkle(); reroll = r.id; syncDice(); paintRoll(); }, 'spark small'));
-      if (!used.has('plus2') && o !== 'success') tw.push(btn([icon('twinkle'), '+2'], () => { sfx.twinkle(); dispatch({ t: 'spark', rollId: r.id, use: 'plus2' }); }, 'spark small'));
-      if (!used.has('ignoreTwist') && o === 'twist') tw.push(btn([icon('twinkle'), 'No twist'], () => { sfx.twinkle(); dispatch({ t: 'spark', rollId: r.id, use: 'ignoreTwist' }); }, 'spark small'));
+      if (!used.has('plus2') && o !== 'strong') tw.push(btn([icon('twinkle'), '+2'], () => { sfx.twinkle(); dispatch({ t: 'spark', rollId: r.id, use: 'plus2' }); }, 'spark small'));
     }
     const guideRow = g ? h('div', { class: 'rc-guide' },
-      h('div', { class: 'rc-out' }, (['success', 'twist', 'trouble'] as const).map((k) => h('button', {
-        type: 'button', class: 'chip o-' + k + (o === k ? ' on' : ''), 'aria-pressed': String(o === k),
+      h('div', { class: 'rc-out' }, (['strong', 'success', 'trouble'] as const).map((k) => h('button', {
+        type: 'button', class: 'chip o-' + k + (o === k ? ' on' : ''), 'aria-pressed': String(o === k), title: WORD[k],
         onclick: () => { if (o !== k) dispatch({ t: 'guide', op: { k: 'outcome', rollId: r.id, outcome: k } }); },
-      }, k === 'success' ? '✓' : k === 'twist' ? '~' : '✗'))),
-      helpCtl,
-      btn(icon('say'), () => { twistOpen = !twistOpen; paintRoll(); }, 'icon small rc-twist-btn' + (twistOpen ? ' on' : ''), { 'aria-label': 'Write a twist', title: 'Twist' })) : null;
-    let twistForm: HTMLElement | null = null;
-    if (g && twistOpen) {
-      const pool = [...(sceneDef(pack, s)?.twists ?? []), ...(pack.twists ?? [])];
-      const inp = h('input', { class: 'twist-in', value: r.twist ?? '', placeholder: 'What goes a bit wrong?', maxlength: '160', 'aria-label': 'Twist' });
-      const set = () => { const t = inp.value.trim(); if (t) { dispatch({ t: 'guide', op: { k: 'twist', rollId: r.id, text: t } }); twistOpen = false; } };
-      inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') set(); });
-      twistForm = h('div', { class: 'rc-twist-form' }, inp,
-        pool.length ? btn(icon('dice'), () => { inp.value = pool[Math.floor(Math.random() * pool.length)]; }, 'icon small', { 'aria-label': 'Pick a twist' }) : null,
-        btn('Set', set, 'primary small'));
-    }
+      }, MARK[k]))),
+      helpCtl) : null;
     rollBox.replaceChildren(h('div', { class: 'roll-card paper thrown o-' + o },
       head,
-      h('div', { class: 'rc-result' }, h('b', { class: 'rc-word' }, OUTCOME_WORD[o] ?? o), sum),
+      h('div', { class: 'rc-result' }, h('b', { class: 'rc-word' }, WORD[o] ?? o), sum),
       stakesList(o),
-      r.twist ? h('p', { class: 'rc-twist' }, r.twist) : null,
       tw.length ? h('div', { class: 'rc-sparks' }, h('span', { class: 'rc-jar' }, icon('twinkle'), String(sparks)), ...tw) : null,
-      guideRow, twistForm,
+      guideRow,
       canAct ? btn('OK', () => { sfx.tap(); dispatch({ t: 'resolve', rollId: r.id }); }, 'primary rc-ok') : h('p', { class: 'rc-hint' }, `${throwerName} is deciding…`)));
   }
   function pips(n: number): HTMLElement {
@@ -840,7 +831,7 @@ export function playScreen(ctx: Ctx) {
       // outcome sounds
       const st = s.roll ? `${s.roll.id}:${s.roll.stage}:${s.roll.outcome}` : '';
       if (st !== lastRollStage && s.roll?.stage === 'thrown') {
-        if (s.roll.outcome === 'success') sfx.chime(); else if (s.roll.outcome === 'twist') sfx.twist(); else sfx.oops();
+        if (s.roll.outcome === 'trouble') sfx.oops(); else sfx.chime();
       }
       lastRollStage = st;
       readAloud(prev);

@@ -3,6 +3,10 @@
 The 3D table is the game. No turns: the family keeps track of whose go it is, like at a real table. The app
 draws the scene, rolls and tracks things, and gets out of the way. A **Guide** (usually a parent) is always present.
 
+> **Rules update (2026-11-10):** Grump, calming, twists, soft spots and inviting the boss are gone. Foes have
+> Hearts and get knocked out; rolls are 10+ strong / 7–9 hit / 6 or less miss with the trait fixed by the action.
+> `docs/game-design.md` has the current rules; the table below is the original interview.
+
 ## 1. Decisions (from the interview, 2026-11-10)
 
 | Topic | Decision |

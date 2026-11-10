@@ -87,7 +87,7 @@ export function twoTap(fn: () => void, msg: string, toastFn: (m: string) => void
 }
 /** What each trait is for (shown when making a hero, on the hero card and on the roll card). */
 export const TRAIT_HELP: Record<Trait, string> = {
-  brave: 'jumping, climbing, standing up to scary things',
-  clever: 'puzzles, tricks, spotting things',
-  kind: 'calming, helping, making friends',
+  brave: 'attacking foes, leaping gaps, crossing ice',
+  clever: 'searching, using items',
+  kind: 'healing friends',
 };

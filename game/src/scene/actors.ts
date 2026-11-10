@@ -83,7 +83,7 @@ export class Actor {
   private leaveT = -1;
   dead = false;
 
-  tuckered = false; calmed = false;
+  tuckered = false; down = false;
   speed = WALK_SPEED;                   // m/s along paths
   private ghosted = false;
   private realMats = new Map<THREE.Mesh, THREE.Material | THREE.Material[]>();
@@ -205,14 +205,13 @@ export class Actor {
     else { this.fadeTo('idle', 0.3); if (animate) this.playOnce('jump'); }
   }
 
-  /** Calmed foe: happy clip, then a puff and shrink. */
-  calm(onPuff: (a: Actor) => void): void {
-    if (this.calmed) return;
-    this.calmed = true; this.pickable = false;
+  /** Knocked-out foe: falls over (sleep clip, or a tip-over for unrigged minis), then a puff and shrink. */
+  knockOut(onPuff: (a: Actor) => void): void {
+    if (this.down) return;
+    this.down = true; this.pickable = false;
     this.path.length = 0; this.oneShot = null;
-    this.fadeTo('happy', 0.3);
-    if (!this.mixer) { this.hopT = 0; this.spinT = 0; }
-    this.leaveT = 0; this.leaveDelay = 1.6; this.onLeave = onPuff;
+    this.fadeTo('sleep', 0.2);                   // unrigged minis tip over (lieGoal)
+    this.leaveT = 0; this.leaveDelay = 1.8; this.onLeave = onPuff;
   }
   private onLeave: ((a: Actor) => void) | null = null;
   private leaveDelay = 1.6;
@@ -228,13 +227,13 @@ export class Actor {
 
   place(p: THREE.Vector3): void {
     this.root.position.copy(p); this.goal.copy(p); this.hop = null;
-    if (this.path.length) { this.path.length = 0; if (!this.tuckered && !this.calmed) this.fadeTo('idle', 0.15); }
+    if (this.path.length) { this.path.length = 0; if (!this.tuckered && !this.down) this.fadeTo('idle', 0.15); }
   }
 
   /** Quick hop to a spot (Guide placement / teleport). */
   hopTo(p: THREE.Vector3): void {
     this.path.length = 0;
-    if (!this.tuckered && !this.calmed && this.base === 'walk') this.fadeTo('idle', 0.15);
+    if (!this.tuckered && !this.down && this.base === 'walk') this.fadeTo('idle', 0.15);
     this.hop = { from: this.root.position.clone(), to: p.clone(), t: 0 };
     this.goal.copy(p);
   }
@@ -261,7 +260,7 @@ export class Actor {
     if (!points.length) return;
     this.path = points; this.slide = slide;
     this.goal.copy(points[points.length - 1]!);
-    if (!slide && !this.tuckered && !this.calmed) { this.oneShot = null; this.fadeTo('walk', 0.15); }
+    if (!slide && !this.tuckered && !this.down) { this.oneShot = null; this.fadeTo('walk', 0.15); }
   }
   get moving(): boolean { return this.path.length > 0; }
 
@@ -284,7 +283,7 @@ export class Actor {
       if (d > 1e-4 && !this.slide) this.targetYaw = Math.atan2(tv.x, tv.z);
       if (d <= step) { p.x = target.x; p.z = target.z; this.path.shift(); }
       else p.addScaledVector(tv, step / d);
-      if (!this.path.length && !this.tuckered && !this.calmed) this.fadeTo('idle', 0.2);
+      if (!this.path.length && !this.tuckered && !this.down) this.fadeTo('idle', 0.2);
     }
     if (this.hop) {
       this.hop.t += dt / 0.38;

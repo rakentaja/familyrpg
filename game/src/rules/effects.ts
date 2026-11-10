@@ -5,7 +5,7 @@ import { randInt, shuffle } from './rng';
 import { areaDist, dash, dist, facingOf, findPath, nearestFree, rp, slide } from './geom';
 import {
   type Ctx, activeFoes, addGoal, addSparks, advanceClock, anim, approach, bubble, drawEvent, drawItem, fail, foeByUid,
-  foeDef, foeFlies, fx, giveToPocket, grumpFoe, healHero, heroById, heroFlies, itemName, log, moveHero, nav, newToken,
+  foeDef, foeFlies, fx, giveToPocket, hitFoe, healHero, heroById, heroFlies, itemName, log, moveHero, nav, newToken,
   reachOf, revealToken, sceneDef, spawnFoe, tell, tokenByUid,
 } from './core';
 
@@ -17,7 +17,7 @@ export const effectRange = (effects: Effect[], fallback = 4): number => {
 };
 /** Minimum roll for effects that need one (e.g. a thrown snowball), else undefined. */
 export function hasRoll(effects: Effect[]): number | undefined {
-  for (const e of effects) if (e.do === 'removeGrump' && typeof e.on === 'number') return e.on;
+  for (const e of effects) if (e.do === 'hitFoes' && typeof e.on === 'number') return e.on;
   return undefined;
 }
 
@@ -149,18 +149,18 @@ export function applyEffects(c: Ctx, actor: Hero | null, effects: Effect[], targ
       case 'addSpark': addSparks(c, e.n); did++; break;
       case 'addGoal': addGoal(c, e.n); did++; break;
       case 'advanceClock': advanceClock(c, e.n); did++; break;
-      case 'removeGrump': {
+      case 'hitFoes': {
         if (e.on !== undefined && !o.fromRoll) break; // needs a roll; the reducer readies one
         const range = e.range ?? 4;
         let foes: Foe[] = [];
         if (e.who === 'target') {
           const f = foeByUid(s, target?.foeUid);
-          if (!f || f.calmed) { need('Pick a foe.'); break; }
+          if (!f || f.down) { need('Pick a foe.'); break; }
           if (actor && !o.fromRoll && !inReach(c, actor, f.pos, range)) { need('Too far away.'); break; }
           foes = [f];
         } else if (e.who === 'foesInRange') foes = activeFoes(s).filter((f) => !actor || dist(f.pos, actor.pos) <= range);
         else foes = activeFoes(s);
-        for (const f of foes) grumpFoe(c, f, -e.n, { hero: actor ?? undefined });
+        for (const f of foes) hitFoe(c, f, -e.n, { hero: actor ?? undefined });
         if (foes.length) did++;
         break;
       }
@@ -168,7 +168,7 @@ export function applyEffects(c: Ctx, actor: Hero | null, effects: Effect[], targ
         if (!actor) break;
         const f = foeByUid(s, target?.foeUid), h = heroById(s, target?.heroId), t = tokenByUid(s, target?.tokenUid);
         const ent: { o: { pos: P }; id: string; fly: boolean } | null =
-          f && !f.calmed ? { o: f, id: f.uid, fly: foeFlies(pack, f) }
+          f && !f.down ? { o: f, id: f.uid, fly: foeFlies(pack, f) }
             : h && h.id !== actor.id ? { o: h, id: h.id, fly: heroFlies(pack, h) }
               : t && t.pos && !t.hidden ? { o: t as { pos: P }, id: t.uid, fly: true } : null;
         if (!ent) { need('Pick something to pull.'); break; }
@@ -186,7 +186,7 @@ export function applyEffects(c: Ctx, actor: Hero | null, effects: Effect[], targ
         const range = e.range ?? R;
         if (e.who === 'target') {
           const f = foeByUid(s, target?.foeUid), h = heroById(s, target?.heroId);
-          const ent = f && !f.calmed ? { o: f as { pos: P }, id: f.uid } : h && h.id !== actor.id ? { o: h as { pos: P }, id: h.id } : null;
+          const ent = f && !f.down ? { o: f as { pos: P }, id: f.uid } : h && h.id !== actor.id ? { o: h as { pos: P }, id: h.id } : null;
           if (!ent) { need('Pick something to push.'); break; }
           if (!inReach(c, actor, ent.o.pos, range)) { need('Too far away.'); break; }
           shove(c, ent.o, ent.id, away(c, actor.pos, ent.o.pos), e.n);
@@ -281,7 +281,7 @@ export function applyEffects(c: Ctx, actor: Hero | null, effects: Effect[], targ
         if (e.what === 'foe') {
           const f = foeByUid(s, target?.foeUid);
           if (!f) break;
-          if (f.calmed) { need('They are already calm.'); break; }
+          if (f.down) { need('It is already knocked out.'); break; }
           if (actor && !inReach(c, actor, f.pos, e.range ?? 4)) { need('Too far away.'); break; }
           f.frozenUntil = c.at + (e.seconds ?? 30) * 1000;
           fx(c, { k: 'event', id: f.uid, text: 'freeze' });

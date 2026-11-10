@@ -4,7 +4,7 @@ import { join } from 'path';
 import type { Action, Envelope, GameState, Hit, Option, P, Pack } from './types';
 import rulesDefault, { buildAction, controlled, createGame, describe, groundAt, isGuide, midnight, options, path, reduce, rules } from './index';
 import { blockers, buildNav, blockedAt, dist, AGENT, inBounds } from './geom';
-import { endingMatches, grumpFactor } from './core';
+import { endingMatches, toughFactor } from './core';
 
 const REPO = join(import.meta.dir, '../../..');
 const PK = JSON.parse(readFileSync(join(import.meta.dir, '../../packs/sleighbound.json'), 'utf8')) as Pack;
@@ -206,7 +206,7 @@ group('permissions', () => {
     expect(nope(s, { t: 'walk', heroId: 'h2', to: { x: 0, z: 0 } }, 'kid1')).toMatch(/not your hero/);
     must(s, { t: 'walk', heroId: 'h1', to: { x: 0, z: 2 } }, 'kid1');
     must(s, { t: 'walk', heroId: 'h2', to: { x: 0, z: 2 } }, 'mum');
-    expect(nope(s, G({ k: 'grump', uid: 'ws-rat1', delta: -1 }), 'kid1')).toMatch(/Guide/);
+    expect(nope(s, G({ k: 'foeHearts', uid: 'ws-rat1', delta: -1 }), 'kid1')).toMatch(/Guide/);
     expect(nope(s, { t: 'next' }, 'kid1')).toMatch(/host or the Guide/);
   });
   test('the Guide cannot own heroes at a multi-device table; setGuide moves the role', () => {
@@ -256,61 +256,59 @@ group('permissions', () => {
 });
 
 // ---------------------------------------------------------------- rolls
+// h1 = Toy Soldier (Brave 3, Clever 1, Kind 2, kid1) · h2 = Carol Singer (Brave 1, Clever 2, Kind 3, kid2)
 group('rolls', () => {
-  test('stakes say what each outcome will do, matching the soft spot', () => {
-    let s = atScene(0);
-    const rat = foe(s, 'ws-rat1');
-    const d = PK.foes.find((f) => f.id === rat.foe)!;
+  test('stakes say what each outcome will do', () => {
+    let s = atScene(2);
     expect(rules.stakes(s, PK)).toBeNull();
-    s = must(s, { t: 'readyRoll', heroId: 'h1', trait: d.weak, purpose: { kind: 'calm', foeUid: rat.uid } }, 'kid1');
+    s = must(s, { t: 'readyRoll', heroId: 'h1', trait: 'kind', purpose: { kind: 'attack', foeUid: 'rr-imp1' } }, 'kid1');
+    expect(s.roll!.trait).toBe('brave');                   // attacks always use Brave
     const st = rules.stakes(s, PK)!;
-    expect(st.best).toBe(d.weak);
-    expect(st.bands.map((b) => b.k)).toEqual(['success', 'twist', 'trouble']);
-    expect(st.bands[0].text).toMatch(rat.grump <= 2 ? /cheers up/ : /loses 2 Grump/);
-    expect(st.bands[2].text).toContain(`loses 1 ${PK.labels.hearts}`);
-    expect(st.bands[2].text).toContain(`+1 ${PK.labels.sparks}`);
-    s = must(s, { t: 'throw', rollId: s.roll!.id, dice: [6, 6] }, 'kid1');
-    s = must(s, { t: 'resolve', rollId: s.roll!.id }, 'kid1');
-    if (rat.grump <= 2) expect(foe(s, rat.uid).calmed).toBe(true);
+    expect(st.bands.map((b) => b.k)).toEqual(['strong', 'success', 'trouble']);
+    expect(st.bands.map((b) => b.range)).toEqual(['10+', '7–9', '6 or less']);
+    expect(st.bands[0].text).toBe(`Coal Imp is ${PK.labels.down}`);
+    expect(st.bands[1].text).toBe(`Coal Imp loses 1 Heart (1 left)`);
+    expect(st.bands[2].text).toContain('Coal Imp hits back');
+    expect(st.bands[2].text).toContain(`Hero1 loses 1 Heart`);
+    expect(st.bands[2].text).toContain(`+1 Twinkle`);
   });
 
   test('lifecycle: ready → help → throw → Twinkles → resolve', () => {
     let s = atScene(0);
     const rat = foe(s, 'ws-rat1');
-    s = must(s, { t: 'readyRoll', heroId: 'h1', trait: 'brave', purpose: { kind: 'calm', foeUid: rat.uid } }, 'kid1');
+    s = must(s, { t: 'readyRoll', heroId: 'h1', trait: 'brave', purpose: { kind: 'attack', foeUid: rat.uid } }, 'kid1');
     expect(dist(hero(s).pos, rat.pos)).toBeLessThanOrEqual(1.5 + 0.05); // walked up to it first
     expect(s.fx.list.some((f) => f.k === 'move' && f.id === 'h1')).toBe(true);
     const r = s.roll!;
     expect(r).toMatchObject({ heroId: 'h1', thrower: 'kid1', trait: 'brave', help: 0, stage: 'ready', sparkUsed: [] });
     expect(nope(s, { t: 'readyRoll', heroId: 'h2', trait: 'kind', purpose: { kind: 'free' } }, 'kid2')).toBe('Hero1 is rolling');
     expect(nope(s, { t: 'setRollTrait', rollId: r.id, trait: 'kind' }, 'kid2')).toMatch(/not your roll/);
-    s = must(s, { t: 'setRollTrait', rollId: r.id, trait: 'clever' }, 'kid1');
+    expect(nope(s, { t: 'setRollTrait', rollId: r.id, trait: 'clever' }, 'kid1')).toMatch(/same trait/);
     expect(nope(s, G({ k: 'help', rollId: r.id, delta: 1 }), 'kid1')).toMatch(/Guide/);
     s = must(s, G({ k: 'help', rollId: r.id, delta: 1 }));
     s = must(s, G({ k: 'help', rollId: r.id, delta: 1 }));
     s = must(s, G({ k: 'help', rollId: r.id, delta: 1 }));
     expect(s.roll!.help).toBe(2);
     expect(nope(s, { t: 'resolve', rollId: r.id }, 'kid1')).toMatch(/Throw/);
-    // soldier: clever 1 → 1 + 2 + 2 help = 5 → twist
-    s = must(s, { t: 'throw', rollId: r.id, dice: [1, 2], land: { x: 0, z: 0 } }, 'kid1');
-    expect(s.roll).toMatchObject({ stage: 'thrown', dice: [1, 2], total: 6, outcome: 'twist', land: { x: 0, z: 0 } });
-    expect(typeof s.roll!.twist).toBe('string');
+    // brave 3 + 2 help + 1 + 1 = 7 → hit
+    s = must(s, { t: 'throw', rollId: r.id, dice: [1, 1], land: { x: 0, z: 0 } }, 'kid1');
+    expect(s.roll).toMatchObject({ stage: 'thrown', dice: [1, 1], total: 7, outcome: 'success', land: { x: 0, z: 0 } });
     expect(s.fx.list.some((f) => f.k === 'dice' && f.dice?.[0] === 1)).toBe(true);
     const sparks = s.meters.sparks;
     s = must(s, { t: 'spark', rollId: r.id, use: 'plus2' }, 'kid1');
-    expect(s.roll).toMatchObject({ total: 8, outcome: 'twist' });
+    expect(s.roll).toMatchObject({ total: 9, outcome: 'success' });
     expect(nope(s, { t: 'spark', rollId: r.id, use: 'plus2' }, 'kid1')).toMatch(/Already/);
     s = must(s, { t: 'spark', rollId: r.id, use: 'reroll', dice: [6, 5] }, 'kid1');
-    expect(s.roll).toMatchObject({ dice: [6, 5], total: 6 + 5 + 1 + 2 + 2, outcome: 'success' });
-    expect(s.roll!.twist).toBeUndefined();
-    expect(nope(s, { t: 'spark', rollId: r.id, use: 'ignoreTwist' }, 'kid1')).toMatch(/no twist/);
+    expect(s.roll).toMatchObject({ dice: [6, 5], total: 6 + 5 + 3 + 2 + 2, outcome: 'strong' });
     expect(s.meters.sparks).toBe(sparks - 2);
     s = must(s, { t: 'resolve', rollId: r.id }, 'kid1');
     expect(s.roll!.stage).toBe('done');
-    expect(foe(s, rat.uid).calmed).toBe(true);
+    expect(foe(s, rat.uid).down).toBe(true);
     // a finished roll never blocks the next one
     s = must(s, { t: 'readyRoll', heroId: 'h2', trait: 'kind', purpose: { kind: 'free' } }, 'kid2');
     expect(s.roll!.heroId).toBe('h2');
+    s = must(s, { t: 'setRollTrait', rollId: s.roll!.id, trait: 'clever' }, 'kid2'); // free rolls pick
+    expect(s.roll!.trait).toBe('clever');
   });
   test('the same hero re-readying replaces the roll; cancel', () => {
     let s = atScene(0);
@@ -318,54 +316,67 @@ group('rolls', () => {
     const first = s.roll!.id;
     s = must(s, { t: 'readyRoll', heroId: 'h1', trait: 'kind', purpose: { kind: 'search', at: { x: 0, z: 3 } } }, 'kid1');
     expect(s.roll!.id).not.toBe(first);
-    expect(s.roll!.trait).toBe('kind');
+    expect(s.roll!.trait).toBe('clever');                 // searching always uses Clever
     expect(nope(s, { t: 'cancelRoll', rollId: s.roll!.id }, 'kid2')).toMatch(/not your roll/);
     s = must(s, { t: 'cancelRoll', rollId: s.roll!.id }, 'kid1');
     expect(s.roll).toBeUndefined();
   });
-  test('ignoreTwist turns a twist into a success; Guide can override outcome and twist', () => {
+  test('outcome bands: 10+ strong, 7–9 hit, 6 or less miss; Guide can override', () => {
     let s = atScene(0);
+    const out = (d: [number, number]) => {
+      const t = must(s, { t: 'readyRoll', heroId: 'h1', trait: 'brave', purpose: { kind: 'free' } }, 'kid1');
+      return must(t, { t: 'throw', rollId: t.roll!.id, dice: d }, 'kid1').roll!;
+    };
+    expect(out([1, 2]).outcome).toBe('trouble');            // 3 + 3 = 6
+    expect(out([2, 2]).outcome).toBe('success');            // 7
+    expect(out([3, 3]).outcome).toBe('success');            // 9
+    expect(out([3, 4]).outcome).toBe('strong');             // 10
     s = must(s, { t: 'readyRoll', heroId: 'h1', trait: 'brave', purpose: { kind: 'free' } }, 'kid1');
-    s = must(s, { t: 'throw', rollId: s.roll!.id, dice: [2, 2] }, 'kid1'); // 4 + 3 brave = 7
-    expect(s.roll!.outcome).toBe('twist');
-    s = must(s, G({ k: 'twist', rollId: s.roll!.id, text: 'A reindeer sneezes on you.' }));
-    expect(s.roll!.twist).toBe('A reindeer sneezes on you.');
-    const t = must(s, { t: 'spark', rollId: s.roll!.id, use: 'ignoreTwist' }, 'kid1');
-    expect(t.roll).toMatchObject({ outcome: 'success', total: 7 });
+    s = must(s, { t: 'throw', rollId: s.roll!.id, dice: [6, 6] }, 'kid1');
     const o = must(s, G({ k: 'outcome', rollId: s.roll!.id, outcome: 'trouble' }));
     expect(o.roll!.outcome).toBe('trouble');
   });
-  test('trouble: −1 Cheer, +1 Twinkle, Midnight + scene.troubleClock steps', () => {
+  test('a missed leap: −1 Heart, +1 Twinkle, Midnight + scene.troubleClock steps', () => {
     let s = atScene(1);                                    // lake: troubleClock 1
     const before = { hearts: hero(s).hearts, sparks: s.meters.sparks, steps: s.clock.steps };
-    s = roll(s, 'h1', 'clever', { kind: 'free' }, [1, 1], 'kid1');  // 2 + 1 = 3
+    s = roll(s, 'h1', 'brave', { kind: 'challenge' }, [1, 1], 'kid1');  // 2 + 3 = 5
     expect(s.roll!.outcome).toBe('trouble');
     expect(hero(s).hearts).toBe(before.hearts - 1);
     expect(s.meters.sparks).toBe(before.sparks + 1);
     expect(s.clock.steps).toBe(before.steps + 1);
+    expect(s.scene.challenge!.trouble).toBe(1);
+  });
+  test('a missed search costs nothing but feeds the jar', () => {
+    let s = atScene(0);
+    const before = { hearts: hero(s).hearts, sparks: s.meters.sparks };
+    s = roll(s, 'h1', 'clever', { kind: 'search', at: hero(s).pos }, [1, 1], 'kid1');
+    expect(s.roll!.outcome).toBe('trouble');
+    expect(hero(s).hearts).toBe(before.hearts);
+    expect(s.meters.sparks).toBe(before.sparks + 1);
   });
   test('dice modes: free never applies, throwAt uses where the dice land', () => {
     let s = atScene(0);
     s = must(s, { t: 'settings', patch: { diceMode: 'free' } });
-    const g = foe(s, 'ws-rat1').grump;
-    s = roll(s, 'h1', 'clever', { kind: 'calm', foeUid: 'ws-rat1' }, [6, 6], 'kid1');
-    expect(foe(s, 'ws-rat1').grump).toBe(g);
+    const g = foe(s, 'ws-rat1').hearts;
+    s = roll(s, 'h1', 'brave', { kind: 'attack', foeUid: 'ws-rat1' }, [6, 6], 'kid1');
+    expect(foe(s, 'ws-rat1').hearts).toBe(g);
     const sp = s.meters.sparks, hp = hero(s).hearts;
-    s = roll(s, 'h1', 'clever', { kind: 'calm', foeUid: 'ws-rat1' }, [1, 1], 'kid1');
-    expect(hero(s).hearts).toBe(hp);                       // no automatic Cheer loss…
-    expect(s.meters.sparks).toBe(sp + 1);                  // …but trouble still feeds the jar
+    s = roll(s, 'h1', 'brave', { kind: 'attack', foeUid: 'ws-rat1' }, [1, 1], 'kid1');
+    expect(hero(s).hearts).toBe(hp);                       // no automatic Heart loss…
+    expect(s.meters.sparks).toBe(sp + 1);                  // …but a miss still feeds the jar
     s = must(s, { t: 'settings', patch: { diceMode: 'throwAt' } });
     s = must(s, { t: 'readyRoll', heroId: 'h2', trait: 'clever', purpose: { kind: 'free' } }, 'kid2');
     s = must(s, { t: 'throw', rollId: s.roll!.id, dice: [6, 6], target: { foeUid: 'ws-rat2' } }, 'kid2');
-    expect(s.roll!.purpose).toEqual({ kind: 'calm', foeUid: 'ws-rat2' });
+    expect(s.roll!.purpose).toEqual({ kind: 'attack', foeUid: 'ws-rat2' });
+    expect(s.roll!.trait).toBe('brave');
     s = must(s, { t: 'resolve', rollId: s.roll!.id }, 'kid2');
-    expect(foe(s, 'ws-rat2').calmed).toBe(true);
+    expect(foe(s, 'ws-rat2').down).toBe(true);
     // no target → free roll, nothing applied
-    s = must(s, { t: 'readyRoll', heroId: 'h2', trait: 'clever', purpose: { kind: 'calm', foeUid: 'ws-rat3' } }, 'kid2');
+    s = must(s, { t: 'readyRoll', heroId: 'h2', trait: 'clever', purpose: { kind: 'attack', foeUid: 'ws-rat3' } }, 'kid2');
     s = must(s, { t: 'throw', rollId: s.roll!.id, dice: [6, 6] }, 'kid2');
     expect(s.roll!.purpose.kind).toBe('free');
     s = must(s, { t: 'resolve', rollId: s.roll!.id }, 'kid2');
-    expect(foe(s, 'ws-rat3').calmed).toBe(false);
+    expect(foe(s, 'ws-rat3').down).toBe(false);
   });
   test('throw without dice values rolls seeded dice; bad dice are rejected', () => {
     let s = atScene(0);
@@ -377,57 +388,58 @@ group('rolls', () => {
 });
 
 // ---------------------------------------------------------------- foes
-group('calm, weak trait, boss', () => {
-  test('success −1 Grump; 9+ with the weak trait −2', () => {
-    let s = atScene(2);                                    // coal imps: Grump 2, weak Brave
-    expect(foe(s, 'rr-imp1').grump).toBe(2);
-    s = roll(s, 'h2', 'kind', { kind: 'calm', foeUid: 'rr-imp1' }, [6, 6], 'kid2');
-    expect(foe(s, 'rr-imp1').grump).toBe(1);
-    s = roll(s, 'h1', 'brave', { kind: 'calm', foeUid: 'rr-imp2' }, [6, 6], 'kid1');
-    expect(foe(s, 'rr-imp2').calmed).toBe(true);
-    // a twist still counts as a success (−1)
-    s = roll(s, 'h2', 'kind', { kind: 'calm', foeUid: 'rr-imp1' }, [2, 2], 'kid2'); // 4 + 3 = 7
-    expect(s.roll!.outcome).toBe('twist');
-    expect(foe(s, 'rr-imp1').calmed).toBe(true);
+group('attacks, healing, boss', () => {
+  test('a hit takes 1 Heart, a strong hit 2; a miss and the foe hits back', () => {
+    let s = atScene(2);                                    // coal imps: 2 Hearts
+    expect(foe(s, 'rr-imp1').hearts).toBe(2);
+    s = roll(s, 'h2', 'brave', { kind: 'attack', foeUid: 'rr-imp1' }, [3, 3], 'kid2'); // 6 + 1 = 7
+    expect(s.roll!.outcome).toBe('success');
+    expect(foe(s, 'rr-imp1').hearts).toBe(1);
+    s = roll(s, 'h1', 'brave', { kind: 'attack', foeUid: 'rr-imp2' }, [6, 6], 'kid1'); // strong
+    expect(foe(s, 'rr-imp2').down).toBe(true);
+    const hp = hero(s, 'h2').hearts;
+    s = roll(s, 'h2', 'brave', { kind: 'attack', foeUid: 'rr-imp1' }, [1, 1], 'kid2'); // 3: miss
+    expect(foe(s, 'rr-imp1').hearts).toBe(1);
+    expect(hero(s, 'h2').hearts).toBe(hp - 1);
+    expect(nope(s, { t: 'readyRoll', heroId: 'h1', trait: 'brave', purpose: { kind: 'attack', foeUid: 'rr-imp2' } }, 'kid1')).toMatch(/knocked out/);
   });
-  test('Grump scales with the table size', () => {
-    expect(grumpFactor(2)).toBe(1);
-    expect(grumpFactor(4)).toBe(1.5);
-    expect(grumpFactor(7)).toBe(2);
+  test('Heal is a Kind roll on a hurt friend (or yourself)', () => {
+    let s = atScene(0);
+    s = must(s, G({ k: 'hearts', heroId: 'h1', delta: -2 }));
+    const hp = hero(s, 'h1').hearts;
+    const o = options(s, 'kid2', 'h2', { kind: 'hero', id: 'h1', at: hero(s, 'h1').pos }, PK);
+    expect(o.find((x) => x.primary)?.id).toBe('heal');
+    s = roll(s, 'h2', 'brave', { kind: 'heal', heroId: 'h1' }, [2, 2], 'kid2');      // 4 + kind 3 = 7
+    expect(s.roll!.trait).toBe('kind');
+    expect(hero(s, 'h1').hearts).toBe(hp + 1);
+    s = roll(s, 'h1', 'kind', { kind: 'heal', heroId: 'h1' }, [6, 6], 'kid1');      // strong: +2 (capped)
+    expect(hero(s, 'h1').hearts).toBe(Math.min(hero(s, 'h1').maxHearts, hp + 3));
+  });
+  test('foe Hearts scale with the table size', () => {
+    expect(toughFactor(2)).toBe(1);
+    expect(toughFactor(4)).toBe(1.5);
+    expect(toughFactor(7)).toBe(2);
     const s = atScene(2, ['toy-soldier', 'carol-singer', 'snow-sprite']);
-    expect(foe(s, 'rr-imp1').grump).toBe(3);
+    expect(foe(s, 'rr-imp1').hearts).toBe(3);
   });
-  test('calmed foes drop what they carry; the hero picks it up when close', () => {
+  test('knocking out the boss drops the Star; the hero picks it up and the scene is won', () => {
     let s = atScene(3);
-    s = must(s, G({ k: 'grump', uid: 'ic-boss', delta: -7 }));
+    s = must(s, G({ k: 'foeHearts', uid: 'ic-boss', delta: -7 }));
     expect(foe(s, 'ic-boss').phase).toBe(2);
-    s = roll(s, 'h1', 'brave', { kind: 'calm', foeUid: 'ic-boss' }, [6, 6], 'kid1');
-    expect(foe(s, 'ic-boss').calmed).toBe(true);
-    expect(s.scene.flags.invited).toBeUndefined();          // not Kind
+    s = roll(s, 'h1', 'brave', { kind: 'attack', foeUid: 'ic-boss' }, [6, 6], 'kid1');
+    expect(foe(s, 'ic-boss').down).toBe(true);
     expect(s.scene.flags.star).toBe(true);                  // Star dropped and picked up
     expect(tok(s, 'ic-star')).toBeUndefined();
     expect(s.phase).toBe('sceneEnd');
   });
-  test('boss phases at Grump thresholds push a phase bubble', () => {
+  test('boss phases at Heart thresholds push a phase bubble', () => {
     let s = atScene(3);
-    expect(foe(s, 'ic-boss').grump).toBe(8);
-    s = must(s, G({ k: 'grump', uid: 'ic-boss', delta: -3 }));
+    expect(foe(s, 'ic-boss').hearts).toBe(8);
+    s = must(s, G({ k: 'foeHearts', uid: 'ic-boss', delta: -3 }));
     expect(foe(s, 'ic-boss').phase).toBe(1);
     expect(s.bubbles.some((b) => b.kind === 'event' && b.who === 'ic-boss' && b.text === 'Grumpling Call')).toBe(true);
     const o = options(s, 'mum', null, { kind: 'foe', id: 'ic-boss', at: foe(s, 'ic-boss').pos }, PK);
     expect(o.find((x) => x.id === 'g:hint')!.hint).toMatch(/^Grumpling Call: .*Grumpling/);
-  });
-  test('a Kind success at 0 Grump invites the boss; a later Kind word works too', () => {
-    let s = atScene(3);
-    s = must(s, G({ k: 'grump', uid: 'ic-boss', delta: -6 }));
-    s = roll(s, 'h2', 'kind', { kind: 'calm', foeUid: 'ic-boss' }, [6, 6], 'kid2');
-    expect(s.scene.flags.invited).toBe(true);
-    expect(s.scene.flags.star).toBe(true);
-    let t = atScene(3);
-    t = must(t, G({ k: 'calm', uid: 'ic-boss' }));
-    expect(t.scene.flags.invited).toBeUndefined();
-    const opts = options(t, 'kid2', 'h2', { kind: 'foe', id: 'ic-boss', at: foe(t, 'ic-boss').pos }, PK);
-    expect(opts.find((o) => o.primary)?.id).toBe('invite');
   });
 });
 
@@ -486,7 +498,7 @@ group('items and knacks', () => {
     expect(hero(s, 'h2').hearts).toBe(2);
     expect(dist(hero(s).pos, hero(s, 'h2').pos)).toBeLessThanOrEqual(1.55);
     expect(hero(s).pocket).toEqual(['rolling-pin', 'cookie']);
-    expect(nope(s, { t: 'useItem', heroId: 'h1', index: 1, target: { heroId: 'h1' } }, 'kid1')).toMatch(/full Cheer/);
+    expect(nope(s, { t: 'useItem', heroId: 'h1', index: 1, target: { heroId: 'h1' } }, 'kid1')).toMatch(/full Hearts/);
   });
   test('Songbook: +2 on the next Kind roll only', () => {
     let s = atScene(0);
@@ -513,17 +525,20 @@ group('items and knacks', () => {
     expect(s.scene.solid).toContain('crack-near-w');
     expect(groundAt(s, { x: -1.0, z: 1.5 }, PK)).toBe('solid:crack');
   });
-  test('Stand Guard: friends close by keep their Cheer on trouble', () => {
-    let s = atScene(0);
+  test('Stand Guard: friends close by keep their Hearts on a miss', () => {
+    let s = atScene(1);                                    // lake: a missed leap costs a Heart
+    s = must(s, { t: 'readyRoll', heroId: 'h2', trait: 'brave', purpose: { kind: 'challenge' } }, 'kid2'); // walks to the edge
+    const at = hero(s, 'h2').pos;
+    s = must(s, G({ k: 'place', what: 'hero', id: 'h1', to: { x: at.x + 0.8, z: at.z + 0.6 } }));
     s = must(s, { t: 'useKnack', heroId: 'h1' }, 'kid1', T0 + 1000);
     expect(hero(s).status.guardUntil).toBe(T0 + 61_000);
-    s = must(s, G({ k: 'place', what: 'hero', id: 'h2', to: { x: hero(s).pos.x + 1, z: hero(s).pos.z } }));
     const hp = hero(s, 'h2').hearts;
-    s = roll(s, 'h2', 'brave', { kind: 'free' }, [1, 1], 'kid2');
+    s = must(s, { t: 'throw', rollId: s.roll!.id, dice: [1, 1] }, 'kid2', T0 + 2000);
     expect(s.roll!.outcome).toBe('trouble');
+    s = must(s, { t: 'resolve', rollId: s.roll!.id }, 'kid2', T0 + 2000);
     expect(hero(s, 'h2').hearts).toBe(hp);
     clockNow = T0 + 70_000;
-    s = roll(s, 'h2', 'brave', { kind: 'free' }, [1, 1], 'kid2');
+    s = roll(s, 'h2', 'brave', { kind: 'challenge' }, [1, 1], 'kid2');
     expect(hero(s, 'h2').hearts).toBe(hp - 1);
   });
   test('Fly lands within 8 m; Sing heals friends within 3 m', () => {
@@ -533,7 +548,7 @@ group('items and knacks', () => {
     expect(dist(hero(s).pos, from)).toBeLessThanOrEqual(8.01);
     expect(hero(s).pos.z).toBeLessThan(from.z - 7);
     s = must(s, G({ k: 'hearts', heroId: 'h1', delta: -1 }));
-    expect(nope(s, { t: 'useKnack', heroId: 'h2' }, 'kid2')).toMatch(/full Cheer/); // the flyer is too far away
+    expect(nope(s, { t: 'useKnack', heroId: 'h2' }, 'kid2')).toMatch(/full Hearts/); // the flyer is too far away
     s = must(s, G({ k: 'place', what: 'hero', id: 'h2', to: { x: hero(s).pos.x + 2, z: hero(s).pos.z } }));
     s = must(s, { t: 'useKnack', heroId: 'h2' }, 'kid2');
     expect(hero(s).hearts).toBe(hero(s).maxHearts);
@@ -568,7 +583,7 @@ group('items and knacks', () => {
     s = must(s, { t: 'throw', rollId: s.roll!.id, dice: [3, 3] }, 'kid1');
     expect(hero(s).pocket).not.toContain('snowball');
     s = must(s, { t: 'resolve', rollId: s.roll!.id }, 'kid1');
-    expect(foe(s, 'rr-grumpling').calmed).toBe(true);
+    expect(foe(s, 'rr-grumpling').down).toBe(true);
   });
   test('pocket max 3 asks what goes back; Mystery Present keeps one of two', () => {
     let s = atScene(0, ['polar-bear-baker', 'carol-singer']);
@@ -596,7 +611,7 @@ group('items and knacks', () => {
     expect(dist(hero(s).pos, hero(s, 'h2').pos)).toBeLessThanOrEqual(1.55);
     s = must(s, G({ k: 'hearts', heroId: 'h2', delta: -5 }));
     expect(hero(s, 'h2').tuckered).toBe(true);
-    expect(nope(s, { t: 'walk', heroId: 'h2', to: { x: 0, z: 0 } }, 'kid2')).toMatch(/Tuckered/);
+    expect(nope(s, { t: 'walk', heroId: 'h2', to: { x: 0, z: 0 } }, 'kid2')).toMatch(/Knocked Out/);
     s = must(s, { t: 'revive', heroId: 'h1', targetId: 'h2' }, 'kid1');
     expect(hero(s, 'h2')).toMatchObject({ tuckered: false, hearts: 1 });
   });
@@ -684,15 +699,15 @@ group('Guide tools and bubbles', () => {
 // ---------------------------------------------------------------- options
 group('options()', () => {
   const prim = (o: Option[]) => o.filter((x) => x.primary);
-  test('player taps: ground → walk, foe → calm with weak trait, token → interact, prop → search', () => {
+  test('player taps: ground → walk, foe → attack (Brave), token → interact, prop → search', () => {
     const s = atScene(0);
     const ground = options(s, 'kid1', 'h1', { kind: 'ground', at: { x: 0, z: 2 } }, PK);
     expect(prim(ground).length).toBe(1);
     expect(prim(ground)[0].action).toEqual({ t: 'walk', heroId: 'h1', to: { x: 0, z: 2 } });
     expect(ground.some((o) => o.guideOnly)).toBe(false);
     const f = options(s, 'kid1', 'h1', { kind: 'foe', id: 'ws-rat1', at: foe(s, 'ws-rat1').pos }, PK);
-    expect(prim(f)[0].action).toEqual({ t: 'readyRoll', heroId: 'h1', trait: 'clever', purpose: { kind: 'calm', foeUid: 'ws-rat1' } });
-    expect(f.filter((o) => o.id.startsWith('calm:')).length).toBe(3);
+    expect(prim(f)[0].action).toEqual({ t: 'readyRoll', heroId: 'h1', trait: 'brave', purpose: { kind: 'attack', foeUid: 'ws-rat1' } });
+    expect(f.filter((o) => o.id.startsWith('calm')).length).toBe(0);
     const t = options(s, 'kid1', 'h1', { kind: 'token', id: 'ws-rose', at: tok(s, 'ws-rose')!.pos! }, PK);
     expect(prim(t)[0]).toMatchObject({ icon: 'grab', action: { t: 'interact', heroId: 'h1', tokenUid: 'ws-rose' } });
     const npc = options(s, 'kid1', 'h1', { kind: 'token', id: 'ws-dapple', at: tok(s, 'ws-dapple')!.pos! }, PK);
@@ -738,7 +753,7 @@ group('options()', () => {
     const s = atScene(0);
     const f = options(s, 'mum', null, { kind: 'foe', id: 'ws-rat1', at: foe(s, 'ws-rat1').pos }, PK);
     const gid = f.filter((o) => o.guideOnly).map((o) => o.id);
-    expect(gid).toEqual(['g:grump-', 'g:grump+', 'g:calm', 'g:hint', 'g:say', 'g:remove', 'g:camera']);
+    expect(gid).toEqual(['g:hit', 'g:heal', 'g:ko', 'g:hint', 'g:say', 'g:remove', 'g:camera']);
     expect(f.find((o) => o.id === 'g:hint')!.hint).toBe(PK.foes.find((x) => x.id === 'wind-up-rat')!.hint);
     const hid = options(s, 'mum', null, { kind: 'token', id: 'ws-pile-present', at: { x: 2.6, z: 2.85 } }, PK);
     expect(prim(hid)[0]).toMatchObject({ id: 'g:reveal', guideOnly: true, action: { t: 'guide', op: { k: 'reveal', tokenUid: 'ws-pile-present' } } });
@@ -752,7 +767,7 @@ group('options()', () => {
     // the Guide acting for a hero gets the hero's tap as primary plus Guide powers
     const gh = options(s, 'mum', 'h1', { kind: 'foe', id: 'ws-rat1', at: foe(s, 'ws-rat1').pos }, PK);
     expect(prim(gh).length).toBe(1);
-    expect(prim(gh)[0].id).toBe('calm');
+    expect(prim(gh)[0].id).toBe('attack');
     expect(gh.some((o) => o.guideOnly)).toBe(true);
     // every option list has at most one primary
     const hits: Hit[] = [{ kind: 'ground', at: { x: 0, z: 0 } }, { kind: 'hero', id: 'h2', at: hero(s, 'h2').pos }, { kind: 'token', id: 'ws-rose', at: { x: 0, z: 0 } }];
@@ -761,7 +776,7 @@ group('options()', () => {
   test('describe(): Guide sees hints and hidden things', () => {
     const s = atScene(0);
     const fhit: Hit = { kind: 'foe', id: 'ws-rat1', at: foe(s, 'ws-rat1').pos };
-    expect(describe(s, fhit, PK, false)).toMatch(/Wind-up Rat .* Grump 1 of 1 .* Soft spot: Clever/);
+    expect(describe(s, fhit, PK, false)).toMatch(/Wind-up Rat .* 1 of 1 Hearts — tap to attack \(Brave\)/);
     expect(describe(s, fhit, PK, false)).not.toMatch(/Hint/);
     expect(describe(s, fhit, PK, true)).toMatch(/Hint: Zips/);
     const hid: Hit = { kind: 'token', id: 'ws-pile-present', at: { x: 2.6, z: 2.85 } };
@@ -769,7 +784,7 @@ group('options()', () => {
     expect(describe(s, hid, PK, true)).toMatch(/hidden/);
     expect(describe(s, { kind: 'prop', index: 9, at: { x: 2.6, z: 3.6 } }, PK, true)).toMatch(/Hides a present buried/);
     expect(describe(s, { kind: 'meter', meter: 'clock', at: { x: 0, z: 0 } }, PK, false)).toMatch(/^Midnight: 12:00 · about 40 minutes left/);
-    expect(describe(s, { kind: 'hero', id: 'h1', at: hero(s).pos }, PK, false)).toMatch(/Hero1 the Toy Soldier · 3 of 3 Cheer/);
+    expect(describe(s, { kind: 'hero', id: 'h1', at: hero(s).pos }, PK, false)).toMatch(/Hero1 the Toy Soldier · 3 of 3 Hearts/);
     expect(describe(atScene(1), { kind: 'ground', at: { x: 0, z: 3 } }, PK, false)).toMatch(/Slippery ice/);
   });
 });
@@ -777,12 +792,12 @@ group('options()', () => {
 // ---------------------------------------------------------------- endings
 group('endings', () => {
   test('condition language', () => {
-    expect(endingMatches('invited && star && goal>=5', { goal: 5, star: true, invited: true })).toBe(true);
-    expect(endingMatches('invited && star && goal>=5', { goal: 4, star: true, invited: true })).toBe(false);
-    expect(endingMatches('!star && goal>=3', { goal: 3, star: false, invited: false })).toBe(true);
-    expect(endingMatches('always', { goal: 0, star: false, invited: false })).toBe(true);
-    expect(endingMatches('goal==2', { goal: 2, star: false, invited: false })).toBe(true);
-    expect(endingMatches('wat', { goal: 2, star: false, invited: false })).toBe(false);
+    expect(endingMatches('star && goal>=5', { goal: 5, star: true })).toBe(true);
+    expect(endingMatches('star && goal>=5', { goal: 4, star: true })).toBe(false);
+    expect(endingMatches('!star && goal>=3', { goal: 3, star: false })).toBe(true);
+    expect(endingMatches('always', { goal: 0, star: false })).toBe(true);
+    expect(endingMatches('goal==2', { goal: 2, star: false })).toBe(true);
+    expect(endingMatches('wat', { goal: 2, star: false })).toBe(false);
   });
   test('skipping every scene still gives a happy ending', () => {
     let s = atScene(3);
@@ -817,11 +832,11 @@ group('pack', () => {
     expect(PK.models['char:blizzard-wisp'].scale).toBe(0.58);
     const counts = Object.fromEntries(PK.items.map((i) => [i.id, i.count]));
     expect(counts).toMatchObject({ 'hot-cocoa': 4, cookie: 4, snowball: 5, 'candy-cane-hook': 2, 'jingle-bell': 2, 'mystery-present': 3, sled: 1 });
-    expect(PK.labels).toMatchObject({ hearts: 'Cheer', sparks: 'Twinkles', goal: 'Presents', clock: 'Midnight' });
-    expect(PK.twists.length).toBeGreaterThanOrEqual(15);
+    expect(PK.labels).toMatchObject({ hearts: 'Hearts', sparks: 'Twinkles', goal: 'Presents', clock: 'Midnight' });
+    expect(words).not.toMatch(/grump \d|soft spot|invite|cheer up/);
     expect(PK.events.length).toBe(7);
     expect(PK.tableMoments.length).toBe(3);
-    expect(ADV.endings.length).toBe(7);
+    expect(ADV.endings.length).toBe(5);
     // effects use v2 units
     const all = [...PK.items.flatMap((i) => i.effects), ...PK.roles.flatMap((r) => r.knack.effects), ...PK.events.flatMap((e) => e.effects)];
     for (const e of all) expect(JSON.stringify(e)).not.toMatch(/rounds/);
@@ -910,7 +925,7 @@ group('happy path', () => {
     const doRoll = (heroId: string, by: string, trait: 'brave' | 'clever' | 'kind', purpose: Extract<Action, { t: 'readyRoll' }>['purpose']) => {
       step({ t: 'readyRoll', heroId, trait, purpose }, by);
       step({ t: 'throw', rollId: s.roll!.id, dice: [6, 5] }, by);
-      expect(s.roll!.outcome).toBe('success');
+      expect(s.roll!.outcome).not.toBe('trouble');
       step({ t: 'resolve', rollId: s.roll!.id }, by);
     };
     step({ t: 'start' }, 'mum');
@@ -969,20 +984,19 @@ group('happy path', () => {
     expect(s.scene.id).toBe('ice-cave');
     step({ t: 'beginScene' }, 'mum');
 
-    // 4. Ice Cave: find his present, then Kind words all the way
-    step({ t: 'useKnack', heroId: 'h1' }, 'ada');                 // Shine: reveals + −1 Grump nearby (nothing near yet)
+    // 4. Ice Cave: find the hidden present, then knock out the boss
+    step({ t: 'useKnack', heroId: 'h1' }, 'ada');                 // Shine: reveals + −1 Heart to foes nearby (nothing near yet)
     step({ t: 'interact', heroId: 'h1', propIndex: 0 }, 'ada');
     step({ t: 'throw', rollId: s.roll!.id, dice: [6, 6] }, 'ada');
     step({ t: 'resolve', rollId: s.roll!.id }, 'ada');
     step({ t: 'interact', heroId: 'h1', tokenUid: 'ic-own' }, 'ada');
     expect(s.meters.goal).toBe(6);
-    while (!foe(s, 'ic-boss').calmed) doRoll('h2', 'bo', 'kind', { kind: 'calm', foeUid: 'ic-boss' });
-    expect(s.scene.flags.invited).toBe(true);
+    while (!foe(s, 'ic-boss').down) doRoll('h2', 'bo', 'brave', { kind: 'attack', foeUid: 'ic-boss' });
     expect(s.scene.flags.star).toBe(true);
     expect(s.phase).toBe('sceneEnd');
     step({ t: 'next' }, 'mum');
     expect(s.phase).toBe('ending');
-    expect(s.ending).toMatchObject({ id: 'best-night', goal: 6, star: true, invited: true });
+    expect(s.ending).toMatchObject({ id: 'full-sleigh', goal: 6, star: true });
     expect(midnight(s, clockNow)).toBeLessThan(12);
   });
 });
