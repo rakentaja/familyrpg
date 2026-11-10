@@ -1,8 +1,9 @@
 name: Deploy game to GitHub Pages
 
+# Builds main at / and (if it exists) the v2 branch at /v2/ as a preview. Same file on both branches.
 on:
   push:
-    branches: [main]
+    branches: [main, v2]
   workflow_dispatch:
 
 permissions:
@@ -19,15 +20,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.4.3
-      - run: bun install --frozen-lockfile
+      - run: bun install --frozen-lockfile && bun test src && bun build.ts
         working-directory: game
-      - run: bun test src
-        working-directory: game
-      - run: bun build.ts
-        working-directory: game
+      - name: Build v2 preview
+        run: |
+          if git ls-remote --exit-code --heads origin v2 >/dev/null; then
+            git fetch --depth 1 origin v2
+            git worktree add ../v2 FETCH_HEAD
+            cd ../v2/game && bun install --frozen-lockfile && bun test src && bun build.ts
+            mkdir -p "$GITHUB_WORKSPACE/game/dist/v2" && cp -r dist/. "$GITHUB_WORKSPACE/game/dist/v2/"
+          fi
       - uses: actions/upload-pages-artifact@v3
         with:
           path: game/dist
