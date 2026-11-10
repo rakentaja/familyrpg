@@ -2,10 +2,10 @@
 const VERSION = '__VERSION__';
 const SHELL = __SHELL__;
 const ASSETS = __ASSETS__;
-const SHELL_CACHE = 'sb-shell-' + VERSION;
-const ASSET_CACHE = 'sb-assets';          // content-addressed by path; survives updates, pruned on activate
-const PACK_CACHE = 'sb-packs-' + VERSION;
-const FONT_CACHE = 'sb-fonts';
+const SHELL_CACHE = 'sb2-shell-' + VERSION;
+const ASSET_CACHE = 'sb2-assets';          // content-addressed by path; survives updates, pruned on activate
+const PACK_CACHE = 'sb2-packs-' + VERSION;
+const FONT_CACHE = 'sb2-fonts';
 const KEEP = [SHELL_CACHE, ASSET_CACHE, PACK_CACHE, FONT_CACHE];
 const BASE = new URL('./', self.location).href;
 
@@ -20,7 +20,7 @@ self.addEventListener('install', (e) => {
 
 self.addEventListener('activate', (e) => {
   e.waitUntil((async () => {
-    for (const k of await caches.keys()) if (k.startsWith('sb-') && !KEEP.includes(k)) await caches.delete(k);
+    for (const k of await caches.keys()) if ((k.startsWith('sb2-') && !KEEP.includes(k)) || (k.startsWith('sb-') && !self.registration.scope.endsWith('/v2/'))) await caches.delete(k); // v1 caches go once v2 is live at the root
     // drop assets that are no longer part of the game
     const wanted = new Set(ASSETS.map((u) => new URL(u, BASE).href));
     const ac = await caches.open(ASSET_CACHE);

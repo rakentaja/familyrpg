@@ -1,6 +1,6 @@
 // In-memory NetApi for pass-and-play on one device: no sockets, everything loops back.
 import type { NetApi, Peer, RoomInfo } from '../contracts';
-import type { Envelope, GameState } from '../engine/types';
+import type { Envelope, GameState } from '../rules/types';
 
 export function createLocalNet(): NetApi {
   const myId = 'local';

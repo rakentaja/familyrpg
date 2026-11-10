@@ -35,12 +35,14 @@ export interface PackRole {
   id: string; name: string; blurb: string; model: string; portrait?: string;
   knack: { id: string; name: string; text: string; target?: TargetKind; effects: Effect[] };
   start: string; suggested: Record<Trait, number>;
+  flies?: boolean;                                                   // walks over gaps (paths ignore 'gap' areas)
 }
 export interface PackItem { id: string; name: string; text: string; count: number; target?: TargetKind; effects: Effect[]; icon?: string; model?: string }
 export interface PackFoe {
   id: string; name: string; blurb: string; grump: number; weak: Trait; model: string; scale?: number;
   hint: string;                                                      // what it would do — shown to the Guide on hold
   speed?: number;                                                    // walk speed m/s when the Guide moves it
+  flies?: boolean;                                                   // paths ignore 'gap' areas
   boss?: { phases: { name: string; text: string; atGrump: number; hint: string }[]; kindFinish: boolean };
 }
 export type AreaKind = 'floor' | 'snow' | 'ice' | 'crack' | 'water' | 'gap' | 'roof' | 'wall';
@@ -73,7 +75,7 @@ export interface Pack {
   meta: { id: string; name: string; version: string; engine: 'hearthside@2' };
   labels: { hearts: string; sparks: string; goal: string; clock: string; traits: Record<Trait, string>; heroes: string; foes: string; tuckered: string; calmed: string; guide: string };
   theme: { title: string; subtitle: string; premise: string; palette: Record<string, string> };
-  models: Record<string, { url: string; scale?: number; rot?: number; anim?: Record<string, string> }>;
+  models: Record<string, { url: string; scale?: number; rot?: number; anim?: Record<string, string>; block?: number /* default blocking radius m for props */ }>;
   roles: PackRole[]; items: PackItem[]; foes: PackFoe[]; events: PackEvent[]; twists: string[];
   adventures: { id: string; name: string; blurb: string; goalMax: number; minutes: number; scenes: PackScene[]; endings: { id: string; when: string; text: string }[] }[];
   tableMoments: PackTableMoment[];
