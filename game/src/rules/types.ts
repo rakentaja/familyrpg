@@ -50,7 +50,7 @@ export interface Area {                                              // ground r
   id: string; kind: AreaKind;
   shape: 'rect' | 'circle'; x: number; z: number; w?: number; d?: number; r?: number; rot?: number; // rect = w×d centred at x,z
 }
-export interface Placement { uid?: string; hidden?: boolean /* only the Guide sees it */; model: string; x: number; z: number; rot?: number /* degrees */; scale?: number; block?: number /* blocking radius m, 0 = walk-through; default from footprint */; story?: string /* tap text */; search?: string /* token uid revealed by searching here */ }
+export interface Placement { uid?: string; hidden?: boolean /* only the Guide sees it */; model: string; x: number; z: number; y?: number /* lifted off the floor, m */; rot?: number /* degrees */; scale?: number; block?: number /* blocking radius m, 0 = walk-through; default from footprint */; story?: string /* tap text */; search?: string /* token uid revealed by searching here */ }
 export type TokenKind = 'goal' | 'item' | 'star' | 'clue' | 'npc' | 'exit' | 'start';   // start = hero start spot (editor only)
 export interface SceneToken { uid: string; kind: TokenKind; x: number; z: number; item?: string; hidden?: boolean; label?: string; text?: string; model?: string }
 export interface SceneFoe { uid: string; foe: string; x: number; z: number; rot?: number; hidden?: boolean; carrying?: string /* token uid */ }
@@ -202,7 +202,7 @@ export type GuideOp =
   | { k: 'endScene'; result: 'won' | 'lost' }
   // layout (the host only): new pieces go into the scene's layout too, hidden unless hidden: false
   | { k: 'add'; what: 'prop' | 'foe' | 'token'; at: P; model?: string; foe?: string; kind?: TokenKind; item?: string; label?: string; text?: string; rot?: number; hidden?: boolean }
-  | { k: 'edit'; what: 'prop' | 'foe' | 'token'; id: string; rot?: number; scale?: number; hidden?: boolean; label?: string; text?: string }
+  | { k: 'edit'; what: 'prop' | 'foe' | 'token'; id: string; rot?: number; scale?: number; y?: number; hidden?: boolean; label?: string; text?: string }
   | { k: 'hideAll'; hidden: boolean }                                                     // show / hide every piece in the scene
   | { k: 'scene'; op: 'goto' | 'add' | 'copy' | 'delete' | 'up' | 'down' | 'set'; index?: number;
       patch?: { name?: string; intro?: string; w?: number; d?: number; ground?: AreaKind; advName?: string; advBlurb?: string } };

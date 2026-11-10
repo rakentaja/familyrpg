@@ -501,6 +501,16 @@ body[data-screen=play] .toasts{bottom:calc(var(--sab) + 42dvh)}
 .pc-texts textarea,.pc-texts input,.ed-field input,.ed-field textarea,.ed-field select,.adv-pick select{font:inherit;font-size:.9em;border:2px solid var(--ink);border-radius:8px;padding:4px 8px;background:#fffdf8;width:100%}
 .pc-texts .btn{align-self:flex-end}
 .btn.danger{color:var(--danger)}
+.dial{display:flex;align-items:center;gap:4px;min-height:40px;padding:2px 8px 2px 4px;border:2px dashed var(--ink);border-radius:20px;background:var(--paper2);
+  font:inherit;color:var(--ink);cursor:ew-resize;touch-action:none;user-select:none;-webkit-user-select:none}
+.dial .ic{width:22px;height:22px}
+.dial-txt{display:flex;flex-direction:column;line-height:1;text-align:left}
+.dial-txt small{font-size:.62em;color:var(--mute)}
+.dial-txt b{font-size:.82em;min-width:2.6em}
+.dial.active{border-style:solid;background:var(--butter);box-shadow:0 0 0 3px var(--lavInk);transform:scale(1.06)}
+.pc-hint{margin:0;font-size:.74em;color:var(--mute)}
+.pc-saved{align-self:flex-end;font-size:.72em;color:var(--sageInk);min-height:1em}
+.btn.icon.on{background:var(--butter)}
 .btn.icon.confirm{width:auto;padding:0 10px;background:var(--rose);color:var(--ink);font-size:.85em;gap:4px}
 .ed-bar{position:absolute;top:calc(var(--sat) + 6px);left:calc(var(--sal) + 6px);right:calc(var(--sar) + 6px);z-index:7;display:flex;align-items:center;gap:6px}
 .ed-bar .btn{min-height:40px;background-color:rgba(247,243,236,.95)}

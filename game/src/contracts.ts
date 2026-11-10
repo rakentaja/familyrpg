@@ -53,6 +53,8 @@ export interface SceneView {
   setDiceY(px: number | null): void;
   /** Picture of a model for the library (data URL), or null. */
   thumbnail(model: string): Promise<string | null>;
+  /** Live preview of a turn / size / height change (null = back to the state). */
+  previewPiece(what: 'prop' | 'foe', id: string, v: { rot?: number; scale?: number; y?: number } | null): void;
   setQuality(q: 'low' | 'high'): void;
   resize(): void; dispose(): void;
 }

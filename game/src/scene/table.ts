@@ -99,7 +99,8 @@ export class Table {
       ref.index = index;
       holder.userData.propIndex = index;
       holder.userData.propUid = uid;
-      if (holder !== skip) holder.position.set(pl.x, 0, pl.z);
+      holder.userData.baseY = pl.y ?? 0;
+      if (holder !== skip) holder.position.set(pl.x, pl.y ?? 0, pl.z);
       holder.rotation.y = deg(pl.rot);
       holder.scale.setScalar(pl.scale ?? 1);
       if (ref.hidden !== hidden) { setGhost(holder, hidden); ref.hidden = hidden; }

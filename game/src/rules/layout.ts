@@ -11,6 +11,7 @@ const TOKEN_KINDS: TokenKind[] = ['goal', 'item', 'star', 'clue', 'npc', 'exit']
 const SCENE_TYPES: PackScene['type'][] = ['explore', 'challenge', 'showdown', 'boss'];
 export const MAX_SCENES = 12;
 export const SIZE_MIN = 4, SIZE_MAX = 20;
+export const MAX_Y = 3;   // highest a prop can be lifted (m)
 const MAX_PROPS = 160, MAX_FOES = 30, MAX_TOKENS = 60;
 
 // ---------------------------------------------------------------- sanitising (shared adventures are untrusted)
@@ -41,6 +42,7 @@ function cleanScene(x: unknown, pack: Pack, i: number): PackScene | null {
     const pl: PackScene['props'][number] = { uid: uid(p.uid, 'p'), model: p.model, ...at };
     if (typeof p.rot === 'number') pl.rot = Math.round(num(p.rot, -360, 360, 0));
     if (typeof p.scale === 'number') pl.scale = r2(num(p.scale, 0.25, 4, 1));
+    if (typeof p.y === 'number' && p.y > 0) pl.y = r2(num(p.y, 0, MAX_Y, 0));
     if (typeof p.block === 'number') pl.block = r2(num(p.block, 0, 5, 0));
     if (p.hidden) pl.hidden = true;
     const story = str(p.story, 300); if (story) pl.story = story;
@@ -303,6 +305,7 @@ function editPiece(c: Ctx, op: Extract<GuideOp, { k: 'edit' }>) {
     if (!p) fail('Nothing there.');
     if (op.rot !== undefined) { const r = deg(op.rot); if (r) p!.rot = r; else delete p!.rot; }
     if (op.scale !== undefined) { const k = r2(num(op.scale, 0.25, 4, 1)); if (k !== 1) p!.scale = k; else delete p!.scale; }
+    if (op.y !== undefined) { const y = r2(num(op.y, 0, MAX_Y, 0)); if (y > 0) p!.y = y; else delete p!.y; }
     if (op.hidden !== undefined) { if (op.hidden) p!.hidden = true; else delete p!.hidden; }
     if (op.text !== undefined) { const t = str(op.text, 300); if (t) p!.story = t; else delete p!.story; }
     return;

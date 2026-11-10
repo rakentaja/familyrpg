@@ -2,7 +2,7 @@
 // a small card to show / hide, turn, resize, rename or remove the piece you tapped, and — in the scene editor —
 // a bar to switch, add and set up scenes. New pieces are hidden until the Guide shows them (unless switched off).
 import type { Adventure, AreaKind, GameState, GuideOp, Hit, P, Pack, TokenKind } from '../rules/types';
-import { GROUNDS, SIZE_MAX, SIZE_MIN, MAX_SCENES } from '../rules/layout';
+import { GROUNDS, SIZE_MAX, SIZE_MIN, MAX_SCENES, MAX_Y } from '../rules/layout';
 import type { Ctx } from './ctx';
 import { h, btn, replaceKids } from './dom';
 import { icon } from './icons';
@@ -109,12 +109,12 @@ export function buildTools(d: BuildDeps) {
   }
 
   // ---------------------------------------------------------------- the tapped piece
-  function pieceOf(p: Piece | null): { name: string; hidden: boolean; rot?: number; scale?: number; text?: string; label?: string; kind?: TokenKind } | null {
+  function pieceOf(p: Piece | null): { name: string; hidden: boolean; rot?: number; scale?: number; y?: number; text?: string; label?: string; kind?: TokenKind } | null {
     if (!p) return null;
     const s = d.state(), sc = sceneDef(pack, s);
     if (p.what === 'prop') {
       const pl = sc?.props.find((x) => x.uid === p.id);
-      return pl ? { name: propName(pl.model), hidden: !!pl.hidden, rot: pl.rot ?? 0, scale: pl.scale ?? 1, text: pl.story ?? '' } : null;
+      return pl ? { name: propName(pl.model), hidden: !!pl.hidden, rot: pl.rot ?? 0, scale: pl.scale ?? 1, y: pl.y ?? 0, text: pl.story ?? '' } : null;
     }
     if (p.what === 'foe') {
       const f = s.foes.find((x) => x.uid === p.id);
@@ -124,26 +124,42 @@ export function buildTools(d: BuildDeps) {
     return t && t.pos ? { name: t.kind === 'start' ? (t.label ?? 'Hero start') : thingName(pack, s, t.uid), hidden: !!t.hidden, text: t.text ?? '', label: t.label ?? '', kind: t.kind } : null;
   }
   let panelKey = '';
+  let dialActive = false;
   function paintPanel(force = false) {
+    if (dialActive) return;                 // never rebuild under a finger
     const x = on ? pieceOf(sel) : null;
     panel.hidden = !x;
-    const key = x ? JSON.stringify([sel, x]) : '';
-    if (!x || (!force && key === panelKey)) { panelKey = key; return; }
+    const key = x ? JSON.stringify([sel, x, textOpen]) : '';
+    if (!x || (!force && key === panelKey)) { panelKey = key; if (!x) textBox = null; return; }
     panelKey = key;
     const p = sel!;
     const edit = (patch: Omit<Extract<GuideOp, { k: 'edit' }>, 'k' | 'what' | 'id'>) => dispatch({ k: 'edit', what: p.what, id: p.id, ...patch });
     const start = x.kind === 'start';
-    const turn = (dd: number) => edit({ rot: (x.rot ?? 0) + dd });
     const textual = (p.what === 'prop' || (p.what === 'token' && !start));
-    const txt = h('textarea', { class: 'pc-text', rows: '2', maxlength: '300', placeholder: p.what === 'prop' ? 'What heroes find when they look (optional)' : 'What it says when a hero reads it (optional)' }) as HTMLTextAreaElement;
-    txt.value = x.text ?? '';
-    const nameIn = h('input', { class: 'pc-name', maxlength: '40', placeholder: 'Name', value: x.label ?? '' }) as HTMLInputElement;
-    const saveText = () => {
-      const patch: { text?: string; label?: string } = {};
-      if (txt.value.trim() !== (x.text ?? '')) patch.text = txt.value;
-      if (p.what === 'token' && nameIn.value.trim() !== (x.label ?? '')) patch.label = nameIn.value;
-      if (Object.keys(patch).length) { edit(patch); toast('Saved', 'good'); }
-    };
+    const dials: HTMLElement[] = [];
+    if (p.what !== 'token') {
+      const what = p.what as 'prop' | 'foe';
+      dials.push(dial({
+        label: 'Turn', ic: 'rotr', value: (((x.rot ?? 0) % 360) + 360) % 360, wrap: 360, step: 15, perPx: -1.2,
+        fmt: (v) => `${Math.round(v)}°`,
+        preview: (v) => scene.previewPiece(what, p.id, v === null ? null : { rot: v }),
+        commit: (v) => edit({ rot: v }),
+      }));
+    }
+    if (p.what === 'prop') {
+      dials.push(dial({
+        label: 'Size', ic: 'grow', value: x.scale ?? 1, min: 0.25, max: 4, step: 0.05, perPx: 0.01,
+        fmt: (v) => `${v.toFixed(2).replace(/0$/, '')}×`,
+        preview: (v) => scene.previewPiece('prop', p.id, v === null ? null : { scale: v }),
+        commit: (v) => edit({ scale: v }),
+      }));
+      dials.push(dial({
+        label: 'Height', ic: 'up', value: x.y ?? 0, min: 0, max: MAX_Y, step: 0.05, perPx: 0.008,
+        fmt: (v) => v < 0.025 ? 'floor' : `${v.toFixed(2).replace(/0$/, '')} m`,
+        preview: (v) => scene.previewPiece('prop', p.id, v === null ? null : { y: v }),
+        commit: (v) => edit({ y: v }),
+      }));
+    }
     replaceKids(panel,
       h('div', { class: 'pc-head' },
         h('b', { class: 'grow' }, x.name),
@@ -151,13 +167,98 @@ export function buildTools(d: BuildDeps) {
         btn(icon('close'), () => { sel = null; paintPanel(); }, 'icon small round', { 'aria-label': 'Close' })),
       h('div', { class: 'pc-row' },
         start ? null : btn([icon(x.hidden ? 'eye' : 'hide'), x.hidden ? ' Show' : ' Hide'], () => { sfx.tap(); edit({ hidden: !x.hidden }); }, x.hidden ? 'primary small' : 'small'),
-        p.what !== 'token' ? btn(icon('rotl'), () => turn(-45), 'icon small', { 'aria-label': 'Turn left' }) : null,
-        p.what !== 'token' ? btn(icon('rotr'), () => turn(45), 'icon small', { 'aria-label': 'Turn right' }) : null,
-        p.what === 'prop' ? btn(icon('shrink'), () => edit({ scale: Math.max(0.25, +((x.scale ?? 1) - 0.25).toFixed(2)) }), 'icon small', { 'aria-label': 'Smaller' }) : null,
-        p.what === 'prop' ? btn(icon('grow'), () => edit({ scale: Math.min(4, +((x.scale ?? 1) + 0.25).toFixed(2)) }), 'icon small', { 'aria-label': 'Bigger' }) : null,
-        textual ? btn([icon('edit'), ' Text'], () => { textOpen = !textOpen; paintPanel(true); }, 'small' + (textOpen ? ' on' : '')) : null,
+        ...dials,
+        textual ? btn(icon('edit'), () => { textOpen = !textOpen; paintPanel(true); }, 'icon small' + (textOpen ? ' on' : ''), { 'aria-label': 'Text', title: 'Text' }) : null,
         removeBtn(() => { dispatch({ k: 'remove', what: p.what, id: p.id }); sel = null; paintPanel(); })),
-      textual && textOpen ? h('div', { class: 'pc-texts' }, p.what === 'token' ? nameIn : null, txt, btn('Save text', saveText, 'small')) : null);
+      dials.length && dialUses() < 3 ? h('p', { class: 'pc-hint' }, '↔ Hold a dial and slide to change it') : null,
+      textual && textOpen ? textBlock(p, x) : null);
+  }
+
+  // ---------------------------------------------------------------- dials: hold and slide (left/down less, right/up more)
+  const DIAL_KEY = 'sb.dial.uses';
+  const dialUses = () => { try { return Number(localStorage.getItem(DIAL_KEY) || 0); } catch { return 3; } };
+  const dialUsed = () => { try { localStorage.setItem(DIAL_KEY, String(dialUses() + 1)); } catch { /* private mode */ } };
+  interface DialSpec {
+    label: string; ic: string; value: number; step: number; perPx: number; min?: number; max?: number; wrap?: number;
+    fmt(v: number): string; preview(v: number | null): void; commit(v: number): void;
+  }
+  function dial(d0: DialSpec): HTMLElement {
+    const val = h('b', null, d0.fmt(d0.value));
+    const el = h('button', { type: 'button', class: 'dial', title: `${d0.label}: hold and slide`, 'aria-label': `${d0.label} ${d0.fmt(d0.value)}. Hold and slide to change.` },
+      icon(d0.ic), h('span', { class: 'dial-txt' }, h('small', null, d0.label), val));
+    let id = -1, x0 = 0, y0 = 0, moved = false, cur = d0.value;
+    const norm = (v: number) => {
+      if (d0.wrap) v = ((v % d0.wrap) + d0.wrap) % d0.wrap;
+      else v = Math.min(d0.max ?? Infinity, Math.max(d0.min ?? -Infinity, v));
+      v = Math.round(v / d0.step) * d0.step;
+      if (d0.wrap && v >= d0.wrap) v -= d0.wrap;
+      return +v.toFixed(3);
+    };
+    el.addEventListener('pointerdown', (e) => {
+      if (id !== -1) return;
+      e.preventDefault();
+      id = e.pointerId; x0 = e.clientX; y0 = e.clientY; moved = false; cur = d0.value;
+      try { el.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+      el.classList.add('active'); dialActive = true;
+    });
+    el.addEventListener('pointermove', (e) => {
+      if (e.pointerId !== id) return;
+      const dx = e.clientX - x0, dy = y0 - e.clientY;
+      if (!moved && Math.hypot(dx, dy) < 6) return;
+      moved = true;
+      const d = Math.abs(dx) >= Math.abs(dy) ? dx : dy;           // right or up = more
+      const v = norm(d0.value + d * d0.perPx);
+      if (v === cur) return;
+      cur = v; val.textContent = d0.fmt(v);
+      d0.preview(v);
+    });
+    const end = (e: PointerEvent, cancel: boolean) => {
+      if (e.pointerId !== id) return;
+      id = -1; el.classList.remove('active'); dialActive = false;
+      try { el.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+      if (!moved) { toast(`Hold ${d0.label.toLowerCase()} and slide your finger ← →`); return; }
+      if (cancel || cur === d0.value) { d0.preview(null); return; }
+      sfx.tap(); dialUsed();
+      d0.commit(cur);
+      setTimeout(() => d0.preview(null), 1500);                     // settle on the state (or back, if refused)
+    };
+    el.addEventListener('pointerup', (e) => end(e, false));
+    el.addEventListener('pointercancel', (e) => end(e, true));
+    el.addEventListener('click', (e) => e.preventDefault());
+    return el;
+  }
+
+  // ---------------------------------------------------------------- text (kept while the piece changes; saves as you type)
+  let textBox: { id: string; el: HTMLElement; txt: HTMLTextAreaElement; name: HTMLInputElement | null; note: HTMLElement } | null = null;
+  let textTimer = 0;
+  function textBlock(p: Piece, x: NonNullable<ReturnType<typeof pieceOf>>): HTMLElement {
+    const id = `${p.what}:${p.id}`;
+    if (textBox?.id === id) {
+      // someone else changed it and I'm not typing: show theirs
+      const typing = textBox.el.contains(document.activeElement);
+      if (!typing && !textTimer) { textBox.txt.value = x.text ?? ''; if (textBox.name) textBox.name.value = x.label ?? ''; }
+      return textBox.el;
+    }
+    const txt = h('textarea', { class: 'pc-text', rows: '2', maxlength: '300', placeholder: p.what === 'prop' ? 'What heroes find when they look (optional)' : 'What it says when a hero reads it (optional)' }) as HTMLTextAreaElement;
+    txt.value = x.text ?? '';
+    const name = p.what === 'token' ? h('input', { class: 'pc-name', maxlength: '40', placeholder: 'Name', value: x.label ?? '' }) as HTMLInputElement : null;
+    const note = h('small', { class: 'pc-saved' });
+    const save = () => {
+      clearTimeout(textTimer); textTimer = 0;
+      const now = pieceOf(p);
+      if (!now) return;
+      const patch: { text?: string; label?: string } = {};
+      if (txt.value.trim() !== (now.text ?? '')) patch.text = txt.value;
+      if (name && name.value.trim() !== (now.label ?? '')) patch.label = name.value;
+      if (!Object.keys(patch).length) return;
+      dispatch({ k: 'edit', what: p.what, id: p.id, ...patch });
+      note.textContent = 'Saved ✓';
+    };
+    const later = () => { note.textContent = ''; clearTimeout(textTimer); textTimer = setTimeout(save, 700) as unknown as number; };
+    for (const f of [txt, name]) if (f) { f.addEventListener('input', later); f.addEventListener('blur', save); }
+    const el = h('div', { class: 'pc-texts' }, name, txt, note);
+    textBox = { id, el, txt, name, note };
+    return el;
   }
 
   /** Bin button: the first tap turns it into “Remove?”, the second removes (no hidden toast to miss). */

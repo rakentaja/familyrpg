@@ -112,6 +112,7 @@ class Scene3D implements SceneView {
   private holdTimer = 0; private ringTimer = 0;
   private dragActor: Actor | null = null; private dragHit: Hit | null = null; private dragAt: P = { x: 0, z: 0 };
   private dragProp: THREE.Object3D | null = null;   // the Guide moving a prop
+  private dialing = new Set<string>();               // pieces being turned with a dial (state facing waits)
   private pinch = { span: 1, angle: 0, mx: 0, my: 0 };
   private lastTap = { t: 0, x: 0, y: 0, ground: false };
   private hover: { x: number; y: number } | null = null;
@@ -188,6 +189,7 @@ class Scene3D implements SceneView {
     await this.assets.load(pack, baseUrl, onProgress);
     if (this.disposed) return;
     this.loaded = true;
+    this.markReady();
     try { this.renderer.compile(this.scene, this.rig.camera); } catch { /* ignore */ }
     if (this.pending) { const { s, p, fx } = this.pending; this.pending = null; this.update(s, p, fx); }
   }
@@ -300,14 +302,37 @@ class Scene3D implements SceneView {
     else this.dice.armY = Math.max(-0.9, Math.min(0.5, -1 + (2 * px) / H));
     this.dirty = true;
   }
+  /** Show a turn / size / height change on a piece while the Guide drags a dial (null = back to the state). */
+  previewPiece(what: 'prop' | 'foe', id: string, v: { rot?: number; scale?: number; y?: number } | null): void {
+    this.dirty = true;
+    if (what === 'prop') {
+      const obj = this.table.props.find((p) => p.uid === id)?.obj;
+      if (!obj) return;
+      if (!v) { this.propsKey = ''; this.syncProps(); return; }
+      if (v.rot !== undefined) obj.rotation.y = (v.rot * Math.PI) / 180;
+      if (v.scale !== undefined) obj.scale.setScalar(v.scale);
+      if (v.y !== undefined) obj.position.y = v.y;
+      return;
+    }
+    const a = this.actors.get('f:' + id);
+    const f = this.state?.foes.find((x) => x.uid === id);
+    if (!a) return;
+    if (!v) { this.dialing.delete('f:' + id); if (f) a.face(f.facing, true); return; }
+    this.dialing.add('f:' + id);
+    if (v.rot !== undefined) a.face((v.rot * Math.PI) / 180, true);
+  }
+
   /** A small picture of a model for the Guide's library (rendered once, cached as a data URL). */
   private thumbs = new Map<string, Promise<string | null>>();
   private thumbQueue: Promise<unknown> = Promise.resolve();
   private thumbRT: THREE.WebGLRenderTarget | null = null;
+  private markReady!: () => void;
+  private ready = new Promise<void>((r) => { this.markReady = r; });
   thumbnail(model: string): Promise<string | null> {
     let p = this.thumbs.get(model);
     if (p) return p;
-    p = this.thumbQueue.then(() => new Promise<string | null>((res) => setTimeout(() => {
+    // wait for the models: a library opened while the game is still loading must not cache an empty picture
+    p = this.thumbQueue.then(() => this.ready).then(() => new Promise<string | null>((res) => setTimeout(() => {
       try { res(this.renderThumb(model)); } catch (err) { console.warn('[scene] thumb', model, err); res(null); }
     }, 0)));
     this.thumbQueue = p;
@@ -496,7 +521,7 @@ class Scene3D implements SceneView {
       if (Math.hypot(lock.x - pos.x, lock.z - pos.z) < 0.08 || performance.now() > lock.until) this.locks.delete(k);
       else return;
     }
-    if (a.goal.distanceToSquared(_v) < 1e-4) { if (!a.moving && facing !== undefined && !places.has(a.id)) a.face(facing); return; }
+    if (a.goal.distanceToSquared(_v) < 1e-4) { if (!a.moving && facing !== undefined && !places.has(a.id) && !this.dialing.has(k)) a.face(facing); return; }
     const p = paths.get(a.id);
     if (places.has(a.id)) { a.hopTo(_v); return; }
     if (p) { a.moveAlong(this.toPoints(p.path, pos, a.root.position), p.slide); return; }
@@ -1051,7 +1076,7 @@ class Scene3D implements SceneView {
           const obj = ok ? this.table.propByIndex(h.index) : null;
           if (obj) {
             this.gesture = 'drag'; this.dragProp = obj; this.dragHit = h; this.dragAt = { ...h.at };
-            obj.position.y = 0.15;
+            obj.position.y = (obj.userData.baseY ?? 0) + 0.15;
             try { this.cb.onDrag(h, this.dragAt, 'start'); } catch (err) { console.error('[scene] onDrag', err); }
             this.dragMove(p);
             break;
@@ -1093,7 +1118,7 @@ class Scene3D implements SceneView {
       if (!g) return;
       const q = { x: Math.round(g.x * 4) / 4, z: Math.round(g.z * 4) / 4 };   // props sit on a quarter-metre grid
       this.dragAt = q;
-      this.dragProp.position.set(q.x, 0.15, q.z);
+      this.dragProp.position.set(q.x, (this.dragProp.userData.baseY ?? 0) + 0.15, q.z);
       try { this.cb.onDrag(this.dragHit, q, 'move'); } catch (err) { console.error('[scene] onDrag', err); }
       return;
     }
@@ -1114,7 +1139,7 @@ class Scene3D implements SceneView {
     if (this.dragProp) {
       const o = this.dragProp, h = this.dragHit;
       this.dragProp = null; this.dragHit = null;
-      o.position.y = 0;
+      o.position.y = o.userData.baseY ?? 0;
       if (notify && h) { try { this.cb.onDrag(h, this.dragAt, 'end'); } catch (err) { console.error('[scene] onDrag', err); } }
       // if the move is refused (or cancelled) the prop goes back to where the layout has it
       setTimeout(() => { if (!this.dragProp) { this.propsKey = ''; this.syncProps(); } }, notify ? 1500 : 0);
