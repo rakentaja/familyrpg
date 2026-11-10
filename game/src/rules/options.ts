@@ -251,7 +251,7 @@ export function describe(state: GameState, hit: Hit, pack: Pack, asGuide: boolea
       const parts = [`${h.name} the ${role?.name ?? h.roleId}`];
       parts.push(h.tuckered ? L.tuckered : `${h.hearts} of ${h.maxHearts} ${L.hearts}`);
       if (h.pocket.length) parts.push(`Pocket: ${h.pocket.map((i) => itemName(pack, i)).join(', ')}`);
-      if (role) parts.push(`${role.knack.name}${h.knackUsed ? ' (used)' : ''}: ${role.knack.text}`);
+      if (role) parts.push(`Special trick ${role.knack.name} (${h.knackUsed ? "used — back next scene" : "once per scene"}): ${role.knack.text}`);
       if ((h.status.guardUntil ?? 0) > s.now) parts.push('Standing guard');
       return parts.join(' · ');
     }
@@ -260,7 +260,8 @@ export function describe(state: GameState, hit: Hit, pack: Pack, asGuide: boolea
       const d = f ? foeDef(pack, f.foe) : undefined;
       if (!f || !d) break;
       const parts = [`${d.name} — ${d.blurb}`];
-      parts.push(f.calmed ? L.calmed : `${f.grump} of ${f.maxGrump} Grump · try being ${L.traits[d.weak]}`);
+      parts.push(f.calmed ? L.calmed : `Grump ${f.grump} of ${f.maxGrump} — each calm success takes 1 away; at 0 it cheers up`);
+      if (!f.calmed) parts.push(`Soft spot: ${L.traits[d.weak]} (a 9+ takes 2)`);
       if ((f.frozenUntil ?? 0) > s.now) parts.push('frozen');
       if (f.carrying) { const t = tokenByUid(s, f.carrying); if (t) parts.push(`carrying ${tokenName(pack, t)}`); }
       if (asGuide && !f.calmed) parts.push(`Hint: ${foeHint(pack, f.foe, f)}`);

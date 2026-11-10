@@ -257,6 +257,23 @@ group('permissions', () => {
 
 // ---------------------------------------------------------------- rolls
 group('rolls', () => {
+  test('stakes say what each outcome will do, matching the soft spot', () => {
+    let s = atScene(0);
+    const rat = foe(s, 'ws-rat1');
+    const d = PK.foes.find((f) => f.id === rat.foe)!;
+    expect(rules.stakes(s, PK)).toBeNull();
+    s = must(s, { t: 'readyRoll', heroId: 'h1', trait: d.weak, purpose: { kind: 'calm', foeUid: rat.uid } }, 'kid1');
+    const st = rules.stakes(s, PK)!;
+    expect(st.best).toBe(d.weak);
+    expect(st.bands.map((b) => b.k)).toEqual(['success', 'twist', 'trouble']);
+    expect(st.bands[0].text).toMatch(rat.grump <= 2 ? /cheers up/ : /loses 2 Grump/);
+    expect(st.bands[2].text).toContain(`loses 1 ${PK.labels.hearts}`);
+    expect(st.bands[2].text).toContain(`+1 ${PK.labels.sparks}`);
+    s = must(s, { t: 'throw', rollId: s.roll!.id, dice: [6, 6] }, 'kid1');
+    s = must(s, { t: 'resolve', rollId: s.roll!.id }, 'kid1');
+    if (rat.grump <= 2) expect(foe(s, rat.uid).calmed).toBe(true);
+  });
+
   test('lifecycle: ready → help → throw → Twinkles → resolve', () => {
     let s = atScene(0);
     const rat = foe(s, 'ws-rat1');
@@ -744,7 +761,7 @@ group('options()', () => {
   test('describe(): Guide sees hints and hidden things', () => {
     const s = atScene(0);
     const fhit: Hit = { kind: 'foe', id: 'ws-rat1', at: foe(s, 'ws-rat1').pos };
-    expect(describe(s, fhit, PK, false)).toMatch(/Wind-up Rat .* Grump · try being Clever/);
+    expect(describe(s, fhit, PK, false)).toMatch(/Wind-up Rat .* Grump 1 of 1 .* Soft spot: Clever/);
     expect(describe(s, fhit, PK, false)).not.toMatch(/Hint/);
     expect(describe(s, fhit, PK, true)).toMatch(/Hint: Zips/);
     const hid: Hit = { kind: 'token', id: 'ws-pile-present', at: { x: 2.6, z: 2.85 } };

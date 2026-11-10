@@ -1,6 +1,6 @@
 // Rolls: ready → (Guide help / trait change) → throw (dice from the thrower's physics) → Twinkle options → resolve.
 // 2d6 + trait + help + status bonus: 9+ success · 6–8 success with a twist · ≤5 trouble (+1 Twinkle).
-import type { Area, Hero, P, Roll, RollPurpose, TargetRef, Trait } from './types';
+import type { Area, GameState, Hero, P, Pack, Roll, RollPurpose, TargetRef, Trait } from './types';
 import { TRAITS } from './types';
 import { d6, pick } from './rng';
 import { areaAt, areaDist, dist, isP, nearestFree, rp } from './geom';
@@ -335,4 +335,75 @@ export function loseChallenge(c: Ctx) {
   });
   log(c, 'The ice is too wobbly! Everyone takes the long way round.', 'bad');
   endScene(c, 'lost');
+}
+
+// ---------------------------------------------------------------- stakes (what this roll will do — for the roll card)
+export interface RollStake { k: 'success' | 'twist' | 'trouble'; range: string; text: string }
+export interface RollStakes { best?: Trait; bestWhy?: string; bands: RollStake[] }
+
+/** Plain-words preview of what each outcome of the pending roll does (same numbers resolveRoll uses). */
+export function rollStakes(state: GameState, pack: Pack, now = state.now): RollStakes | null {
+  const r = state.roll;
+  if (!r) return null;
+  const s = state, L = pack.labels;
+  const hero = s.heroes.find((x) => x.id === r.heroId);
+  if (!hero) return null;
+  const R = pack.ranges?.reach ?? 1.5;
+  const safe = s.heroes.some((g) => (g.status.guardUntil ?? 0) > now && !g.tuckered && Math.hypot(g.pos.x - hero.pos.x, g.pos.z - hero.pos.z) <= R);
+  const sc = pack.adventures.find((a) => a.id === s.adventureId)?.scenes[s.scene.index];
+  const extra: string[] = [];
+  const troubleTail = (hurts: boolean) => {
+    const bits = [hurts ? (safe ? `nobody loses ${L.hearts} (on guard)` : `${hero.name} loses 1 ${L.hearts}`) : null, `+1 ${L.sparks}`, ...extra];
+    if (sc?.troubleClock) bits.push(`${L.clock} creeps closer`);
+    return bits.filter(Boolean).join(' · ');
+  };
+  const bands = (win: string, twist: string, lose: string, hurts = true): RollStake[] => [
+    { k: 'success', range: '9+', text: win },
+    { k: 'twist', range: '6–8', text: twist },
+    { k: 'trouble', range: '5 or less', text: lose ? `${lose} · ${troubleTail(hurts)}` : troubleTail(hurts) },
+  ];
+  if (s.settings.diceMode === 'free') {
+    return { bands: bands(`It works — the ${L.guide} says how`, 'It works, with a twist', `The ${L.guide} says what goes wrong`, false) };
+  }
+  const p = r.purpose;
+  switch (p.kind) {
+    case 'calm': {
+      const f = s.foes.find((x) => x.uid === p.foeUid);
+      const d = f ? pack.foes.find((x) => x.id === f.foe) : undefined;
+      if (!f || !d) break;
+      if (f.calmed) {
+        const can = r.trait === 'kind';
+        return { best: 'kind', bestWhy: `Only ${L.traits.kind} can invite`, bands: bands(can ? `${d.name} is invited!` : `Nothing — try ${L.traits.kind}`, can ? `${d.name} is invited, with a twist` : 'Nothing happens', '') };
+      }
+      const big = r.trait === d.weak ? 2 : 1;
+      const takes = (n: number) => (n >= f.grump ? `${d.name} cheers up` : `${d.name} loses ${n} Grump (${f.grump - n} left)`);
+      return {
+        best: d.weak, bestWhy: f.grump > 1 ? `${d.name}'s soft spot: a 9+ takes 2 Grump` : `${d.name}'s soft spot`,
+        bands: bands(takes(big) + '!' + (big > 1 && f.grump > 1 ? ` (${L.traits[d.weak]} soft spot)` : ''), `${takes(1)}, plus a twist`, `${d.name} stays grumpy`),
+      };
+    }
+    case 'challenge': {
+      const ch = s.scene.challenge;
+      if (ch) {
+        return { best: 'brave', bestWhy: 'Brave suits leaping and balancing',
+          bands: bands(`The ice holds (${Math.min(ch.need, ch.success + 1)} of ${ch.need})`, `The ice holds, plus a twist`, `The ice wobbles (${ch.trouble + 1} of ${ch.maxTrouble})`) };
+      }
+      return { best: 'brave', bestWhy: 'Brave suits leaping and balancing', bands: bands(`${hero.name} gets across`, `${hero.name} gets across, plus a twist`, `${hero.name} steps back`) };
+    }
+    case 'search':
+      return { best: 'clever', bestWhy: 'Clever suits spotting things', bands: bands('Finds anything hidden nearby', 'Finds it, plus a twist', 'Nothing turns up') };
+    case 'item': {
+      const it = pack.items.find((i) => i.id === p.item);
+      const on = it ? hasRoll(it.effects) : undefined;
+      if (it && on !== undefined) {
+        return { bands: [
+          { k: 'success', range: `${on}+`, text: it.text },
+          { k: 'trouble', range: `${on - 1} or less`, text: `A miss · ${troubleTail(false)}` },
+        ] };
+      }
+      break;
+    }
+    default: break;
+  }
+  return { bands: bands('It works!', 'It works, with a twist', '') };
 }

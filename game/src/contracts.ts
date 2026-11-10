@@ -1,5 +1,6 @@
 // v2 module boundaries. main.ts wires them together. See docs/rewrite-plan.md.
 import type { Action, Envelope, FxEvent, GameState, Hit, Option, P, Pack, TargetRef } from './rules/types';
+import type { RollStakes } from './rules/rolls';
 
 // ---------------------------------------------------------------- rules (src/rules/index.ts) — pure, no DOM
 export interface RulesApi {
@@ -17,6 +18,8 @@ export interface RulesApi {
   describe(state: GameState, hit: Hit, pack: Pack, asGuide: boolean): string; // inspect text
   /** Nav/ground helpers for the scene (same data the reducer uses). */
   groundAt(state: GameState, p: P, pack: Pack): string;          // AreaKind (or 'solid:<kind>')
+  /** What each outcome of the pending roll would do, in plain words (for the roll card). */
+  stakes(state: GameState, pack: Pack): RollStakes | null;
 }
 
 // ---------------------------------------------------------------- scene (src/scene/scene.ts) — three.js, the main screen

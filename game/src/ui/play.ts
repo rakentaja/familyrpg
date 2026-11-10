@@ -7,7 +7,7 @@ import { rules } from '../rules';
 import type { Ctx } from './ctx';
 import { h, btn, replaceKids } from './dom';
 import { icon } from './icons';
-import { hero, sceneDef, thingName, traitName, TRAITS, safe, twoTap, avatar, heroColor } from './common';
+import { hero, sceneDef, thingName, traitName, TRAITS, TRAIT_HELP, safe, twoTap, avatar, heroColor, traitBadge, itemDef, role as roleOf, singular } from './common';
 import { sfx, buzz, toast, prefs, setMuted, speakQueued, stopSpeaking } from './feedback';
 import { momentView } from './moments';
 import { endingScreen } from './ending';
@@ -53,7 +53,8 @@ export function playScreen(ctx: Ctx) {
   const noteBox = h('div', { class: 'note-layer' });
   const rollBox = h('div', { class: 'roll-layer' });
   const overlay = h('div', { class: 'full-layer' });
-  el.append(strip, netPill, pickPill, noteBox, rollBox, overlay);
+  const heroChip = h('div', { class: 'hero-chip', hidden: true });
+  el.append(strip, netPill, pickPill, heroChip, noteBox, rollBox, overlay);
 
   // keep the scene's camera clear of the strip
   const ro = new ResizeObserver(() => {
@@ -71,6 +72,7 @@ export function playScreen(ctx: Ctx) {
     selected = id;
     if (id) sfx.tap();
     pushLocal();
+    paintHeroChip();
   }
 
   function hitThingId(hit: Hit): string | undefined {
@@ -153,9 +155,10 @@ export function playScreen(ctx: Ctx) {
     replaceKids(pickPill, icon('target'), h('span', null, NEEDS_TEXT[opt.needs ?? 'any'] || 'Tap a target'),
       h('button', { type: 'button', class: 'pill-x', 'aria-label': 'Cancel', onclick: () => leavePick() }, icon('close')));
     pickPill.hidden = false;
+    paintHeroChip();
     toast(NEEDS_TEXT[opt.needs ?? 'any'] || 'Tap a target');
   }
-  function leavePick() { pick = null; pickPill.hidden = true; }
+  function leavePick() { pick = null; pickPill.hidden = true; paintHeroChip(); }
 
   function targetFrom(hit: Hit, needs: TargetKind): TargetRef | null {
     switch (needs) {
@@ -169,6 +172,78 @@ export function playScreen(ctx: Ctx) {
         if (hit.kind === 'token') return { tokenUid: hit.id };
         return { at: hit.at };
     }
+  }
+
+  // ---------------------------------------------------------------- hero chip + hero card (what my hero is good at)
+  let chipKey = '';
+  function knackOf(id: string): { opt: Option; hit: Hit } | null {
+    const x = hero(s, id);
+    if (!x) return null;
+    const hit: Hit = { kind: 'hero', id, at: x.pos };
+    const opt = safe(() => rules.options(s, me, id, hit, pack), [] as Option[]).find((o) => o.id === 'knack');
+    return opt ? { opt, hit } : null;
+  }
+  function useKnack(id: string) {
+    const k = knackOf(id);
+    if (!k) { toast('Special tricks work once per scene'); return; }
+    closeSheet();
+    if (selected !== id) select(id);
+    run(k.opt, k.hit);
+  }
+  function paintHeroChip() {
+    const x = hero(s, selected ?? undefined);
+    const busy = !!s.roll && s.roll.stage !== 'done';
+    const show = s.phase === 'play' && !!x && !busy && !pick;
+    const ro = x ? roleOf(pack, x.roleId) : undefined;
+    const key = show && x ? JSON.stringify([x.id, x.name, x.knackUsed, x.tuckered, x.hearts]) : '';
+    heroChip.hidden = !show;
+    if (key === chipKey) return;
+    chipKey = key;
+    if (!show || !x) return;
+    const L = pack.labels;
+    replaceKids(heroChip,
+      h('button', { type: 'button', class: 'hc-me', 'aria-label': `About ${x.name}`, onclick: () => openSheet(x.id) },
+        avatar(pack, x.roleId, heroColor(s, x), 'avatar tiny'), h('span', { class: 'hc-name' }, x.name),
+        h('span', { class: 'hc-hearts', 'aria-label': `${x.hearts} ${L.hearts}` }, icon('heart'), String(x.hearts)), icon('help', 'ic hc-q')),
+      ro ? (x.knackUsed || x.tuckered
+        ? h('span', { class: 'hc-knack used', title: 'Back next scene' }, icon('sparkle'), ro.knack.name, ' ✓')
+        : h('button', { type: 'button', class: 'hc-knack', title: ro.knack.text, onclick: () => useKnack(x.id) }, icon('sparkle'), ro.knack.name)) : null);
+  }
+
+  let sheetEl: HTMLElement | null = null;
+  let sheetFor: string | null = null;
+  function closeSheet() { sheetEl?.remove(); sheetEl = null; sheetFor = null; }
+  function openSheet(id: string) {
+    closeSheet(); closeInspect();
+    const x = hero(s, id);
+    if (!x) return;
+    const L = pack.labels;
+    const ro = roleOf(pack, x.roleId);
+    const kid = s.settings.kidMode;
+    const isMine = mine().includes(x.id);
+    const hearts = h('span', { class: 'hs-hearts' });
+    for (let i = 0; i < x.maxHearts; i++) hearts.appendChild(icon('heart', 'ic' + (i < x.hearts ? '' : ' off')));
+    const k = ro?.knack;
+    const kn = knackOf(x.id);
+    sheetFor = id;
+    sheetEl = h('div', { class: 'hero-sheet paper', role: 'dialog', 'aria-label': `${x.name}'s card` },
+      h('header', { class: 'hs-head' }, avatar(pack, x.roleId, heroColor(s, x), 'avatar small'),
+        h('span', { class: 'grow' }, h('b', null, x.name), h('small', null, ro?.name ?? '')),
+        btn(icon('close'), closeSheet, 'icon small round', { 'aria-label': 'Close' })),
+      h('section', null, h('h4', null, L.hearts, ' ', hearts),
+        h('p', null, x.tuckered ? `${L.tuckered} — a friend next to ${x.name} can wake them.` : `Trouble on a roll costs 1 ${L.hearts}. At 0 you're ${L.tuckered} until a friend wakes you.`)),
+      h('section', null, h('h4', null, 'Good at'),
+        h('p', { class: 'hs-note' }, 'Every roll is 2 dice + one of these. Bigger number = better chance.'),
+        h('ul', { class: 'hs-traits' }, TRAITS.map((t: Trait) => h('li', null, traitBadge(pack, t, x.traits[t], kid),
+          h('span', null, h('b', null, traitName(pack, t)), ' ', TRAIT_HELP[t]))))),
+      k ? h('section', null, h('h4', null, icon('sparkle'), ' Special trick: ', k.name),
+        h('p', null, k.text),
+        h('p', { class: 'hs-note' }, x.knackUsed ? 'Used — it comes back next scene.' : 'Works once per scene, no dice needed.'),
+        isMine && kn && !x.tuckered ? btn([icon('sparkle'), `Use ${k.name}`], () => useKnack(x.id), 'primary small') : null) : null,
+      x.pocket.length ? h('section', null, h('h4', null, icon('pocket'), ' Pocket'),
+        h('ul', { class: 'hs-pocket' }, x.pocket.map((id) => { const it = itemDef(pack, id); return h('li', null, h('b', null, it?.name ?? id), it ? ` — ${it.text}` : ''); })),
+        isMine ? h('p', { class: 'hs-note' }, 'Hold your hero to use or give things.') : null) : null);
+    el.appendChild(sheetEl);
   }
 
   // ---------------------------------------------------------------- scene callbacks
@@ -187,7 +262,9 @@ export function playScreen(ctx: Ctx) {
     }
     if (s.phase !== 'play') return;
     // own hero → select / switch
-    if (hit.kind === 'hero' && mine().includes(hit.id) && selected !== hit.id) { closeInspect(); select(hit.id); return; }
+    if (hit.kind === 'hero' && mine().includes(hit.id) && selected !== hit.id) { closeInspect(); closeSheet(); select(hit.id); return; }
+    if (hit.kind === 'hero' && mine().includes(hit.id)) { if (sheetFor === hit.id) closeSheet(); else openSheet(hit.id); return; }
+    closeSheet();
     const opts = safe(() => rules.options(s, me, selected, hit, pack), [] as Option[]);
     const primary = opts.find((o) => o.primary && (!o.guideOnly || guide()));
     if (primary) { run(primary, hit); return; }
@@ -514,8 +591,10 @@ export function playScreen(ctx: Ctx) {
     return h('div', { class: 'howto' },
       h('p', null, h('b', null, 'Tap'), ' your hero to pick them, then tap the ground to walk there.'),
       h('p', null, h('b', null, 'Tap'), ` one of the ${L.foes?.toLowerCase() || 'foes'} to get ready to calm it. `, h('b', null, 'Flick the dice up'), ' to throw!'),
-      h('p', null, h('b', null, 'Hold'), ' anything for more choices.'),
-      h('p', null, '9 or more: it works! · 6–8: it works, with a twist · 5 or less: trouble (and +1 ', L.sparks, ').'),
+      h('p', null, h('b', null, 'Hold'), ' anything for more choices. Tap your own hero again to see their card.'),
+      h('p', null, h('b', null, 'Rolls:'), ' 2 dice + a trait (', traitName(pack, 'brave'), ', ', traitName(pack, 'clever'), ' or ', traitName(pack, 'kind'), '). 9 or more: it works! · 6–8: it works, with a twist · 5 or less: trouble — you lose 1 ', L.hearts, ' and the team gets +1 ', L.sparks, '.'),
+      h('p', null, h('b', null, 'Grump'), ` is how grumpy a ${singular(L.foes?.toLowerCase() || 'foe')} is. Nobody gets hurt: each calm success takes 1 Grump away (2 with its soft spot ★ on a 9+). At 0 it cheers up.`),
+      h('p', null, h('b', null, 'Special trick'), ' (✦ button by your hero): once per scene, no dice.'),
       h('p', null, 'Spend ', L.sparks, ' to roll again, add +2, or skip a twist.'),
       h('p', null, 'Find the ', L.goal.toLowerCase(), ' before ', L.clock, '!'));
   }
@@ -589,13 +668,18 @@ export function playScreen(ctx: Ctx) {
     const r = s.roll;
     const g = guide();
     if (!r || s.phase !== 'play' || r.stage === 'done') { if (rollKey) { rollKey = ''; twistOpen = false; rollBox.replaceChildren(); } return; }
-    const key = JSON.stringify([r, s.meters.sparks, reroll, g, twistOpen, s.settings.kidMode]);
+    const key = JSON.stringify([r, s.meters.sparks, reroll, g, twistOpen, s.settings.kidMode, safe(() => rules.stakes(s, pack), null)]);
     if (key === rollKey) return;
     rollKey = key;
     const x = hero(s, r.heroId);
     const kid = s.settings.kidMode;
     const canAct = g || r.thrower === me || mine().includes(r.heroId);
     const throwerName = s.players.find((p) => p.id === r.thrower)?.name ?? x?.name ?? 'someone';
+    const st = safe(() => rules.stakes(s, pack), null);
+    const MARK: Record<string, string> = { success: '✓', twist: '~', trouble: '✗' };
+    const stakesList = (only?: string) => st ? h('ul', { class: 'rc-stakes' + (only ? ' one' : '') },
+      st.bands.filter((b) => !only || b.k === only).map((b) => h('li', { class: 'o-' + b.k },
+        h('span', { class: 'rc-band' }, only ? '→' : `${MARK[b.k]} ${b.range}`), h('span', null, b.text)))) : null;
     const head = h('div', { class: 'rc-head' },
       x ? avatar(pack, x.roleId, heroColor(s, x), 'avatar tiny') : icon('dice'),
       h('span', { class: 'grow' }, h('b', null, x?.name ?? 'Roll'), h('small', null, ' · ', purposeLabel(r))),
@@ -608,10 +692,15 @@ export function playScreen(ctx: Ctx) {
 
     if (r.stage === 'ready') {
       const traits = h('div', { class: 'rc-traits' }, TRAITS.map((t: Trait) => h('button', {
-        type: 'button', class: 'chip t-' + t + (r.trait === t ? ' on' : ''), disabled: !canAct, 'aria-pressed': String(r.trait === t),
+        type: 'button', class: 'chip t-' + t + (r.trait === t ? ' on' : '') + (st?.best === t ? ' best' : ''), disabled: !canAct, 'aria-pressed': String(r.trait === t),
+        title: `${traitName(pack, t)}: ${TRAIT_HELP[t]}`,
         onclick: () => { if (r.trait !== t) { sfx.tap(); dispatch({ t: 'setRollTrait', rollId: r.id, trait: t }); } },
-      }, icon(t), kid ? null : h('b', null, String(x?.traits[t] ?? 0)))));
-      rollBox.replaceChildren(h('div', { class: 'roll-card paper ready' }, head, h('div', { class: 'rc-row' }, traits, helpCtl),
+      }, st?.best === t ? h('i', { class: 'rc-star', 'aria-label': 'best choice' }, '★') : null, icon(t),
+        h('span', { class: 'rc-tn' }, traitName(pack, t)), kid ? null : h('b', null, '+' + String(x?.traits[t] ?? 0)))));
+      const bonus = rollBonus(r);
+      const how = h('p', { class: 'rc-how' }, `2 dice + ${traitName(pack, r.trait)} ${bonus - (r.help ?? 0)}`, r.help ? ` + ${r.help} help` : '',
+        st?.bestWhy ? h('small', null, ' · ★ ', st.bestWhy) : null);
+      rollBox.replaceChildren(h('div', { class: 'roll-card paper ready' }, head, h('div', { class: 'rc-row' }, traits, helpCtl), how, stakesList(),
         h('p', { class: 'rc-hint' }, r.thrower === me ? h('b', null, 'Flick the dice up to throw!') : `Waiting for ${throwerName} to throw…`)));
       return;
     }
@@ -655,6 +744,7 @@ export function playScreen(ctx: Ctx) {
     rollBox.replaceChildren(h('div', { class: 'roll-card paper thrown o-' + o },
       head,
       h('div', { class: 'rc-result' }, h('b', { class: 'rc-word' }, OUTCOME_WORD[o] ?? o), sum),
+      stakesList(o),
       r.twist ? h('p', { class: 'rc-twist' }, r.twist) : null,
       tw.length ? h('div', { class: 'rc-sparks' }, h('span', { class: 'rc-jar' }, icon('twinkle'), String(sparks)), ...tw) : null,
       guideRow, twistForm,
@@ -760,6 +850,8 @@ export function playScreen(ctx: Ctx) {
     }
     paintStrip();
     paintRoll();
+    paintHeroChip();
+    if (!tick && sheetFor) { if (s.phase === 'play' && hero(s, sheetFor)) openSheet(sheetFor); else closeSheet(); }
     paintDrop();
     lastPhase = s.phase;
   }
@@ -775,7 +867,7 @@ export function playScreen(ctx: Ctx) {
       offEph(); offStatus(); ro.disconnect();
       removeEventListener('online', onLineChange); removeEventListener('offline', onLineChange);
       clearTimeout(previewTimer); clearTimeout(dragTimer);
-      closeInspect(); closeRing(); sayEl?.remove();
+      closeInspect(); closeRing(); closeSheet(); sayEl?.remove();
       moment?.destroy();
       if (armedKey) safe(() => scene.disarmDice(), undefined);
     },

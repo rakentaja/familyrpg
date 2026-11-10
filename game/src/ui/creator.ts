@@ -2,15 +2,10 @@
 import type { GameState, Pack, Trait } from '../rules/types';
 import { h, btn } from './dom';
 import { icon } from './icons';
-import { portraitUrl, traitName, TRAITS, itemDef } from './common';
+import { portraitUrl, traitName, TRAITS, itemDef, TRAIT_HELP } from './common';
 import { sfx, readAloud, toast } from './feedback';
 
 const HERO_NAMES = ['Pip', 'Comet', 'Holly', 'Juniper', 'Sprinkle', 'Bramble', 'Clove', 'Nutmeg', 'Tinsel', 'Maple', 'Frost', 'Ginger', 'Twig', 'Pebble', 'Sorrel', 'Wren'];
-const TRAIT_HELP: Record<Trait, string> = {
-  brave: 'jumping, climbing, standing up to scary things',
-  clever: 'puzzles, tricks, spotting things',
-  kind: 'calming, helping, making friends',
-};
 
 export function openCreator(opts: {
   pack: Pack; state: GameState; me: string; canAssign: boolean;

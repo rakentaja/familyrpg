@@ -438,6 +438,40 @@ body[data-screen=play] .toasts{bottom:calc(var(--sab) + 42dvh)}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+
+/* roll card: what each outcome does */
+.rc-traits .chip{position:relative}
+.rc-traits .chip.best{box-shadow:0 0 0 2.5px var(--butter),0 2px 0 var(--ink)}
+.rc-star{position:absolute;top:-9px;right:-5px;font-style:normal;font-size:15px;line-height:1;color:#b8860b;text-shadow:0 0 2px #fff}
+.rc-tn{font-size:.82em}
+.rc-how{margin:0;font-size:.9em;color:var(--mute)}
+.rc-stakes{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;font-size:.84em;line-height:1.2}
+.rc-stakes li{display:flex;gap:8px;align-items:baseline;padding:2px 8px;border-radius:8px;border:1.4px solid var(--ink)}
+.rc-stakes .o-success{background:#dfe8da}.rc-stakes .o-twist{background:#f7edcd}.rc-stakes .o-trouble{background:#efd9d9}
+.rc-band{flex:none;min-width:4.4em;font-weight:700;font-variant-numeric:tabular-nums}
+.rc-stakes.one{font-size:1em}.rc-stakes.one li{border-width:2px}.rc-stakes.one .rc-band{min-width:0}
+@media (max-width:380px){.rc-tn{display:none}}
+/* hero chip (bottom-left) + hero card */
+.hero-chip{position:absolute;left:calc(var(--sal) + 8px);bottom:calc(var(--sab) + 10px);display:flex;gap:6px;align-items:center;z-index:5;pointer-events:auto}
+.hero-chip button,.hero-chip .hc-knack.used{display:inline-flex;align-items:center;gap:5px;min-height:44px;padding:4px 10px 4px 5px;border:2px solid var(--ink);border-radius:999px;background:var(--paper);font:inherit;font-weight:700;cursor:pointer;box-shadow:0 2px 0 var(--ink)}
+.hero-chip .hc-name{max-width:7em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hero-chip .hc-hearts{display:inline-flex;align-items:center;gap:1px;font-variant-numeric:tabular-nums}
+.hero-chip .hc-hearts .ic,.hero-chip .hc-q{width:18px;height:18px}
+.hero-chip .hc-knack{padding-left:10px;background:var(--butter)}
+.hero-chip .hc-knack .ic{width:20px;height:20px}
+.hero-chip .hc-knack.used{background:var(--paper2);color:var(--mute);box-shadow:none;cursor:default;border-style:dashed}
+.hero-sheet{position:absolute;left:calc(var(--sal) + 8px);right:calc(var(--sar) + 8px);bottom:calc(var(--sab) + 8px);max-width:440px;margin:0 auto;max-height:70vh;overflow:auto;padding:10px 14px 14px;z-index:8;display:flex;flex-direction:column;gap:8px}
+.hs-head{display:flex;align-items:center;gap:10px}
+.hs-head .grow{display:flex;flex-direction:column;min-width:0}
+.hs-head b{font-family:var(--title);font-size:1.15em}.hs-head small{color:var(--mute)}
+.hero-sheet section{border-top:1.4px dashed var(--ink);padding-top:6px}
+.hero-sheet h4{margin:0 0 3px;display:flex;align-items:center;gap:4px;font-size:1em}
+.hero-sheet p{margin:2px 0;font-size:.93em}
+.hs-note{color:var(--mute);font-size:.86em!important}
+.hs-hearts{display:inline-flex;gap:2px;margin-left:4px}.hs-hearts .ic{width:20px;height:20px}.hs-hearts .ic.off{opacity:.25}
+.hs-traits,.hs-pocket{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:.93em}
+.hs-traits li{display:flex;align-items:center;gap:8px}
+.hero-sheet .btn{align-self:flex-start;margin-top:4px}
 `;
 
 export function injectStyles() {

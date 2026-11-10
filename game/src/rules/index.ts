@@ -6,6 +6,7 @@ import { findPath, groundOf, navFor, sceneOf } from './geom';
 import { controlledIds, isGuide as isGuideP, midnight as midnightAt, heroById, heroFlies } from './core';
 import { reduce } from './reduce';
 import { buildAction, describe, options } from './options';
+import { rollStakes as stakes } from './rolls';
 
 export function createGame(pack: Pack, opts: { hostId: string; hostName: string; hostColor: string; at: number; seed?: number; adventureId?: string }): GameState {
   const adv = pack.adventures.find((a) => a.id === opts.adventureId) ?? pack.adventures[0];
@@ -48,6 +49,6 @@ export function groundAt(state: GameState, p: P, pack: Pack): string {
   return g.solid ? `solid:${g.kind}` : g.kind;
 }
 
-export { reduce, options, buildAction, describe };
-export const rules: RulesApi = { createGame, reduce, path, options, buildAction, controlled, isGuide, midnight, describe, groundAt };
+export { reduce, options, buildAction, describe, stakes };
+export const rules: RulesApi = { createGame, reduce, path, options, buildAction, controlled, isGuide, midnight, describe, groundAt, stakes };
 export default rules;
