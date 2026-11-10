@@ -28,7 +28,7 @@ type Gesture = 'none' | 'press' | 'pan' | 'rotate' | 'pinch' | 'drag' | 'held';
 
 // scratch
 const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _box = new THREE.Box3(), _ndc = new THREE.Vector2(), _m4 = new THREE.Matrix4();
-const _ray = new THREE.Raycaster(), _plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), _col = new THREE.Color();
+const _ray = new THREE.Raycaster(), _plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), _plane2 = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), _col = new THREE.Color();
 
 const midnightOf = (s: GameState, now: number): number => {
   const c = s.clock;
@@ -112,6 +112,8 @@ class Scene3D implements SceneView {
   private holdTimer = 0; private ringTimer = 0;
   private dragActor: Actor | null = null; private dragHit: Hit | null = null; private dragAt: P = { x: 0, z: 0 };
   private dragProp: THREE.Object3D | null = null;   // the Guide moving a prop
+  private pickPoint = new THREE.Vector3();            // where the last pick ray hit a prop
+  private grab = { y: 0, dx: 0, dz: 0 };              // grabbed point height + its offset from the prop's origin
   private dialing = new Set<string>();               // pieces being turned with a dial (state facing waits)
   private pinch = { span: 1, angle: 0, mx: 0, my: 0 };
   private lastTap = { t: 0, x: 0, y: 0, ground: false };
@@ -917,6 +919,14 @@ class Scene3D implements SceneView {
     return _ndc.set(((x - r.left) / r.width) * 2 - 1, -((y - r.top) / r.height) * 2 + 1);
   }
 
+  /** Where the pointer ray crosses the level plane at height y (no clamping). */
+  private planeAt(x: number, y: number, h: number): P | null {
+    _ray.setFromCamera(this.ndcAt(x, y), this.rig.camera);
+    _plane2.constant = -h;
+    if (!_ray.ray.intersectPlane(_plane2, _v2)) return null;
+    return { x: _v2.x, z: _v2.z };
+  }
+
   private groundAt(x: number, y: number, clampIt = true): P | null {
     _ray.setFromCamera(this.ndcAt(x, y), this.rig.camera);
     if (!_ray.ray.intersectPlane(_plane, _v2)) return null;
@@ -967,6 +977,7 @@ class Scene3D implements SceneView {
       const wp = o.getWorldPosition(_v);
       const at = { x: wp.x, z: wp.z };
       if (o.userData.meter !== undefined) return { kind: 'meter', meter: o.userData.meter as MeterKind, at };
+      this.pickPoint.copy(h.point);
       return { kind: 'prop', index: o.userData.propIndex as number, at };
     }
     return { kind: 'ground', at: this.groundAt(x, y) ?? { x: 0, z: 0 } };
@@ -1076,6 +1087,11 @@ class Scene3D implements SceneView {
           const obj = ok ? this.table.propByIndex(h.index) : null;
           if (obj) {
             this.gesture = 'drag'; this.dragProp = obj; this.dragHit = h; this.dragAt = { ...h.at };
+            // keep the exact point that was grabbed under the pointer: move it on a level plane at its own height
+            // (snapping the base to the floor under the pointer made tall, big or lifted props jump away)
+            const s0 = this.planeAt(p.sx, p.sy, this.pickPoint.y);
+            this.grab.dx = s0 ? obj.position.x - s0.x : 0; this.grab.dz = s0 ? obj.position.z - s0.z : 0;
+            this.grab.y = this.pickPoint.y + 0.15;   // the piece is lifted a little while held
             obj.position.y = (obj.userData.baseY ?? 0) + 0.15;
             try { this.cb.onDrag(h, this.dragAt, 'start'); } catch (err) { console.error('[scene] onDrag', err); }
             this.dragMove(p);
@@ -1114,9 +1130,11 @@ class Scene3D implements SceneView {
 
   private dragMove(p: Ptr): void {
     if (this.dragProp && this.dragHit) {
-      const g = this.groundAt(p.x, p.y - (p.mouse ? 0 : 26));
+      const g = this.planeAt(p.x, p.y, this.grab.y);
       if (!g) return;
-      const q = { x: Math.round(g.x * 4) / 4, z: Math.round(g.z * 4) / 4 };   // props sit on a quarter-metre grid
+      const hw = this.table.w / 2 - 0.15, hd = this.table.d / 2 - 0.15;
+      const x = THREE.MathUtils.clamp(g.x + this.grab.dx, -hw, hw), z = THREE.MathUtils.clamp(g.z + this.grab.dz, -hd, hd);
+      const q = { x: Math.round(x * 4) / 4, z: Math.round(z * 4) / 4 };   // props sit on a quarter-metre grid
       this.dragAt = q;
       this.dragProp.position.set(q.x, (this.dragProp.userData.baseY ?? 0) + 0.15, q.z);
       try { this.cb.onDrag(this.dragHit, q, 'move'); } catch (err) { console.error('[scene] onDrag', err); }
