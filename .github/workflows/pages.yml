@@ -1,6 +1,5 @@
 name: Deploy game to GitHub Pages
 
-# Builds main at / and (if it exists) the v2 branch at /v2/ as a preview. To refresh the preview after pushing v2, run this workflow manually (workflow_dispatch on main).
 on:
   push:
     branches: [main]
@@ -27,14 +26,6 @@ jobs:
           bun-version: 1.4.3
       - run: bun install --frozen-lockfile && bun test src && bun build.ts
         working-directory: game
-      - name: Build v2 preview
-        run: |
-          if git ls-remote --exit-code --heads origin v2 >/dev/null; then
-            git fetch --depth 1 origin v2
-            git worktree add ../v2 FETCH_HEAD
-            cd ../v2/game && bun install --frozen-lockfile && bun test src && bun build.ts
-            mkdir -p "$GITHUB_WORKSPACE/game/dist/v2" && cp -r dist/. "$GITHUB_WORKSPACE/game/dist/v2/"
-          fi
       - uses: actions/upload-pages-artifact@v3
         with:
           path: game/dist

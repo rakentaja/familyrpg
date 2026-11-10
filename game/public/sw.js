@@ -20,7 +20,7 @@ self.addEventListener('install', (e) => {
 
 self.addEventListener('activate', (e) => {
   e.waitUntil((async () => {
-    for (const k of await caches.keys()) if ((k.startsWith('sb2-') && !KEEP.includes(k)) || (k.startsWith('sb-') && !self.registration.scope.endsWith('/v2/'))) await caches.delete(k); // v1 caches go once v2 is live at the root
+    for (const k of await caches.keys()) if ((k.startsWith('sb2-') && !KEEP.includes(k)) || k.startsWith('sb-')) await caches.delete(k); // also clears the old v1 caches
     // drop assets that are no longer part of the game
     const wanted = new Set(ASSETS.map((u) => new URL(u, BASE).href));
     const ac = await caches.open(ASSET_CACHE);

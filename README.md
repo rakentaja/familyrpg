@@ -5,20 +5,22 @@ A light, co-op tabletop RPG for 2–8 players (ages 6+), built for a browser 3D 
 - **Hearthside** — the theme-agnostic core rules engine.
 - **Sleighbound** — the first theme pack (Christmas): recover the stolen Star and six lost presents before Midnight.
 
-**Play:** https://rakentaja.github.io/familyrpg/ — installable on phones (Add to Home Screen), works offline after the
-first load. Host a table and everyone joins on their own phone with a code/QR (multiplayer runs over public Nostr
-relays, end-to-end encrypted with the table code), or play pass-and-play on one device.
-
+**Play:** https://rakentaja.github.io/familyrpg/ — the 3D table is the game. No turns: tap your hero, tap the table to
+walk, tap a foe to get a roll ready and flick the dice; hold (or right-click) anything for more options. A Guide (usually
+a parent) moves the foes and tells the story. Installable on phones, works offline after the first load. Play together on
+your own phones with a table code/QR (encrypted, over public Nostr relays) or pass-and-play on one device.
+Design: `docs/rewrite-plan.md`.
 
 ## What's here
 
 ```
 game/                       The game (TypeScript, three.js, Bun)
-  src/engine/               Hearthside rules engine: pure reducer, seeded RNG, effects DSL, foe AI, tests
-  src/render/               three.js board: toon/ink/hatch look, touch camera, minis + animations, dice
-  src/ui/                   Mobile-first screens: lobby, hero creator, play HUD, rolls, Guide panel, table moments
+  src/rules/                Rules helper: pure reducer (no turns, soft rules), nav/pathing, rolls, effects DSL, tests
+  src/scene/                three.js table: dioramas, minis, bubbles, in-scene meters, tap/hold/drag input,
+                            camera, flick-to-throw physics dice (cannon-es) with replay
+  src/ui/                   Thin layer: home, lobby, hero creator, ring menu, roll card, corner strip, table moments
   src/net/                  Multiplayer over public Nostr relays (encrypted), plus local pass-and-play
-  packs/sleighbound.json    The Sleighbound theme pack: roles, foes, items, events, 4 scenes, endings
+  packs/sleighbound.json    The Sleighbound pack (hearthside@2): roles, foes, items, events, 4 free-form scenes, endings
   public/                   PWA manifest, service worker template, icons
 docs/                       Game design, player's handbook, asset pipeline notes
 assets/
