@@ -1,5 +1,5 @@
 // Hand-inked SVG icons in the pack palette (ink outline + watercolour fill).
-import type { Trait } from '../engine/types';
+import type { Trait } from '../rules/types';
 import { svg } from './dom';
 
 const S = (body: string, vb = '0 0 48 48') =>
@@ -32,6 +32,7 @@ export const ICONS: Record<string, string> = {
   camera: S('<path d="M6 16h8l4-6h12l4 6h8v24H6z" fill="#f2eadb"/><circle cx="24" cy="27" r="7" fill="#b4abc6"/>'),
   dice: S('<rect x="6" y="10" width="22" height="22" rx="4" fill="#f2eadb" transform="rotate(-10 17 21)"/><circle cx="12" cy="17" r="2" fill="#2a2328"/><circle cx="20" cy="24" r="2" fill="#2a2328"/><rect x="22" y="18" width="20" height="20" rx="4" fill="#d8a7a7" transform="rotate(12 32 28)"/><circle cx="27" cy="24" r="1.8" fill="#2a2328"/><circle cx="37" cy="32" r="1.8" fill="#2a2328"/><circle cx="32" cy="28" r="1.8" fill="#2a2328"/>'),
   guide: S('<path d="M10 40V12c6-4 12-4 14 0 2-4 8-4 14 0v28c-6-3-12-3-14 0-2-3-8-3-14 0z" fill="#b4abc6"/><path d="M24 12v28"/>'),
+  back: S('<path d="M30 10L16 24l14 14" fill="none" stroke-width="4"/>'),
   log: S('<path d="M12 6h20l6 6v30H12z" fill="#f2eadb"/><path d="M17 18h16M17 25h16M17 32h10"/>'),
   crown: S('<path d="M8 36l-2-20 10 8 8-14 8 14 10-8-2 20z" fill="#f6e7b0"/><path d="M8 40h32"/>'),
   pocket: S('<path d="M8 12h32v12c0 10-7 18-16 18S8 34 8 24z" fill="#b4abc6"/><path d="M8 12c5 6 27 6 32 0"/>'),
@@ -40,9 +41,32 @@ export const ICONS: Record<string, string> = {
   qr: S('<rect x="7" y="7" width="13" height="13" fill="#f2eadb"/><rect x="28" y="7" width="13" height="13" fill="#f2eadb"/><rect x="7" y="28" width="13" height="13" fill="#f2eadb"/><path d="M28 28h5v5h-5zM36 36h5v5h-5zM36 28h5M28 41h4"/>'),
   foe: S('<path d="M10 36c0-12 6-22 14-22s14 10 14 22z" fill="#b4abc6"/><path d="M17 22l5 3M31 22l-5 3M19 31c3-2 7-2 10 0"/>'),
   walk: S('<path d="M16 8c3 0 5 2 5 4s-2 4-5 4-5-2-5-4 2-4 5-4z" fill="#a9bfa0"/><path d="M26 22c3 0 5 2 5 4s-2 4-5 4-5-2-5-4 2-4 5-4zM18 34c3 0 5 2 5 4s-2 4-5 4-5-2-5-4 2-4 5-4z" fill="#a9bfa0"/>'),
+  pause: S('<rect x="12" y="10" width="8" height="28" rx="2" fill="#b4abc6"/><rect x="28" y="10" width="8" height="28" rx="2" fill="#b4abc6"/>'),
+  play: S('<path d="M14 9l24 15-24 15z" fill="#a9bfa0"/>'),
+  say: S('<path d="M8 10h32v20H22l-9 8v-8H8z" fill="#f2eadb"/><path d="M15 18h18M15 24h11" stroke-width="2.4"/>'),
+  flag: S('<path d="M12 42V6"/><path d="M12 8h24l-5 8 5 8H12" fill="#d8a7a7"/>'),
+  gear: S('<circle cx="24" cy="24" r="7" fill="#f2eadb"/><path d="M24 5v7M24 36v7M5 24h7M36 24h7M10.5 10.5l5 5M32.5 32.5l5 5M37.5 10.5l-5 5M15.5 32.5l-5 5" stroke-width="3.4"/>'),
+  eye: S('<path d="M4 24c6-10 13-14 20-14s14 4 20 14c-6 10-13 14-20 14S10 34 4 24z" fill="#f2eadb"/><circle cx="24" cy="24" r="6" fill="#b4abc6"/>'),
+  hand: S('<path d="M16 26V12c0-3 4-3 4 0v10V8c0-3 4-3 4 0v14V10c0-3 4-3 4 0v14-8c0-3 4-3 4 0v14c0 8-5 14-12 14-6 0-9-4-12-9l-4-7c-1-3 2-5 4-3z" fill="#a9bfa0"/>'),
+  next: S('<path d="M8 24h28M26 12l12 12-12 12" stroke-width="4"/>'),
+  help: S('<circle cx="24" cy="24" r="18" fill="#f2eadb"/><path d="M18 19c0-4 3-6 6-6s6 2 6 6c0 5-6 5-6 10" stroke-width="3.4"/><circle cx="24" cy="35" r="1.8" fill="#2a2328"/>'),
+  leave: S('<path d="M20 8H8v32h12"/><path d="M18 24h22M32 16l8 8-8 8" stroke-width="3.4"/>'),
+  target: S('<circle cx="24" cy="24" r="17" fill="#f2eadb"/><circle cx="24" cy="24" r="9" fill="#d8a7a7"/><circle cx="24" cy="24" r="2.5" fill="#2a2328"/>'),
+  card: S('<rect x="11" y="6" width="26" height="36" rx="3" fill="#b4abc6" transform="rotate(-8 24 24)"/><path d="M24 17l2.5 5 5 .6-3.7 3.4 1 5L24 28.5 19.2 31l1-5-3.7-3.4 5-.6z" fill="#f6e7b0" stroke-width="2"/>'),
+  plus: S('<circle cx="24" cy="24" r="17" fill="#e6eee2"/><path d="M24 15v18M15 24h18" stroke-width="4"/>'),
+  minus: S('<circle cx="24" cy="24" r="17" fill="#f6e3e1"/><path d="M15 24h18" stroke-width="4"/>'),
+  search: S('<circle cx="20" cy="20" r="11" fill="#f2eadb"/><path d="M28 28l12 12" stroke-width="5"/>'),
+  trash: S('<path d="M12 14h24l-2 26H14z" fill="#f2eadb"/><path d="M8 14h32M19 14V8h10v6M20 21v13M28 21v13"/>'),
+};
+
+/** Icon names the rules use → our drawings. */
+const ALIAS: Record<string, string> = {
+  calm: 'kind', event: 'card', give: 'gift', grab: 'hand', inspect: 'eye', item: 'pocket', knack: 'sparkle', reveal: 'twinkle',
+  revive: 'heart', roll: 'dice', present: 'gift', goal: 'gift', spark: 'twinkle', sparks: 'twinkle', time: 'clock',
 };
 
 export function icon(name: string, cls = 'ic'): HTMLElement {
+  if (!ICONS[name] && ALIAS[name]) name = ALIAS[name];
   if (ICONS[name]) return svg(ICONS[name], cls);
   // engine/pack icons may be emoji; unknown icon names fall back to a sparkle
   if (/^[\w-]+$/.test(name)) return svg(ICONS.sparkle, cls);

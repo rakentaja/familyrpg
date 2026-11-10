@@ -1,18 +1,18 @@
 // What screens get from the app shell.
-import type { BoardView } from '../contracts';
-import type { Pack } from '../engine/types';
+import type { SceneView } from '../contracts';
+import type { Pack } from '../rules/types';
 import type { AppStore } from '../store';
 
 export interface Ctx {
   pack: Pack;
-  board: BoardView;
+  scene: SceneView;
   root: HTMLElement;
   store: AppStore | null;
   readonly me: string;
-  /** 0..1 model loading progress, and a promise for when the board is ready. */
-  boardProgress: number;
-  boardReady: Promise<void>;
-  onBoardProgress(cb: (p: number) => void): void;
+  /** 0..1 model loading progress, and a promise for when the scene is ready. */
+  readonly sceneProgress: number;
+  sceneReady: Promise<void>;
+  onSceneProgress(cb: (p: number) => void): () => void;
   hostOnline(): Promise<void>;
   join(code: string): Promise<void>;
   playLocal(): Promise<void>;

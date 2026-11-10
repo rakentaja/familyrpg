@@ -1,7 +1,7 @@
-// Boot: load the pack, set up the board on a full-screen canvas, register the service worker, start the app.
-import type { BoardCallbacks, BoardView } from './contracts';
-import type { Pack } from './engine/types';
-import { createBoard } from './render/board';
+// Boot: load the pack, put the 3D table on a full-screen canvas, register the service worker, start the app.
+import type { SceneCallbacks, SceneView } from './contracts';
+import type { Pack } from './rules/types';
+import { createScene } from './scene/scene';
 import { createApp } from './ui/app';
 import { injectStyles } from './ui/styles';
 import { registerSW, watchOnline } from './ui/pwa';
@@ -17,7 +17,7 @@ const setBoot = (p: number, msg?: string) => {
 const hideBoot = () => { bootEl?.classList.add('gone'); setTimeout(() => bootEl?.remove(), 500); };
 
 function preventPageZoom() {
-  // the page itself never zooms (the board handles its own pinch on the canvas)
+  // the page itself never zooms (the scene handles its own pinch on the canvas)
   const stop = (e: Event) => { if (!(e.target instanceof HTMLCanvasElement)) e.preventDefault(); };
   document.addEventListener('gesturestart', stop, { passive: false } as AddEventListenerOptions);
   document.addEventListener('gesturechange', stop, { passive: false } as AddEventListenerOptions);
@@ -29,6 +29,8 @@ function preventPageZoom() {
     if (now - lastTouch < 300 && !(t instanceof HTMLCanvasElement) && !t.closest('input,textarea,select')) e.preventDefault();
     lastTouch = now;
   }, { passive: false });
+  // right-click on the table opens the ring menu, not the browser menu
+  document.addEventListener('contextmenu', (e) => { if (e.target instanceof HTMLCanvasElement) e.preventDefault(); });
 }
 
 async function boot() {
@@ -55,28 +57,32 @@ async function boot() {
   const canvas = document.getElementById('board') as HTMLCanvasElement;
   const root = document.getElementById('ui') as HTMLElement;
   let app: ReturnType<typeof createApp> | null = null;
-  const cb: BoardCallbacks = {
-    onCellTap: (c) => app?.callbacks.onCellTap(c),
-    onHeroTap: (id) => app?.callbacks.onHeroTap(id),
-    onFoeTap: (id) => app?.callbacks.onFoeTap(id),
-    onTokenTap: (id) => app?.callbacks.onTokenTap(id),
+  const cb: SceneCallbacks = {
+    onTap: (hit) => app?.callbacks.onTap(hit),
+    onHold: (hit, at) => app?.callbacks.onHold(hit, at),
+    canDrag: (hit) => app?.callbacks.canDrag(hit) ?? false,
+    onDrag: (hit, at, phase) => app?.callbacks.onDrag(hit, at, phase),
+    onDiceThrown: (t) => app?.callbacks.onDiceThrown(t),
   };
-  const board: BoardView = createBoard(canvas, cb);
-  const lowEnd = (navigator.hardwareConcurrency ?? 8) <= 4 || matchMedia('(max-width: 420px)').matches && devicePixelRatio > 2.5;
-  try { board.setQuality(prefs.quality ?? (lowEnd ? 'low' : 'high')); } catch { /* optional */ }
+  const scene: SceneView = createScene(canvas, cb);
+  if (new URLSearchParams(location.search).has('debug')) {             // test/debug handle: ?debug
+    (window as unknown as Record<string, unknown>).__sb = { scene, cb, get state() { return app?.ctx.store?.state ?? null; } };
+  }
+  const lowEnd = (navigator.hardwareConcurrency ?? 8) <= 4 || (matchMedia('(max-width: 420px)').matches && devicePixelRatio > 2.5);
+  try { scene.setQuality(prefs.quality ?? (lowEnd ? 'low' : 'high')); } catch { /* optional */ }
 
   const progressCbs = new Set<(p: number) => void>();
-  const boardReady = board.load(pack, './', (p) => { for (const f of progressCbs) f(p); })
+  const sceneReady = scene.load(pack, './', (p) => { for (const f of progressCbs) f(p); })
     .then(() => { for (const f of progressCbs) f(1); })
-    .catch((err) => { console.error('board load', err); for (const f of progressCbs) f(1); });
+    .catch((err) => { console.error('scene load', err); for (const f of progressCbs) f(1); });
 
   let resizeT = 0;
-  const onResize = () => { cancelAnimationFrame(resizeT); resizeT = requestAnimationFrame(() => { try { board.resize(); } catch { /* ignore */ } }); };
+  const onResize = () => { cancelAnimationFrame(resizeT); resizeT = requestAnimationFrame(() => { try { scene.resize(); } catch { /* ignore */ } }); };
   addEventListener('resize', onResize);
   addEventListener('orientationchange', onResize);
   visualViewport?.addEventListener('resize', onResize);
 
-  app = createApp({ pack, board, root, boardReady, progress: (f) => progressCbs.add(f) });
+  app = createApp({ pack, scene, root, sceneReady, progress: (f) => progressCbs.add(f) });
   setBoot(1);
   hideBoot();
   await app.start();

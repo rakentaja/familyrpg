@@ -8,7 +8,7 @@
 import { AbstractRelay, type Subscription } from 'nostr-tools/abstract-relay';
 import { finalizeEvent, generateSecretKey, getPublicKey, verifyEvent, type Event } from 'nostr-tools/pure';
 import type { NetApi, Peer, RoomInfo } from '../contracts';
-import type { Envelope, GameState } from '../engine/types';
+import type { Envelope, GameState } from '../rules/types';
 import {
   activePeers, backoffMs, batchItems, decryptPayload, deriveRoomKey, encryptPayload, fromHex, generateRoomCode,
   isFresh, isNewerSnapshot, joinLink, parseJoinInput, roomTag, SeenSet, toHex, type SnapshotMeta,

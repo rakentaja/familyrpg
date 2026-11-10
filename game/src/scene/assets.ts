@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
-import type { Pack } from '../engine/types';
+import type { Pack } from '../rules/types';
 import { stylize, type OutlineWidth } from './style';
 
 const ROOT_BONE = 'Hips';
@@ -94,7 +94,7 @@ export class Assets {
   private fetch(url: string): Promise<GLTF | null> {
     let p = this.pending.get(url);
     if (!p) {
-      p = this.loader.loadAsync(url).catch((e) => { console.warn('[board] failed to load', url, e); return null; });
+      p = this.loader.loadAsync(url).catch((e) => { console.warn('[scene] failed to load', url, e); return null; });
       this.pending.set(url, p);
     }
     return p;
@@ -173,7 +173,7 @@ export class Assets {
     let scale = packScale ?? 1;
     if (packScale === undefined && character && !rigged && size.y > 0) {
       scale = UNRIGGED_HEIGHT / size.y;
-      console.warn(`[board] ${key}: unrigged model without pack scale, fitted to ${UNRIGGED_HEIGHT} m (scale ${scale.toFixed(3)})`);
+      console.warn(`[scene] ${key}: unrigged model without pack scale, fitted to ${UNRIGGED_HEIGHT} m (scale ${scale.toFixed(3)})`);
     }
     stylize(scene, (size.y * scale > 3 ? 'med' : 'thin') as OutlineWidth, true);
     for (const o of collectTextures(scene)) this.textures.add(o);

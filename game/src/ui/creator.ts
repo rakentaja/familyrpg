@@ -1,5 +1,5 @@
 // Hero creator: swipeable role carousel, name, trait splitter (6 points, each 1–3), owner.
-import type { GameState, Pack, Trait } from '../engine/types';
+import type { GameState, Pack, Trait } from '../rules/types';
 import { h, btn } from './dom';
 import { icon } from './icons';
 import { portraitUrl, traitName, TRAITS, itemDef } from './common';
@@ -21,7 +21,9 @@ export function openCreator(opts: {
   let idx = Math.max(0, pack.roles.findIndex((r) => !taken.has(r.id)));
   let traits: Record<Trait, number> = { ...pack.roles[idx].suggested };
   let touchedTraits = false;
-  const kid = state.kidMode;
+  const kid = state.settings.kidMode;
+  const meGuide = !!state.players.find((p) => p.id === me)?.guide;
+  const defaultOwner = (opts.canAssign && meGuide ? state.players.find((p) => !p.guide)?.id : undefined) ?? me;
 
   // ---- carousel
   const track = h('div', { class: 'carousel', role: 'listbox', 'aria-label': 'Hero roles' });
@@ -83,7 +85,7 @@ export function openCreator(opts: {
 
   // ---- owner
   const ownerSel = h('select', { class: 'owner-sel', 'aria-label': 'Who plays this hero?' },
-    state.players.map((p) => h('option', { value: p.id, selected: p.id === me }, p.name + (p.id === me ? ' (you)' : ''))));
+    state.players.map((p) => h('option', { value: p.id, selected: p.id === defaultOwner }, p.name + (p.id === me ? ' (you)' : '') + (p.guide ? ' · Guide' : ''))));
   const ownerRow = opts.canAssign && state.players.length > 1 ? h('label', { class: 'field' }, h('span', { class: 'lbl' }, 'Who plays this hero?'), ownerSel) : null;
 
   const addBtn = btn('Add this hero!', () => {
@@ -91,7 +93,7 @@ export function openCreator(opts: {
     if (!name) { nameIn.focus(); toast('Give your hero a name'); return; }
     if (total() !== 6) { toast('Share out all 6 points first'); return; }
     sfx.chime();
-    opts.onDone({ roleId: pack.roles[idx].id, name, traits: { ...traits }, owner: ownerRow ? ownerSel.value : me });
+    opts.onDone({ roleId: pack.roles[idx].id, name, traits: { ...traits }, owner: ownerRow ? ownerSel.value : defaultOwner });
     close();
   }, 'primary big');
 

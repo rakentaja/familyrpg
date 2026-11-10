@@ -58,8 +58,8 @@ export function homeScreen(ctx: Ctx, opts: { joinCode?: string } = {}) {
   const loadBar = h('i');
   const loadRow = h('div', { class: 'load-row' }, h('span', null, 'Packing the sleigh…'), h('div', { class: 'bar small' }, loadBar));
   const setLoad = (p: number) => { loadBar.style.width = Math.round(p * 100) + '%'; if (p >= 1) loadRow.hidden = true; };
-  setLoad(ctx.boardProgress);
-  ctx.onBoardProgress(setLoad);
+  setLoad(ctx.sceneProgress);
+  const offLoad = ctx.onSceneProgress(setLoad);
 
   // install
   const installBox = h('div', { class: 'install' });
@@ -81,11 +81,11 @@ export function homeScreen(ctx: Ctx, opts: { joinCode?: string } = {}) {
         h('label', { for: 'myName', class: 'lbl' }, 'Your name'), nameIn, swatches),
       h('div', { class: 'choices' },
         btn([icon('star'), h('span', null, h('b', null, 'Host a table'), h('small', null, 'Everyone plays on their own phone'))], run(() => ctx.hostOnline()), 'choice primary'),
-        btn([icon('qr'), h('span', null, h('b', null, 'Join a table'), h('small', null, 'Use a code or scan it'))], () => { joinPanel.hidden = !joinPanel.hidden; if (!joinPanel.hidden) codeIn.focus(); sfx.tap(); }, 'choice'),
+        btn([icon('qr'), h('span', null, h('b', null, 'Join a table'), h('small', null, 'Type the code or scan the QR'))], () => { joinPanel.hidden = !joinPanel.hidden; if (!joinPanel.hidden) codeIn.focus(); sfx.tap(); }, 'choice'),
         joinPanel,
-        btn([icon('dice'), h('span', null, h('b', null, 'Play on this device'), h('small', null, 'Pass the phone around — no internet needed'))], run(() => ctx.playLocal()), 'choice')),
+        btn([icon('dice'), h('span', null, h('b', null, 'Play on this device'), h('small', null, 'You are the Guide — pass the phone around, no internet needed'))], run(() => ctx.playLocal()), 'choice')),
       h('p', { class: 'premise' }, pack.theme.premise, ' ', readAloud(() => pack.theme.premise)),
       loadRow, installBox));
 
-  return { el, destroy() { offInstall(); }, focusJoin() { joinPanel.hidden = false; } };
+  return { el, destroy() { offInstall(); offLoad(); }, focusJoin() { joinPanel.hidden = false; } };
 }

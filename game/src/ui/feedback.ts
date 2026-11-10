@@ -89,6 +89,14 @@ export function speak(text: string) {
   u.rate = 0.92; u.pitch = 1.05;
   speechSynthesis.speak(u);
 }
+/** Queue a line after whatever is being read (story bubbles arriving one after another). */
+export function speakQueued(text: string) {
+  if (!canSpeak() || prefs.muted) return;
+  const u = new SpeechSynthesisUtterance(text.replace(/[*_#]/g, ''));
+  if (voice) u.voice = voice;
+  u.rate = 0.92; u.pitch = 1.05;
+  speechSynthesis.speak(u);
+}
 export function stopSpeaking() { if (canSpeak()) speechSynthesis.cancel(); }
 
 /** A 🔊 button that reads `text()` aloud. */

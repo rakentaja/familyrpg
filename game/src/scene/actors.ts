@@ -1,5 +1,6 @@
-// One mini on the board: hero, foe or token. Owns its clone, mixer, movement along paths, one-shot clips and the
-// code-driven motion used for unrigged models (bob / hop / spin).
+// One mini on the table: hero, foe or token. Owns its clone, mixer, movement along paths (metres, free movement),
+// one-shot clips, hop-teleports, ghosting (hidden / remote preview) and the code-driven motion used for unrigged
+// models (bob / hop / spin).
 import * as THREE from 'three';
 import type { Assets, ModelTemplate } from './assets';
 import { addOutline, PALETTE, toonMaterial } from './style';
@@ -17,7 +18,7 @@ const ALIASES: Record<string, string[]> = {
   happy: ['happy_idle', 'happy', 'cheer', 'victory'], sleep: ['sleep', 'tuckered', 'lie'],
 };
 
-const WALK_SPEED = 3; // squares per second
+export const WALK_SPEED = 1.6; // metres per second
 const tv = new THREE.Vector3();
 
 const angleDamp = (a: number, b: number, k: number): number => {
@@ -35,27 +36,21 @@ function baseMat(color: string): THREE.Material {
   if (!m) { m = toonMaterial({ color: new THREE.Color(color) }); baseMats.set(color, m); }
   return m;
 }
-let pipTex: [THREE.Texture, THREE.Texture] | null = null;
-let pipMats: [THREE.SpriteMaterial, THREE.SpriteMaterial] | null = null;
-function pips(): [THREE.SpriteMaterial, THREE.SpriteMaterial] {
-  if (pipMats) return pipMats;
-  const mk = (filled: boolean) => {
-    const c = document.createElement('canvas'); c.width = c.height = 64;
-    const g = c.getContext('2d')!;
-    g.beginPath(); g.arc(32, 32, 24, 0, Math.PI * 2);
-    g.fillStyle = filled ? '#8a4a4e' : '#f7f3ec'; g.fill();
-    g.lineWidth = 6; g.strokeStyle = '#2a2328'; g.stroke();
-    if (filled) { g.beginPath(); g.arc(25, 25, 7, 0, Math.PI * 2); g.fillStyle = 'rgba(255,255,255,.45)'; g.fill(); }
-    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
-    return t;
-  };
-  pipTex = [mk(true), mk(false)];
-  pipMats = [new THREE.SpriteMaterial({ map: pipTex[0], depthWrite: false }), new THREE.SpriteMaterial({ map: pipTex[1], depthWrite: false })];
-  return pipMats;
+// ghost versions of toon materials (hidden tokens on the Guide's screen, remote drag previews)
+const ghostMats = new Map<THREE.Material, THREE.Material>();
+function ghostOf(src: THREE.Material): THREE.Material {
+  let m = ghostMats.get(src);
+  if (!m) {
+    const s = src as THREE.MeshToonMaterial;
+    m = toonMaterial({ color: s.color, map: s.map, transparent: true, opacity: 0.42, side: s.side });
+    m.depthWrite = false;
+    ghostMats.set(src, m);
+  }
+  return m;
 }
 export function disposeActorShared(): void {
   baseGeo.dispose(); for (const m of baseMats.values()) m.dispose(); baseMats.clear();
-  pipTex?.forEach((t) => t.dispose()); pipMats?.forEach((m) => m.dispose()); pipTex = null; pipMats = null;
+  for (const m of ghostMats.values()) m.dispose(); ghostMats.clear();
 }
 
 export class Actor {
@@ -89,8 +84,11 @@ export class Actor {
   dead = false;
 
   tuckered = false; calmed = false;
-  pipGroup: THREE.Group | null = null;
-  private pipState = '';
+  speed = WALK_SPEED;                   // m/s along paths
+  private ghosted = false;
+  private realMats = new Map<THREE.Mesh, THREE.Material | THREE.Material[]>();
+  private hop: { from: THREE.Vector3; to: THREE.Vector3; t: number } | null = null;
+  lift = 0; private liftCur = 0;          // raised while dragged
   private baseDisc: THREE.Mesh | null = null;
   carriedBy: string | null = null;
   pickable = true;
@@ -115,7 +113,7 @@ export class Actor {
         const walk = this.clip('walk');
         if (walk?.speed) {
           const natural = walk.speed * this.tpl.scale * extraScale;
-          this.walkScale = THREE.MathUtils.clamp(WALK_SPEED / natural, 0.8, 2.2);
+          this.walkScale = THREE.MathUtils.clamp(this.speed / natural, 0.7, 2.2);
         }
       }
     } else {
@@ -215,7 +213,6 @@ export class Actor {
     this.fadeTo('happy', 0.3);
     if (!this.mixer) { this.hopT = 0; this.spinT = 0; }
     this.leaveT = 0; this.leaveDelay = 1.6; this.onLeave = onPuff;
-    if (this.pipGroup) this.pipGroup.visible = false;
   }
   private onLeave: ((a: Actor) => void) | null = null;
   private leaveDelay = 1.6;
@@ -229,7 +226,34 @@ export class Actor {
 
   popIn(delay = 0): void { this.popT = 0.0001; this.popDelay = delay; this.pose.scale.setScalar(0.0001); }
 
-  place(p: THREE.Vector3): void { this.root.position.copy(p); this.goal.copy(p); this.path.length = 0; }
+  place(p: THREE.Vector3): void {
+    this.root.position.copy(p); this.goal.copy(p); this.hop = null;
+    if (this.path.length) { this.path.length = 0; if (!this.tuckered && !this.calmed) this.fadeTo('idle', 0.15); }
+  }
+
+  /** Quick hop to a spot (Guide placement / teleport). */
+  hopTo(p: THREE.Vector3): void {
+    this.path.length = 0;
+    if (!this.tuckered && !this.calmed && this.base === 'walk') this.fadeTo('idle', 0.15);
+    this.hop = { from: this.root.position.clone(), to: p.clone(), t: 0 };
+    this.goal.copy(p);
+  }
+
+  /** See-through look (hidden things for the Guide, remote drag previews). */
+  setGhost(on: boolean): void {
+    if (on === this.ghosted || !this.body) return;
+    this.ghosted = on;
+    this.body.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh) return;
+      if (m.userData.sbOutline) { m.visible = !on; return; }
+      if (on) { this.realMats.set(m, m.material); m.material = Array.isArray(m.material) ? m.material.map(ghostOf) : ghostOf(m.material); }
+      else { const r = this.realMats.get(m); if (r) m.material = r; }
+      m.castShadow = !on;
+    });
+    if (!on) this.realMats.clear();
+  }
+  get ghost(): boolean { return this.ghosted; }
   face(yaw: number, instant = false): void { this.targetYaw = yaw; if (instant) this.yaw.rotation.y = yaw; }
 
   /** Walk (or slide) through world points. */
@@ -241,30 +265,12 @@ export class Actor {
   }
   get moving(): boolean { return this.path.length > 0; }
 
-  setPips(grump: number, max: number): void {
-    const key = grump + '/' + max;
-    if (key === this.pipState) return;
-    this.pipState = key;
-    if (!this.pipGroup) { this.pipGroup = new THREE.Group(); this.root.add(this.pipGroup); }
-    const [full, empty] = pips();
-    const g = this.pipGroup;
-    while (g.children.length > max) g.remove(g.children[g.children.length - 1]!);
-    while (g.children.length < max) { const s = new THREE.Sprite(full); s.scale.setScalar(0.17); g.add(s); }
-    const per = Math.min(max, 6), sp = 0.17;
-    g.children.forEach((c, i) => {
-      const s = c as THREE.Sprite; s.material = i < grump ? full : empty;
-      const row = Math.floor(i / per), col = i % per, n = Math.min(per, max - row * per);
-      s.position.set((col - (n - 1) / 2) * sp, row * sp, 0);
-    });
-    g.position.y = this.height + 0.22;
-  }
-
   /** Top of head in world space. */
   head(out: THREE.Vector3): THREE.Vector3 {
-    return out.copy(this.root.position).setY(this.root.position.y + this.height * (1 - this.lie * 0.6) * this.pose.scale.y + 0.1);
+    return out.copy(this.root.position).setY(this.root.position.y + this.pose.position.y + this.height * (1 - this.lie * 0.6) * this.pose.scale.y + 0.1);
   }
 
-  get busy(): boolean { return this.path.length > 0 || !!this.oneShot || this.popT > 0 || this.leaveT >= 0 || this.hopT >= 0 || this.shakeT >= 0 || Math.abs(this.lie - this.lieGoal) > 0.01; }
+  get busy(): boolean { return this.path.length > 0 || !!this.hop || Math.abs(this.liftCur - this.lift) > 1e-3 || !!this.oneShot || this.popT > 0 || this.leaveT >= 0 || this.hopT >= 0 || this.shakeT >= 0 || Math.abs(this.lie - this.lieGoal) > 0.01; }
 
   // ---------------------------------------------------------------- per frame
   update(dt: number): void {
@@ -274,12 +280,22 @@ export class Actor {
       const target = this.path[0]!;
       const p = this.root.position;
       tv.subVectors(target, p); tv.y = 0;
-      const d = tv.length(), step = (this.slide ? 5 : WALK_SPEED) * dt;
+      const d = tv.length(), step = (this.slide ? 4 : this.speed) * dt;
       if (d > 1e-4 && !this.slide) this.targetYaw = Math.atan2(tv.x, tv.z);
       if (d <= step) { p.x = target.x; p.z = target.z; this.path.shift(); }
       else p.addScaledVector(tv, step / d);
       if (!this.path.length && !this.tuckered && !this.calmed) this.fadeTo('idle', 0.2);
     }
+    if (this.hop) {
+      this.hop.t += dt / 0.38;
+      const u = Math.min(1, this.hop.t), e = u * u * (3 - 2 * u);
+      this.root.position.lerpVectors(this.hop.from, this.hop.to, e);
+      this.root.position.y = Math.sin(u * Math.PI) * (0.35 + Math.min(1, this.hop.from.distanceTo(this.hop.to) * 0.1));
+      tv.subVectors(this.hop.to, this.hop.from); tv.y = 0;
+      if (tv.lengthSq() > 0.01) this.targetYaw = Math.atan2(tv.x, tv.z);
+      if (u >= 1) { this.root.position.copy(this.hop.to); this.root.position.y = 0; this.hop = null; }
+    }
+    this.liftCur += (this.lift - this.liftCur) * (1 - Math.exp(-dt * 14));
     this.yaw.rotation.y = angleDamp(this.yaw.rotation.y, this.targetYaw, 1 - Math.exp(-dt * 12));
     this.mixer?.update(dt);
 
@@ -295,7 +311,7 @@ export class Actor {
     if (this.spinT >= 0) { this.spinT += dt; const u = this.spinT / 0.6; if (u >= 1) this.spinT = -1; else ry += u * Math.PI * 2; }
     if (this.shakeT >= 0) { this.shakeT += dt; const u = this.shakeT / 0.45; if (u >= 1) this.shakeT = -1; else rz += Math.sin(u * 40) * 0.2 * (1 - u); }
     this.lie += (this.lieGoal - this.lie) * (1 - Math.exp(-dt * 6));
-    this.pose.position.y = y + this.lie * this.radius * 0.5;
+    this.pose.position.y = y + this.lie * this.radius * 0.5 + this.liftCur;
     this.pose.rotation.set(-this.lie * Math.PI * 0.48, ry, rz + this.lie * 0.15);
 
     // pop in / leave
@@ -315,7 +331,6 @@ export class Actor {
       if (u >= 0) this.pose.scale.setScalar(Math.max(0.0001, 1 - u) * (1 + Math.sin(Math.min(1, u) * Math.PI) * 0.25));
       if (u >= 1) { this.dead = true; this.root.visible = false; }
     }
-    if (this.pipGroup) this.pipGroup.position.y = this.height * (1 - this.lie * 0.6) + 0.22 + y;
   }
 
   dispose(): void {

@@ -1,9 +1,9 @@
 // Table moments between scenes: "Wrap it!" (charades), "Draw the ornament" (shared canvas), "Hum-a-tune".
-import type { GameState, PackTableMoment } from '../engine/types';
+import type { GameState, PackTableMoment } from '../rules/types';
 import type { Ctx } from './ctx';
 import { h, btn } from './dom';
 import { icon } from './icons';
-import { canRunTable, hero } from './common';
+import { hero } from './common';
 import { readAloud, sfx, buzz } from './feedback';
 
 const INK = ['#2a2328', '#c97f84', '#7f9a78', '#8c80a8', '#d9b75a'];
@@ -14,7 +14,7 @@ export function momentView(ctx: Ctx) {
   const store = ctx.store!;
   const pack = ctx.pack;
   const net = store.net;
-  const el = h('div', { class: 'modal moment', role: 'dialog', 'aria-label': 'Table moment' });
+  const el = h('div', { class: 'modal moment full', role: 'dialog', 'aria-label': 'Table moment' });
   const card = h('div', { class: 'card moment-card tall' });
   el.appendChild(card);
 
@@ -91,7 +91,7 @@ export function momentView(ctx: Ctx) {
     return pack.tableMoments.find((m) => m.id === s.tableMoment?.id);
   }
   const name = (s: GameState, id?: string) => s.players.find((p) => p.id === id)?.name ?? hero(s, id)?.name ?? 'Someone';
-  const tm = (op: 'start' | 'begin' | 'vote' | 'finish' | 'skip', extra: { performer?: string; vote?: string; winner?: string; at?: number } = {}) => {
+  const tm = (op: 'start' | 'begin' | 'vote' | 'finish' | 'skip', extra: { performer?: string; vote?: string; winner?: string } = {}) => {
     sfx.tap(); store.dispatch({ t: 'tm', op, ...extra });
   };
 
@@ -101,12 +101,13 @@ export function momentView(ctx: Ctx) {
     return s.players.filter((p) => p.id !== perf).map((p) => ({ id: p.id, label: p.name }));
   }
 
-  function render(s: GameState) {
+  function render(s: GameState, prev?: GameState | null) {
+    if (prev === s) return;                      // clock tick: the timer runs on its own
     last = s;
     const t = s.tableMoment;
     const d = def(s);
     const me = store.me;
-    const runner = canRunTable(s, me, store.isHost());
+    const runner = store.isHost() || !!s.players.find((p) => p.id === me)?.guide;
     const local = store.role === 'local';
     const kind = d?.kind ?? 'charades';
     const key = `${t?.id}:${t?.performer}:${t?.stage === 'performing' ? 'p' : 'x'}:${t?.endsAt ?? ''}`;
@@ -138,7 +139,7 @@ export function momentView(ctx: Ctx) {
         else parts.push(btn('Me! I’ll go first', () => tm('start', { performer: me }), 'big'), waiting(s));
       } else if (iPerform) {
         parts.push(h('p', { class: 'big-q' }, local ? 'Pick who goes first and hand them the phone. Everyone else: no peeking!' : 'You’re up! Don’t show anyone your screen.'),
-          btn('Start!', () => tm('begin', { at: Date.now() }), 'primary big'));
+          btn('Start!', () => tm('begin'), 'primary big'));
       } else parts.push(h('p', { class: 'waiting' }, `${name(s, t!.performer)} is getting ready…`));
     } else if (t.stage === 'performing' && !localDone) {
       const left = h('b', { class: 'timer' });
@@ -208,8 +209,8 @@ export function momentView(ctx: Ctx) {
   }
 
   function waiting(s: GameState) {
-    const hst = s.players.find((p) => p.host);
-    return h('p', { class: 'waiting' }, `Waiting for ${hst?.name ?? 'the host'}…`);
+    const g = s.players.find((p) => p.guide) ?? s.players.find((p) => p.host);
+    return h('p', { class: 'waiting' }, `Waiting for ${g?.name ?? 'the Guide'}…`);
   }
 
   return {

@@ -1,51 +1,52 @@
-// App shell: owns the store/net lifecycle and switches between Home, Lobby and Play.
-import type { BoardView, BoardCallbacks, NetApi, RoomInfo } from '../contracts';
-import type { GameState, Pack, Vec } from '../engine/types';
-import * as engine from '../engine';
+// App shell: owns the store/net lifecycle and switches between Home, Lobby and the game (the 3D table).
+import type { NetApi, RoomInfo, SceneCallbacks, SceneView } from '../contracts';
+import type { GameState, Pack } from '../rules/types';
+import { rules } from '../rules';
 import { createNostrNet } from '../net/nostr';
 import { createLocalNet } from '../net/local';
-import { createStore, clearSession, loadSession, type StoreRole } from '../store';
+import { createStore, clearSession, loadSession, type AppStore, type StoreRole } from '../store';
 import type { Ctx } from './ctx';
 import { h, btn } from './dom';
 import { homeScreen, myName, myColor } from './home';
 import { lobbyScreen } from './lobby';
-import { playScreen } from './play';
+import { playScreen, type PlayScreen } from './play';
 import { toast, sfx, stopSpeaking } from './feedback';
-import { keepAwake, banner } from './pwa';
+import { keepAwake } from './pwa';
 import { safe } from './common';
 
 type Screen = { el: HTMLElement; update?(s: GameState, prev: GameState | null): void; destroy?(): void };
-type PlayScreen = ReturnType<typeof playScreen>;
+type NetExtras = NetApi & { onInfo?(cb: (i: RoomInfo | null) => void): () => void; setName?(name: string): void };
 
-export function createApp(opts: { pack: Pack; board: BoardView; root: HTMLElement; boardReady: Promise<void>; progress(cb: (p: number) => void): void }) {
-  const { pack, board, root } = opts;
+export function createApp(opts: { pack: Pack; scene: SceneView; root: HTMLElement; sceneReady: Promise<void>; progress(cb: (p: number) => void): void }) {
+  const { pack, scene, root } = opts;
   let screen: Screen | null = null;
   let screenKind: 'home' | 'lobby' | 'play' | 'joining' | null = null;
   let net: NetApi | null = null;
   let unsub: (() => void) | null = null;
-  let offs: (() => void)[] = [];
+  const offs: (() => void)[] = [];
   let progress = 0;
   const progressCbs = new Set<(p: number) => void>();
-  opts.progress((p) => { progress = p; for (const cb of progressCbs) cb(p); });
-  let boardShown = false;
+  opts.progress((p) => { progress = p; for (const cb of [...progressCbs]) cb(p); });
+  let sceneShown = false;
 
   const ctx: Ctx = {
-    pack, board, root,
+    pack, scene, root,
     store: null,
     get me() { return net?.myId ?? 'local'; },
-    get boardProgress() { return progress; },
-    set boardProgress(v: number) { progress = v; },
-    boardReady: opts.boardReady,
-    onBoardProgress(cb) { progressCbs.add(cb); },
+    get sceneProgress() { return progress; },
+    sceneReady: opts.sceneReady,
+    onSceneProgress(cb) { progressCbs.add(cb); return () => { progressCbs.delete(cb); }; },
     hostOnline, join, playLocal, leave, playAgain,
   };
 
-  // ---------------------------------------------------------------- board callbacks (forwarded to the play screen)
-  const callbacks: BoardCallbacks = {
-    onCellTap: (c: Vec) => (screen as PlayScreen | null)?.onCellTap?.(c),
-    onHeroTap: (id: string) => (screen as PlayScreen | null)?.onHeroTap?.(id),
-    onFoeTap: (id: string) => (screen as PlayScreen | null)?.onFoeTap?.(id),
-    onTokenTap: (id: string) => (screen as PlayScreen | null)?.onTokenTap?.(id),
+  // ---------------------------------------------------------------- scene callbacks → the play screen
+  const play = () => (screenKind === 'play' ? (screen as PlayScreen) : null);
+  const callbacks: SceneCallbacks = {
+    onTap: (hit) => play()?.callbacks.onTap(hit),
+    onHold: (hit, at) => play()?.callbacks.onHold(hit, at),
+    canDrag: (hit) => play()?.callbacks.canDrag(hit) ?? false,
+    onDrag: (hit, at, phase) => play()?.callbacks.onDrag(hit, at, phase),
+    onDiceThrown: (t) => play()?.callbacks.onDiceThrown(t),
   };
 
   function show(kind: typeof screenKind, next: Screen) {
@@ -57,10 +58,16 @@ export function createApp(opts: { pack: Pack; board: BoardView; root: HTMLElemen
     document.body.dataset.screen = kind ?? '';
   }
 
+  function setSceneVisible(on: boolean) {
+    if (on === sceneShown) return;
+    sceneShown = on;
+    document.body.classList.toggle('scene-on', on);
+    if (on) safe(() => scene.resize(), undefined);
+  }
+
   function goHome(joinCode?: string) {
     keepAwake(false);
-    document.body.classList.remove('board-on');
-    boardShown = false;
+    setSceneVisible(false);
     show('home', homeScreen(ctx, { joinCode }));
   }
 
@@ -75,16 +82,15 @@ export function createApp(opts: { pack: Pack; board: BoardView; root: HTMLElemen
   }
 
   // ---------------------------------------------------------------- store wiring
-  function attach(role: StoreRole, n: NetApi, state: GameState | null) {
+  function attach(role: StoreRole, n: NetApi, state: GameState | null): AppStore {
     detach(false);
     net = n;
     const store = createStore({ pack, net: n, role, state });
     ctx.store = store;
     offs.push(store.onError((m) => toast(m, 'error')));
-    offs.push(n.onStatus((st) => banner('net', role !== 'local' && st === 'connecting' ? 'Reconnecting…' : null, undefined, 'warn')));
-    // host stepped down (another device took over) → become a client
-    const nn = n as NetApi & { onInfo?(cb: (i: RoomInfo | null) => void): () => void; setName?(name: string): void };
+    const nn = n as NetExtras;
     nn.setName?.(myName());
+    // host stepped down (another device took over) → become a client
     if (nn.onInfo && role === 'host') {
       offs.push(nn.onInfo((info) => {
         if (info && !info.isHost && ctx.store?.role === 'host') { toast('Another device is hosting now'); attach('client', n, ctx.store.state); }
@@ -93,7 +99,7 @@ export function createApp(opts: { pack: Pack; board: BoardView; root: HTMLElemen
     let joinSent = 0;
     unsub = store.subscribe((s, prev) => {
       // clients announce themselves until the host lists them (also after "Play again")
-      if (role === 'client' && !s.players.some((p) => p.id === n.myId) && Date.now() - joinSent > 4000) {
+      if (role === 'client' && prev !== s && !s.players.some((p) => p.id === n.myId) && Date.now() - joinSent > 4000) {
         joinSent = Date.now();
         store.dispatch({ t: 'join', name: myName(), color: myColor() });
       }
@@ -102,7 +108,6 @@ export function createApp(opts: { pack: Pack; board: BoardView; root: HTMLElemen
     if (state) render(state, null);
     else show('joining', joiningScreen('Finding the table…', () => leave()));
     if (role === 'client' && !state) {
-      // nothing arrived yet: say hello anyway so the host adds us
       setTimeout(() => { if (ctx.store === store && !store.state) store.dispatch({ t: 'join', name: myName(), color: myColor() }); }, 1500);
       setTimeout(() => { if (ctx.store === store && !store.state) toast('Still looking… is the host’s app open?'); }, 12000);
     }
@@ -118,35 +123,46 @@ export function createApp(opts: { pack: Pack; board: BoardView; root: HTMLElemen
   }
 
   function render(s: GameState, prev: GameState | null) {
-    // board first, so overlays sit on a fresh picture
-    if (s.phase !== 'lobby') {
-      if (!boardShown) { boardShown = true; document.body.classList.add('board-on'); safe(() => board.resize(), undefined); }
-      const fx = !prev || s.fx.seq !== prev.fx.seq ? s.fx.list : [];
-      safe(() => board.update(s, prev && prev.phase !== 'lobby' ? prev : null, prev ? fx : []), undefined);
-    } else if (boardShown) { boardShown = false; document.body.classList.remove('board-on'); }
+    const inGame = s.phase !== 'lobby';
+    // scene first, so overlays sit on a fresh picture
+    if (inGame) {
+      setSceneVisible(true);
+      const tick = prev === s;
+      const fx = !tick && prev && s.fx.seq !== prev.fx.seq ? s.fx.list : [];
+      safe(() => scene.update(s, prev && prev.phase !== 'lobby' ? prev : null, fx), undefined);
+    } else setSceneVisible(false);
 
-    const kind = s.phase === 'lobby' ? 'lobby' : 'play';
+    const kind = inGame ? 'play' : 'lobby';
     if (kind !== screenKind) {
-      if (kind === 'lobby') show('lobby', lobbyScreen(ctx));
-      else show('play', playScreen(ctx));
+      show(kind, kind === 'lobby' ? lobbyScreen(ctx) : playScreen(ctx));
       keepAwake(kind === 'play');
     } else screen?.update?.(s, prev);
+  }
+
+  /** A fresh table. The host (this device) is the Guide unless rules picked someone already. */
+  function freshGame(hostId: string, adventureId?: string): GameState {
+    const s = rules.createGame(pack, { hostId, hostName: myName(), hostColor: myColor(), at: Date.now(), adventureId });
+    return s;
+  }
+  function ensureGuide(store: AppStore) {
+    const s = store.state;
+    if (s && !s.players.some((p) => p.guide)) store.dispatch({ t: 'setGuide', playerId: store.me });
   }
 
   // ---------------------------------------------------------------- flows
   async function hostOnline() {
     const n = createNostrNet();
-    (n as { setName?(x: string): void }).setName?.(myName());
+    n.setName(myName());
     await n.host();
-    const s = engine.createGame(pack, { hostId: n.myId, hostName: myName(), hostColor: myColor(), mode: 'guideless' });
-    const store = attach('host', n, s);
+    const store = attach('host', n, freshGame(n.myId));
+    ensureGuide(store);
     n.publishState(store.state!);
     sfx.chime();
   }
 
   async function join(code: string) {
     const n = createNostrNet();
-    (n as { setName?(x: string): void }).setName?.(myName());
+    n.setName(myName());
     let cancelled = false;
     show('joining', joiningScreen('Knocking on the door…', () => { cancelled = true; n.leave(); goHome(); }));
     try { await n.join(code); }
@@ -159,8 +175,8 @@ export function createApp(opts: { pack: Pack; board: BoardView; root: HTMLElemen
   async function playLocal() {
     const n = createLocalNet();
     await n.host().catch(() => null);
-    const s = engine.createGame(pack, { hostId: n.myId, hostName: myName(), hostColor: myColor(), mode: 'guideless' });
-    attach('local', n, s);
+    const store = attach('local', n, freshGame(n.myId));
+    ensureGuide(store);
     sfx.chime();
   }
 
@@ -168,7 +184,6 @@ export function createApp(opts: { pack: Pack; board: BoardView; root: HTMLElemen
     stopSpeaking();
     detach(true);
     clearSession();
-    safe(() => board.highlight([], 'move'), undefined);
     goHome();
   }
 
@@ -176,11 +191,13 @@ export function createApp(opts: { pack: Pack; board: BoardView; root: HTMLElemen
     const store = ctx.store;
     if (!store || !store.isHost()) return;
     const old = store.state;
-    const fresh = engine.createGame(pack, { hostId: store.me, hostName: myName(), hostColor: myColor(), mode: old?.mode ?? 'guideless', adventureId: old?.adventureId });
+    const fresh = freshGame(store.me, old?.adventureId);
+    // keep the family together: same players (and Guide), same settings, same heroes
+    if (old?.players.length) fresh.players = old.players.map((p) => ({ ...p }));
+    if (old?.settings) fresh.settings = { ...old.settings };
     store.replace(fresh);
-    // bring the heroes back so nobody has to start over (the host can hand them out again in the lobby)
-    for (const x of old?.heroes ?? []) store.dispatch({ t: 'addHero', roleId: x.roleId, name: x.name, traits: x.traits });
-    if (old?.kidMode) store.dispatch({ t: 'setKidMode', on: true });
+    ensureGuide(store);
+    for (const x of old?.heroes ?? []) store.dispatch({ t: 'addHero', roleId: x.roleId, name: x.name, traits: x.traits, owner: x.owner });
   }
 
   // ---------------------------------------------------------------- boot routing
@@ -204,7 +221,7 @@ export function createApp(opts: { pack: Pack; board: BoardView; root: HTMLElemen
         const code = saved.info?.roomId || saved.link!;
         if (saved.role === 'host' && saved.state) {
           const n = createNostrNet();
-          (n as { setName?(x: string): void }).setName?.(myName());
+          n.setName(myName());
           show('joining', joiningScreen('Reopening your table…', () => { n.leave(); clearSession(); goHome(); }));
           await n.join(code);
           await n.claimHost();

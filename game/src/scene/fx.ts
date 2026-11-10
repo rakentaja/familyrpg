@@ -1,4 +1,4 @@
-// Little floating things: rising text ("−1", "+1 Cheer"), speech bubbles, puffs of snow/sparkle.
+// Little floating things: rising text ("-1", "+1 Cheer") and puffs of snow / sparkle (3D sprites).
 import * as THREE from 'three';
 
 const FONT = '"Kalam", "Comic Sans MS", "Chalkboard SE", "Marker Felt", cursive';
