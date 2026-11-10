@@ -1,0 +1,22 @@
+# secrets
+.env
+.meshy_key
+
+# local-only (large sources, review pages, raw third-party animation files)
+art/
+review/
+assets/characters-source/
+assets/mixamo/*.fbx
+CLAUDE.md
+CLAUDE.local.md
+AGENTS.md
+.mcp.json
+.claude/
+
+# build output / deps
+node_modules/
+game/dist/
+tools/web/public/
+tools/web/tmp_*.glb
+*.png.tmp
+.DS_Store

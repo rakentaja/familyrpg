@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sleighbound — Animation Viewer</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=IM+Fell+English&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#2a2328;--paper:#f7f3ec;--sage:#a9bfa0;--rose:#8a4a4e;--lav:#8c84a3}
+  html,body{margin:0;height:100%;background:#e9e1d3;font-family:'IM Fell English',Georgia,serif;color:var(--ink);overflow:hidden}
+  .app{display:grid;grid-template-columns:240px 1fr;height:100%}
+  aside{background:var(--paper);border-right:2px solid var(--ink);display:flex;flex-direction:column;min-height:0}
+  h1{font-family:Cinzel,serif;font-size:16px;color:var(--rose);margin:14px 14px 2px;letter-spacing:.04em}
+  .sub{font-size:12.5px;color:#5a4e58;margin:0 14px 10px}
+  #list{list-style:none;margin:0;padding:0 8px 10px;overflow:auto;flex:1}
+  #list li{display:flex;flex-direction:column;padding:6px 8px;border-radius:5px;cursor:pointer;border:1.5px solid transparent}
+  #list li:hover{background:rgba(169,191,160,.25)}
+  #list li.sel{background:var(--sage);border-color:var(--ink)}
+  #list li span{font-size:14.5px}#list li em{font-size:11.5px;color:#5a4e58}
+  .keys{font-size:11.5px;color:#5a4e58;padding:8px 14px 12px;border-top:1px dashed rgba(42,35,40,.25)}
+  main{position:relative;min-width:0}
+  #c{position:absolute;inset:0;width:100%;height:100%;display:block}
+  #paper{position:absolute;inset:0;pointer-events:none;mix-blend-mode:multiply;opacity:.5;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='260'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .55  0 0 0 0 .47  0 0 0 0 .38  0 0 0 .35 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    box-shadow:inset 0 0 140px rgba(90,70,50,.3)}
+  #meta{position:absolute;top:14px;left:16px;font-size:13.5px;line-height:1.45;background:rgba(247,243,236,.88);border:1.5px solid var(--ink);border-radius:5px;padding:7px 11px}
+  #meta b{font-family:Cinzel,serif;color:var(--rose)}
+  #stage-msg{position:absolute;top:14px;right:16px;font-family:Kalam,cursive;font-size:14px;max-width:300px;text-align:right}
+  .dock{position:absolute;left:16px;right:16px;bottom:14px;background:rgba(247,243,236,.94);border:2px solid var(--ink);border-radius:6px 9px 5px 8px/8px 5px 9px 6px;
+    padding:10px 12px;box-shadow:3px 4px 0 rgba(42,35,40,.22);display:flex;flex-direction:column;gap:8px}
+  .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  button{font-family:Kalam,cursive;font-size:14.5px;background:var(--paper);border:1.8px solid var(--ink);border-radius:6px 3px 7px 4px;padding:3px 11px;cursor:pointer;color:var(--ink)}
+  button.on{background:var(--sage)} button:disabled{opacity:.35;cursor:default}
+  .clip small{font-size:11px;color:#5a4e58}
+  #clips{display:flex;gap:6px;flex-wrap:wrap}
+  .sep{width:1px;height:22px;background:rgba(42,35,40,.25);margin:0 4px}
+  input[type=range]{accent-color:#7f9a78}
+  #scrub{flex:1;min-width:120px}
+  .lbl{font-size:12.5px;color:#5a4e58;font-variant-numeric:tabular-nums}
+  @media (max-width:700px){.app{grid-template-columns:1fr;grid-template-rows:150px 1fr}aside{border-right:0;border-bottom:2px solid var(--ink)}.keys,.sub{display:none}
+    #list{display:flex;flex-wrap:wrap;gap:4px}#list li em{display:none}#meta{font-size:12px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <h1>ANIMATION VIEWER</h1>
+    <div class="sub">Sleighbound · Meshy rigs + clips</div>
+    <ul id="list"></ul>
+    <div class="keys">↑ ↓ character · 1–3 clip · Space play/pause · drag to orbit</div>
+  </aside>
+  <main>
+    <canvas id="c"></canvas><div id="paper"></div>
+    <div id="meta"></div><div id="stage-msg"></div>
+    <div class="dock">
+      <div class="row"><div id="clips"></div><span class="sep"></span>
+        <button id="bInk" class="on">Ink</button><button id="bHatch" class="on">Hatching</button><button id="bSkel">Skeleton</button><button id="bTurn">Turntable</button></div>
+      <div class="row"><button id="bPlay">Pause</button>
+        <span class="lbl" id="t">0.00s</span><input type="range" id="scrub" min="0" max="1" step="0.001" value="0"><span class="lbl" id="dur"></span>
+        <span class="sep"></span><span class="lbl">Speed</span><input type="range" id="speed" min="0.1" max="2" step="0.05" value="1"><span class="lbl" id="speedv">1.00×</span></div>
+    </div>
+  </main>
+</div>
+<script>window.SB_ANIM = /*ANIM*/;</script>
+<script type="module">/*APP*/</script>
+</body>
+</html>

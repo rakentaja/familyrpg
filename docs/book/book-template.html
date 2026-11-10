@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sleighbound — Player's Handbook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pw:440px; --ph:620px;
+  --ink:#2b2219; --ink2:#5a4636; --red:#7a1f14; --paper:#f1e4c8; --paper2:#e6d3ab;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:#1d1611 radial-gradient(ellipse at 50% 40%, #3a2a1d 0%, #1a130e 70%);
+  font-family:'IM Fell English',Georgia,serif; color:var(--ink);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;
+}
+.stage{position:relative;width:calc(var(--pw)*2);height:var(--ph);perspective:2600px;transform-origin:center center}
+.book{position:absolute;inset:0;transition:transform .9s cubic-bezier(.4,.1,.2,1);transform-style:preserve-3d}
+.book.closed-front{transform:translateX(calc(var(--pw)*-0.5))}
+.book.closed-back{transform:translateX(calc(var(--pw)*0.5))}
+.leaf{
+  position:absolute;top:0;left:50%;width:var(--pw);height:var(--ph);
+  transform-origin:left center;transform-style:preserve-3d;
+  transition:transform .9s cubic-bezier(.45,.05,.25,1);cursor:pointer;
+}
+.leaf.flipped{transform:rotateY(-180deg)}
+.face{
+  position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(255,250,235,.55), transparent 60%),
+    radial-gradient(ellipse at 80% 90%, rgba(160,120,70,.18), transparent 55%),
+    linear-gradient(var(--paper),var(--paper2));
+  padding:40px 40px 46px 40px;
+}
+.face::before{ /* paper grain */
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:.35;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .45  0 0 0 0 .35  0 0 0 0 .22  0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+.face.front{box-shadow:inset 22px 0 30px -18px rgba(70,45,20,.55)}
+.face.back{transform:rotateY(180deg);box-shadow:inset -22px 0 30px -18px rgba(70,45,20,.55)}
+.face.front .folio{right:40px}.face.back .folio{left:40px}
+.folio{position:absolute;bottom:18px;font-family:'IM Fell English SC',serif;font-size:12px;color:var(--ink2);letter-spacing:.08em}
+.runhead{position:absolute;top:16px;left:40px;right:40px;text-align:center;font-family:'IM Fell English SC',serif;font-size:10.5px;letter-spacing:.2em;color:var(--ink2);opacity:.8}
+.content{position:relative;height:100%;font-size:13.4px;line-height:1.42}
+
+/* typography */
+h1{font-family:'Cinzel',serif;font-weight:900;color:var(--red);letter-spacing:.03em}
+h2{font-family:'Cinzel',serif;font-weight:700;color:var(--red);font-size:21px;letter-spacing:.04em;margin:2px 0 4px}
+h3{font-family:'Cinzel',serif;font-weight:700;color:var(--ink);font-size:13.5px;letter-spacing:.06em;margin:10px 0 3px;text-transform:uppercase}
+p{margin:0 0 7px;text-align:justify;hyphens:auto}
+em{color:var(--ink2)}
+b{font-weight:normal;font-family:'IM Fell English SC',serif;letter-spacing:.03em;color:var(--red)}
+.rule{height:9px;margin:2px 0 9px;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 360 9' preserveAspectRatio='none'><path d='M2 5 C 60 2, 120 7, 180 4 S 300 6, 358 3' stroke='%237a1f14' stroke-width='1.6' fill='none' stroke-linecap='round'/><path d='M8 6.5 C 90 5, 200 8, 350 5.5' stroke='%237a1f14' stroke-width='.6' fill='none' opacity='.6'/></svg>") center/100% 100% no-repeat}
+.dropcap::first-letter{float:left;font-family:'Cinzel',serif;font-weight:900;font-size:50px;line-height:.82;margin:4px 6px 0 0;color:var(--red)}
+ul,ol{margin:0 0 7px 18px}
+li{margin:0 0 3px}
+.hand{font-family:'Kalam',cursive;color:#3c3a5c;font-size:14px;line-height:1.3}
+
+/* pencil boxes */
+.sidebar{
+  position:relative;margin:8px 0;padding:8px 12px 7px;
+  background:rgba(140,100,50,.10);
+  border:1.4px solid rgba(60,40,25,.65);border-radius:3px 6px 4px 7px / 6px 3px 7px 4px;
+  filter:url(#pencil);
+}
+.sidebar h3{margin-top:0;color:var(--red)}
+.sidebar p{margin-bottom:4px}
+
+table{width:100%;border-collapse:collapse;margin:5px 0 8px;font-size:12.4px}
+th{font-family:'Cinzel',serif;font-size:10.5px;letter-spacing:.06em;text-align:left;padding:4px 5px;border-bottom:1.5px solid var(--ink);color:var(--red)}
+td{padding:3.5px 5px;vertical-align:top;border-bottom:1px dashed rgba(60,40,25,.35)}
+tr:nth-child(even) td{background:rgba(140,100,50,.08)}
+td:first-child{font-family:'IM Fell English SC',serif;white-space:nowrap;color:var(--ink)}
+
+.art{display:block;width:100%;mix-blend-mode:multiply;border-radius:2px}
+.art-full{position:absolute;inset:24px;width:calc(100% - 48px);height:calc(100% - 70px);object-fit:contain;mix-blend-mode:multiply}
+.caption{position:absolute;left:40px;right:40px;bottom:30px;text-align:center;font-style:italic;font-size:12.5px;color:var(--ink2)}
+
+/* cover */
+.cover{padding:0;background:#3b1d14 linear-gradient(135deg,#4a2418,#2a130c)}
+.cover::before{opacity:.5}
+.cover .frame{position:absolute;inset:14px;border:2px solid #c9a35c;border-radius:4px;box-shadow:inset 0 0 0 5px #3b1d14, inset 0 0 0 6px rgba(201,163,92,.6)}
+.cover img{position:absolute;left:34px;right:34px;top:118px;width:calc(100% - 68px);height:400px;object-fit:cover;border:2px solid #c9a35c}
+.cover h1{position:absolute;top:34px;left:0;right:0;text-align:center;font-size:40px;color:#e8c675;text-shadow:0 2px 0 #1a0a05}
+.cover .sub{position:absolute;top:86px;left:0;right:0;text-align:center;font-family:'IM Fell English SC',serif;color:#d9c08a;letter-spacing:.3em;font-size:13px}
+.cover .foot{position:absolute;bottom:38px;left:0;right:0;text-align:center;font-family:'IM Fell English',serif;font-style:italic;color:#d9c08a;font-size:14px}
+.backcover{padding:0;background:#3b1d14 linear-gradient(225deg,#4a2418,#2a130c)}
+.backcover .inner{position:absolute;inset:70px 54px;color:#e3cf9f;text-align:center;font-size:14.5px;line-height:1.55}
+.backcover h2{color:#e8c675;font-size:22px;margin-bottom:14px}
+
+/* toc */
+.toc{list-style:none;margin:6px 0 0}
+.toc li{display:flex;align-items:baseline;gap:6px;margin:0 0 7px;font-size:14px}
+.toc li span.dots{flex:1;border-bottom:1.5px dotted rgba(60,40,25,.55);transform:translateY(-4px)}
+.toc a{color:inherit;text-decoration:none;cursor:pointer}
+.toc a:hover{color:var(--red)}
+
+.note{position:absolute;transform:rotate(-3deg)}
+.center{text-align:center}
+
+/* UI */
+.ui{margin-top:20px;display:flex;align-items:center;gap:18px;color:#d9c08a;font-family:'IM Fell English SC',serif;letter-spacing:.1em;font-size:14px;user-select:none}
+.ui button{background:none;border:1.5px solid #c9a35c;color:#e8c675;font-family:'Cinzel',serif;font-size:16px;width:42px;height:42px;border-radius:50%;cursor:pointer;transition:background .2s}
+.ui button:hover:not(:disabled){background:rgba(201,163,92,.18)}
+.ui button:disabled{opacity:.3;cursor:default}
+.hint{color:#8c7550;font-size:12px;margin-top:8px;font-style:italic;font-family:'IM Fell English',serif}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <filter id="pencil"><feTurbulence type="fractalNoise" baseFrequency=".04" numOctaves="2" seed="3"/><feDisplacementMap in="SourceGraphic" scale="2.2"/></filter>
+</svg>
+
+<div class="stage" id="stage">
+  <div class="book closed-front" id="book">
+
+    <!-- Leaf 1 -->
+    <div class="leaf">
+      <div class="face front cover">
+        <div class="frame"></div>
+        <h1>SLEIGHBOUND</h1>
+        <div class="sub">PLAYER'S HANDBOOK</div>
+        <img src="{{cover}}" alt="Four heroes on a snowy rooftop">
+        <div class="foot">A Hearthside adventure · 2–8 players · ages 6+</div>
+      </div>
+      <div class="face back">
+        <div class="content">
+          <h2 style="margin-top:30px">Contents</h2><div class="rule"></div>
+          <ul class="toc">
+            <li><a data-go="2">Welcome, Heroes</a><span class="dots"></span>1</li>
+            <li><a data-go="2">What You Need</a><span class="dots"></span>2</li>
+            <li><a data-go="3">The North Pole</a><span class="dots"></span>3</li>
+            <li><a data-go="4">Making Your Hero</a><span class="dots"></span>5</li>
+            <li><a data-go="5">How to Play</a><span class="dots"></span>8</li>
+            <li><a data-go="6">Twinkles &amp; Cheer</a><span class="dots"></span>10</li>
+            <li><a data-go="7">Foes</a><span class="dots"></span>11</li>
+            <li><a data-go="7">Items</a><span class="dots"></span>13</li>
+            <li><a data-go="8">Winning the Night</a><span class="dots"></span>14</li>
+            <li><a data-go="8">Quick Reference</a><span class="dots"></span>15</li>
+          </ul>
+          <div class="sidebar" style="margin-top:22px">
+            <h3>Reading this book</h3>
+            <p>Click a page, use the arrow keys, or swipe to turn. Grown-ups can read it aloud — little heroes only need the pictures and the big ideas.</p>
+          </div>
+          <p class="hand center" style="margin-top:26px">This book belongs to:<br>________________________</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Leaf 2 -->
+    <div class="leaf">
+      <div class="face front">
+        <div class="runhead">Chapter One · Welcome</div>
+        <div class="content">
+          <h2 style="margin-top:10px">Welcome, Heroes!</h2><div class="rule"></div>
+          <p class="dropcap">It is Christmas Eve at the North Pole. The sleigh is packed, the reindeer are stamping in the snow — and then every light goes dark. <b>Grumbleweed, the Winter Troll</b>, has snatched the Star from the top of the great tree. Without it, the sleigh cannot find its way through the storm.</p>
+          <p>Worse still, his mischievous Grumplings have scattered the night's presents across the land: in the workshop, on the frozen lake, among the rooftops.</p>
+          <p>You and your friends are the only ones who can set it right. Find the <b>six lost presents</b>, bring back the Star, and do it all <b>before Midnight</b>.</p>
+          <div class="sidebar">
+            <h3>One Team</h3>
+            <p>In Sleighbound you never play against each other. The whole table wins or loses together. Nobody is ever knocked out of the game, and every ending is a happy one — some are simply happier than others.</p>
+          </div>
+          <p class="hand" style="margin-top:12px;transform:rotate(-2deg)">“Bring cocoa. Bring friends. Bring the Star home.”</p>
+        </div>
+        <div class="folio">1</div>
+      </div>
+      <div class="face back">
+        <div class="runhead">Chapter One · Welcome</div>
+        <div class="content">
+          <h2 style="margin-top:10px">What You Need</h2><div class="rule"></div>
+          <ul>
+            <li>The <b>Sleighbound table</b> open in a browser — phone, tablet or laptop.</li>
+            <li>One <b>Guide</b>: the storyteller who plays the foes and describes the world. A grown-up usually starts; older kids make wonderful co-Guides.</li>
+            <li>One to seven <b>Heroes</b>: everyone else.</li>
+            <li>Thirty to forty-five minutes, and something warm to drink.</li>
+          </ul>
+          <p>The app rolls the dice, keeps the meters and moves the miniatures. If you would rather play at a real table, fetch two six-sided dice and a handful of tokens.</p>
+          <div class="sidebar">
+            <h3>For the Guide</h3>
+            <p>Your job is to make the world feel alive and to say “yes, and…” as often as you can. Describe what the heroes see, voice the characters they meet, and ask for a roll only when something is truly uncertain.</p>
+          </div>
+          <h3>A Night in Four Scenes</h3>
+          <p>An adventure has three or four short scenes of about ten minutes each: exploring, a tricky challenge, and a showdown at the end.</p>
+        </div>
+        <div class="folio">2</div>
+      </div>
+    </div>
+
+    <!-- Leaf 3 -->
+    <div class="leaf">
+      <div class="face front">
+        <img class="art-full" src="{{map}}" alt="Map of the North Pole">
+        <div class="caption">The North Pole, as drawn by a very cold reindeer.</div>
+        <div class="folio">3</div>
+      </div>
+      <div class="face back">
+        <div class="runhead">Chapter Two · The North Pole</div>
+        <div class="content">
+          <h2 style="margin-top:10px">The North Pole</h2><div class="rule"></div>
+          <h3>Toy Workshop</h3>
+          <p>Where every toy in the world is built. Tonight the wind-up toys have escaped and are running everywhere.</p>
+          <h3>Candy Cane Forest</h3>
+          <p>Tall striped trees and sticky paths. It is very easy to get lost in here.</p>
+          <h3>Frozen Lake</h3>
+          <p>Slippery! Step onto the ice and you slide until you bump into something.</p>
+          <h3>Gingerbread Village</h3>
+          <p>Tiny sweet houses and very worried gingerbread folk.</p>
+          <h3>Chimney Rooftops</h3>
+          <p>Leap from roof to roof. Some gaps are too wide without wings or a clever plan.</p>
+          <h3>The Troll's Ice Cave</h3>
+          <p>Deep in the blue mountains, where Grumbleweed hides with the Star.</p>
+        </div>
+        <div class="folio">4</div>
+      </div>
+    </div>
+
+    <!-- Leaf 4 -->
+    <div class="leaf">
+      <div class="face front">
+        <div class="runhead">Chapter Three · Making Your Hero</div>
+        <div class="content">
+          <h2 style="margin-top:10px">Making Your Hero</h2><div class="rule"></div>
+          <p>A hero takes about five minutes to make. You need three things: a <b>role</b>, your <b>traits</b> and a <b>name</b>.</p>
+          <img class="art" src="{{roles}}" alt="The seven hero roles" style="margin:6px 0 8px">
+          <h3>Step 1 — Pick a Role</h3>
+          <p>Each role has a <b>Knack</b>, a special trick you may use once per scene, and starts with one item. With seven roles, every hero at a full table can be different.</p>
+        </div>
+        <div class="folio">5</div>
+      </div>
+      <div class="face back">
+        <div class="runhead">Chapter Three · Making Your Hero</div>
+        <div class="content">
+          <h3 style="margin-top:12px">The Seven Roles</h3>
+          <table>
+            <tr><th>Role</th><th>Knack · once per scene</th></tr>
+            <tr><td>Reindeer Flyer</td><td><em>Fly</em> 8 squares over anything, carrying one friend. <em>Harness bell.</em></td></tr>
+            <tr><td>Snow Sprite</td><td><em>Freeze</em> water into ice, or stop a foe for a round. <em>Snowflake charm.</em></td></tr>
+            <tr><td>Gingerbread Scout</td><td><em>Crumb trail:</em> jump back to any square visited this scene. <em>Gumdrop.</em></td></tr>
+            <tr><td>Toy Soldier</td><td><em>Stand guard:</em> friends beside you can't lose Cheer this round. <em>Drum.</em></td></tr>
+            <tr><td>Carol Singer</td><td><em>Sing:</em> every friend within 3 squares gets 1 Cheer back. <em>Songbook.</em></td></tr>
+            <tr><td>Polar Bear Baker</td><td><em>Cookie break:</em> hand out 2 Cookies. <em>Rolling pin.</em></td></tr>
+            <tr><td>Star Keeper</td><td><em>Shine:</em> reveal hidden things within 4 squares; nearby foes lose 1 Grump. <em>Lantern.</em></td></tr>
+          </table>
+        </div>
+        <div class="folio">6</div>
+      </div>
+    </div>
+
+    <!-- Leaf 5 -->
+    <div class="leaf">
+      <div class="face front">
+        <div class="runhead">Chapter Three · Making Your Hero</div>
+        <div class="content">
+          <h3 style="margin-top:12px">Step 2 — Set Your Traits</h3>
+          <p>Every hero has three traits:</p>
+          <ul>
+            <li><b>Brave</b> — jumping, climbing, facing scary things, throwing snowballs.</li>
+            <li><b>Clever</b> — puzzles, tricks, building, spotting things, outsmarting foes.</li>
+            <li><b>Kind</b> — calming, helping, cheering up, making friends, even with a grumpy troll.</li>
+          </ul>
+          <p>Split <b>6 points</b> between them, each trait being 1, 2 or 3. A balanced hero is 2 / 2 / 2; a daring one might be 3 / 2 / 1.</p>
+          <h3>Step 3 — Name Your Hero</h3>
+          <p>Give your hero a name and one fun detail. Details like these give the Guide wonderful ideas:</p>
+          <p class="hand">“Pip Crumbleton, a gingerbread scout who is scared of milk.”<br>“Comet, the reindeer who can't stop sneezing.”</p>
+          <div class="sidebar">
+            <h3>Your Hero Sheet</h3>
+            <p><b>Cheer 3</b> — your energy. At 0 you are Tuckered Out.<br>
+            <b>Pocket 3</b> — you can carry up to three items.<br>
+            <b>Knack</b> — ready again at the start of every scene.</p>
+          </div>
+        </div>
+        <div class="folio">7</div>
+      </div>
+      <div class="face back">
+        <div class="runhead">Chapter Four · How to Play</div>
+        <div class="content">
+          <h2 style="margin-top:10px">How to Play</h2><div class="rule"></div>
+          <h3>A Round</h3>
+          <ol>
+            <li><b>Heroes act</b>, in any order the team likes.</li>
+            <li><b>Foes act</b> — the Guide moves them.</li>
+            <li><b>Flip a Blizzard card</b>: a gust of wind, a surprise cocoa stand, a sneaky ambush…</li>
+            <li><b>Midnight ticks</b> one step closer.</li>
+          </ol>
+          <h3>Your Turn</h3>
+          <p>Move up to <b>4 squares</b> and take <b>one action</b>:</p>
+          <ul>
+            <li>Try something tricky (roll the dice)</li>
+            <li>Use an item</li>
+            <li>Help a friend</li>
+            <li>Wake up a Tuckered Out friend beside you</li>
+            <li>Pick up, open or talk to something</li>
+          </ul>
+          <div class="sidebar">
+            <h3>Scenes</h3>
+            <p><b>Explore</b> the map and meet characters. Beat a <b>Challenge</b> such as crossing the cracking ice. Win the <b>Showdown</b> against the foes.</p>
+          </div>
+        </div>
+        <div class="folio">8</div>
+      </div>
+    </div>
+
+    <!-- Leaf 6 -->
+    <div class="leaf">
+      <div class="face front">
+        <div class="runhead">Chapter Four · How to Play</div>
+        <div class="content">
+          <h3 style="margin-top:12px">Rolling the Dice</h3>
+          <img class="art" src="{{dice}}" alt="Dice, star tokens and cocoa" style="margin:2px 0 6px;max-height:230px;object-fit:cover">
+          <p>When you try something tricky, the Guide names the trait that fits. Roll <b>two dice</b> and add that trait.</p>
+          <table>
+            <tr><th>You get</th><th>What happens</th></tr>
+            <tr><td>9 or more</td><td>You did it!</td></tr>
+            <tr><td>6 to 8</td><td>You did it… but something small goes wrong too.</td></tr>
+            <tr><td>5 or less</td><td>Uh-oh! It doesn't work. The team gains a Twinkle.</td></tr>
+          </table>
+          <p>Not sure which trait? Say <em>how</em> you do it. Sneaking past with a joke is Clever; leaping over is Brave; offering a cookie is Kind.</p>
+        </div>
+        <div class="folio">9</div>
+      </div>
+      <div class="face back">
+        <div class="runhead">Chapter Four · How to Play</div>
+        <div class="content">
+          <h3 style="margin-top:12px">Helping a Friend</h3>
+          <p>Before someone rolls, say how you help: <span class="hand">“I hold the ladder steady!”</span> They get <b>+1</b>. Up to two friends may help at once, and helping does not use your turn.</p>
+          <h3>Twinkles</h3>
+          <p>Twinkles are magic sparkles the <b>whole team shares</b>. You start with one per hero and gain another every time a roll goes wrong, so even bad luck helps. Spend one to:</p>
+          <ul>
+            <li>roll again,</li>
+            <li>add <b>+2</b> to a roll, or</li>
+            <li>cancel the “something goes wrong” part of a 6–8.</li>
+          </ul>
+          <h3>Cheer &amp; Tuckered Out</h3>
+          <p>Coal, snowballs and slippery falls cost <b>Cheer</b>. At 0 Cheer you are <b>Tuckered Out</b>: your mini lies down for a nap and you cannot act. You are not out of the game! A friend beside you can spend their action to wake you with 1 Cheer.</p>
+          <div class="sidebar"><p>Hot Cocoa, Cookies and the Carol Singer's song all bring Cheer back.</p></div>
+        </div>
+        <div class="folio">10</div>
+      </div>
+    </div>
+
+    <!-- Leaf 7 -->
+    <div class="leaf">
+      <div class="face front">
+        <img class="art-full" src="{{foes}}" alt="Grumbleweed and his crew">
+        <div class="caption">Grumbleweed and his crew, sketched from a safe distance.</div>
+        <div class="folio">11</div>
+      </div>
+      <div class="face back">
+        <div class="runhead">Chapter Five · Foes</div>
+        <div class="content">
+          <h2 style="margin-top:10px">Foes</h2><div class="rule"></div>
+          <p>In Sleighbound you never hurt anyone. Foes have <b>Grump</b> instead of health. Each success against a foe takes away 1 Grump, or 2 on a 9+ using its weak trait. At 0 Grump it is calmed, outsmarted or tagged out, and waddles off.</p>
+          <table>
+            <tr><th>Foe</th><th>What it does</th><th>Try being…</th></tr>
+            <tr><td>Grumplings</td><td>Grab presents and run</td><td>Kind</td></tr>
+            <tr><td>Coal Imps</td><td>Throw coal from 3 squares</td><td>Brave</td></tr>
+            <tr><td>Wind-up Rats</td><td>Fast; always in threes</td><td>Clever</td></tr>
+            <tr><td>Blizzard Wisps</td><td>Blow heroes 2 squares</td><td>Brave</td></tr>
+            <tr><td>Snow Golems</td><td>Slow, huge, block paths</td><td>Clever</td></tr>
+            <tr><td>Grumbleweed</td><td>The Winter Troll himself</td><td>…?</td></tr>
+          </table>
+          <p class="hand" style="transform:rotate(-1.5deg);margin-top:10px">Grumplings only want a hug. And Grumbleweed looks more sad than mean, doesn't he? Watch him closely…</p>
+        </div>
+        <div class="folio">12</div>
+      </div>
+    </div>
+
+    <!-- Leaf 8 -->
+    <div class="leaf">
+      <div class="face front">
+        <div class="runhead">Chapter Six · Items</div>
+        <div class="content">
+          <h2 style="margin-top:10px">Items</h2><div class="rule"></div>
+          <img class="art" src="{{items}}" alt="Item sketches" style="margin:0 0 6px;max-height:250px;object-fit:cover">
+          <p>Find items on the map, in Mystery Presents and on Blizzard cards. Using one is your action.</p>
+          <table>
+            <tr><td>Hot Cocoa</td><td>Get 2 Cheer back.</td></tr>
+            <tr><td>Cookie</td><td>Get 1 Cheer, or give it to a friend beside you.</td></tr>
+            <tr><td>Snowball</td><td>Throw up to 4 squares; on 6+ the foe loses 1 Grump.</td></tr>
+            <tr><td>Candy Cane Hook</td><td>Pull a friend, foe or present 3 squares closer.</td></tr>
+            <tr><td>Jingle Bell</td><td>Everyone moves 2 extra squares this round.</td></tr>
+            <tr><td>Mystery Present</td><td>Draw 2 items, keep one.</td></tr>
+            <tr><td>Sled</td><td>Zoom 10 squares in a line — downhill only.</td></tr>
+          </table>
+        </div>
+        <div class="folio">13</div>
+      </div>
+      <div class="face back">
+        <div class="runhead">Chapter Seven · Winning the Night</div>
+        <div class="content">
+          <h2 style="margin-top:10px">Winning the Night</h2><div class="rule"></div>
+          <p>Two meters sit at the top of the table:</p>
+          <ul>
+            <li><b>Presents</b> (0–6) — how many lost presents you have found.</li>
+            <li><b>Midnight</b> (12 steps) — when it fills, the night is over.</li>
+          </ul>
+          <p>Bring back the Star before Midnight and the sleigh takes off. The more presents you found, the more homes get their gifts. And if you find a <em>kind</em> way to deal with Grumbleweed… well, you'll see.</p>
+          <h3>Table Rules for Families</h3>
+          <ul>
+            <li><b>Yes, and…</b> — build on each other's ideas.</li>
+            <li><b>Share the spotlight.</b> Ask quiet players what their hero does.</li>
+            <li><b>Little players</b> just say what they want; a grown-up does the sums.</li>
+            <li><b>Table moments</b> — between scenes, act out a gift, draw an ornament or hum a carol to win Twinkles.</li>
+            <li><b>Pause anytime.</b> Snack breaks are part of the adventure.</li>
+          </ul>
+        </div>
+        <div class="folio">14</div>
+      </div>
+    </div>
+
+    <!-- Leaf 9 -->
+    <div class="leaf">
+      <div class="face front">
+        <div class="runhead">Quick Reference</div>
+        <div class="content">
+          <h2 style="margin-top:10px">Quick Reference</h2><div class="rule"></div>
+          <table>
+            <tr><td>Your turn</td><td>Move 4 + one action</td></tr>
+            <tr><td>Roll</td><td>2 dice + trait<br>9+ success · 6–8 success with a twist · 5− trouble, +1 Twinkle</td></tr>
+            <tr><td>Help</td><td>Say how → +1 (max 2 helpers)</td></tr>
+            <tr><td>Twinkle</td><td>Reroll · +2 · cancel a twist</td></tr>
+            <tr><td>Cheer 0</td><td>Tuckered Out; a friend wakes you with 1 Cheer</td></tr>
+            <tr><td>Knack</td><td>Once per scene</td></tr>
+            <tr><td>Pocket</td><td>3 items</td></tr>
+            <tr><td>Round</td><td>Heroes → Foes → Blizzard card → Midnight +1</td></tr>
+            <tr><td>Foes</td><td>Success = −1 Grump; 9+ with weak trait = −2</td></tr>
+            <tr><td>Win</td><td>Star home before Midnight; more presents, happier ending</td></tr>
+          </table>
+          <p class="hand center" style="margin-top:18px">Good luck, heroes. The North Pole is counting on you!</p>
+        </div>
+        <div class="folio">15</div>
+      </div>
+      <div class="face back backcover">
+        <div class="frame" style="position:absolute;inset:14px;border:2px solid #c9a35c;border-radius:4px;box-shadow:inset 0 0 0 5px #3b1d14, inset 0 0 0 6px rgba(201,163,92,.6)"></div>
+        <div class="inner">
+          <h2>The Night Before</h2>
+          <p>The Star is gone. The presents are scattered. The clock is ticking toward Midnight.</p>
+          <p style="margin-top:14px">Gather your family, pick your heroes and set out across the North Pole in a cosy, co-operative adventure where nobody ever loses — they just get a little tuckered out.</p>
+          <p style="margin-top:28px;font-family:'IM Fell English SC',serif;letter-spacing:.2em;font-size:12px">HEARTHSIDE · THEME PACK I</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="ui">
+  <button id="prev" aria-label="Previous page">‹</button>
+  <span id="count">Cover</span>
+  <button id="next" aria-label="Next page">›</button>
+</div>
+<div class="hint">Click a page, use ← → keys, or swipe</div>
+
+<script>
+(function(){
+  const book=document.getElementById('book'), stage=document.getElementById('stage');
+  const leaves=[...document.querySelectorAll('.leaf')], N=leaves.length;
+  let cur=0; // number of flipped leaves
+  function layout(){
+    leaves.forEach((l,i)=>{
+      const f=i<cur; l.classList.toggle('flipped',f);
+    });
+    book.classList.toggle('closed-front',cur===0);
+    book.classList.toggle('closed-back',cur===N);
+    document.getElementById('prev').disabled=cur===0;
+    document.getElementById('next').disabled=cur===N;
+    const c=document.getElementById('count');
+    if(cur===0)c.textContent='Cover'; else if(cur===N)c.textContent='Back cover';
+    else c.textContent=(cur===1?'Contents':'Pages '+(2*cur-2)+'–'+(2*cur-1))+'  ·  '+cur+' / '+(N-1);
+  }
+  function setZ(animating){
+    leaves.forEach((l,i)=>{ l.style.zIndex = i<cur ? i+1 : N-i+1; });
+    if(animating!=null) leaves[animating].style.zIndex=N+5;
+  }
+  function go(to){
+    to=Math.max(0,Math.min(N,to)); if(to===cur)return;
+    const dir=to>cur?1:-1;
+    const step=()=>{
+      if(cur===to)return;
+      const idx=dir>0?cur:cur-1;
+      cur+=dir; setZ(idx); layout();
+      setTimeout(()=>{setZ();},900);
+      if(cur!==to) setTimeout(step,260);
+    };
+    step();
+  }
+  leaves.forEach((l,i)=>l.addEventListener('click',e=>{
+    if(e.target.closest('a[data-go]'))return;
+    go(i<cur?cur-1:cur+1);
+  }));
+  document.querySelectorAll('a[data-go]').forEach(a=>a.addEventListener('click',e=>{e.stopPropagation();go(+a.dataset.go)}));
+  document.getElementById('prev').onclick=()=>go(cur-1);
+  document.getElementById('next').onclick=()=>go(cur+1);
+  addEventListener('keydown',e=>{if(e.key==='ArrowRight')go(cur+1);if(e.key==='ArrowLeft')go(cur-1);});
+  let sx=null; addEventListener('touchstart',e=>{sx=e.touches[0].clientX},{passive:true});
+  addEventListener('touchend',e=>{if(sx==null)return;const d=e.changedTouches[0].clientX-sx;if(Math.abs(d)>40)go(cur+(d<0?1:-1));sx=null});
+  function fit(){
+    const pw=440,ph=620;
+    const s=Math.min(1,(innerWidth-24)/(pw*2),(innerHeight-110)/ph);
+    stage.style.transform='scale('+s+')';
+    stage.style.margin=(-(ph*(1-s))/2)+'px '+(-(pw*2*(1-s))/2)+'px';
+  }
+  addEventListener('resize',fit); fit(); setZ(); layout();
+})();
+</script>
+</body>
+</html>

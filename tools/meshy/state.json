@@ -1,0 +1,119 @@
+{
+  "star-keeper": {
+    "mesh_task": "01a1c5f1-3b83-71f0-b35b-9a9d5a96a274",
+    "mesh_glb": "assets/characters-source/sb_star-keeper_mesh.glb",
+    "rig_task": "01a1c5f3-4916-75eb-9102-0c2aa2f81c77",
+    "rig_glb": "assets/characters-source/sb_star-keeper_rig.glb",
+    "walk_glb": "assets/characters-source/sb_star-keeper_walk.glb",
+    "anim_task": "01a1c5f3-880f-76c9-9b7e-f83e3b23a51d",
+    "idle_glb": "assets/characters-source/sb_star-keeper_idle.glb",
+    "final": "assets/characters-source/sb_star-keeper_idle.glb"
+  },
+  "polar-bear-baker": {
+    "mesh_task": "01a1c5f1-3c9a-7746-812d-72a9bdc16972",
+    "mesh_glb": "assets/characters-source/sb_polar-bear-baker_mesh.glb",
+    "rig_task": "01a1c5f3-c0cb-70e4-8373-80b512187e3a",
+    "rig_glb": "assets/characters-source/sb_polar-bear-baker_rig.glb",
+    "walk_glb": "assets/characters-source/sb_polar-bear-baker_walk.glb",
+    "anim_task": "01a1c5f3-f975-7264-8bc6-dc8a656d9f80",
+    "idle_glb": "assets/characters-source/sb_polar-bear-baker_idle.glb",
+    "final": "assets/characters-source/sb_polar-bear-baker_idle.glb"
+  },
+  "gingerbread-scout": {
+    "mesh_task": "01a1c5f1-3bc8-7625-bdc5-6e72b0a939c2",
+    "mesh_glb": "assets/characters-source/sb_gingerbread-scout_mesh.glb",
+    "rig_task": "01a1c5f3-e7c2-7131-9526-410a73b7238b",
+    "rig_glb": "assets/characters-source/sb_gingerbread-scout_rig.glb",
+    "anim_task": "01a1c5fa-1c1e-70cc-93be-a8f95c28114b",
+    "idle_glb": "assets/characters-source/sb_gingerbread-scout_idle.glb",
+    "final": "assets/characters-source/sb_gingerbread-scout_idle.glb"
+  },
+  "toy-soldier": {
+    "mesh_task": "01a1c5f1-3c42-70b8-a2e5-f1a698056053",
+    "mesh_glb": "assets/characters-source/sb_toy-soldier_mesh.glb",
+    "rig_task": "01a1c5f3-bf88-73a5-854d-6451eda618a2",
+    "rig_glb": "assets/characters-source/sb_toy-soldier_rig.glb",
+    "walk_glb": "assets/characters-source/sb_toy-soldier_walk.glb",
+    "anim_task": "01a1c5f3-f67a-7056-823d-f74cb4ef2def",
+    "idle_glb": "assets/characters-source/sb_toy-soldier_idle.glb",
+    "final": "assets/characters-source/sb_toy-soldier_idle.glb"
+  },
+  "carol-singer": {
+    "mesh_task": "01a1c5f1-3b6c-7389-8fb7-76309c64e98a",
+    "mesh_glb": "assets/characters-source/sb_carol-singer_mesh.glb",
+    "rig_task": "01a1c5f3-231d-714b-abff-449543496855",
+    "rig_glb": "assets/characters-source/sb_carol-singer_rig.glb",
+    "walk_glb": "assets/characters-source/sb_carol-singer_walk.glb",
+    "anim_task": "01a1c5f3-61e7-759c-b60e-63bf48879edf",
+    "idle_glb": "assets/characters-source/sb_carol-singer_idle.glb",
+    "final": "assets/characters-source/sb_carol-singer_idle.glb"
+  },
+  "snow-sprite": {
+    "mesh_task": "01a1c5f3-8e3a-711a-b01e-40c3158103a1",
+    "mesh_glb": "assets/characters-source/sb_snow-sprite_mesh.glb",
+    "rig_task": "01a1c5f5-c3a3-76df-9c51-73f46ccd2249",
+    "rig_glb": "assets/characters-source/sb_snow-sprite_rig.glb",
+    "walk_glb": "assets/characters-source/sb_snow-sprite_walk.glb",
+    "anim_task": "01a1c5f5-fabc-74aa-b30d-f5627d1a1a19",
+    "idle_glb": "assets/characters-source/sb_snow-sprite_idle.glb",
+    "final": "assets/characters-source/sb_snow-sprite_idle.glb"
+  },
+  "reindeer-flyer": {
+    "mesh_task": "01a1c5f3-b49a-77fc-869a-f96edc2132e3",
+    "mesh_glb": "assets/characters-source/sb_reindeer-flyer_mesh.glb",
+    "rig_task": "01a1c5f4-fdda-7735-90f2-82d8fc33ad4f",
+    "rig_glb": "assets/characters-source/sb_reindeer-flyer_rig.glb",
+    "walk_glb": "assets/characters-source/sb_reindeer-flyer_walk.glb",
+    "final": "assets/characters-source/sb_reindeer-flyer_walk.glb"
+  },
+  "grumbleweed": {
+    "mesh_task": "01a1c5f4-2463-73eb-8d55-90a95f6c5465",
+    "mesh_glb": "assets/characters-source/sb_grumbleweed_mesh.glb",
+    "rig_task": "01a1c5f6-d22e-7418-82e4-4bba97bfa2dc",
+    "rig_glb": "assets/characters-source/sb_grumbleweed_rig.glb",
+    "walk_glb": "assets/characters-source/sb_grumbleweed_walk.glb",
+    "anim_task": "01a1c5f7-31eb-725f-9bab-ea816d691a90",
+    "idle_glb": "assets/characters-source/sb_grumbleweed_idle.glb",
+    "final": "assets/characters-source/sb_grumbleweed_idle.glb"
+  },
+  "grumpling": {
+    "mesh_task": "01a1c5f4-2960-734a-8c47-b4384910b033",
+    "mesh_glb": "assets/characters-source/sb_grumpling_mesh.glb",
+    "rig_task": "01a1c5f6-d5d0-7460-b1b1-ad099296b930",
+    "rig_glb": "assets/characters-source/sb_grumpling_rig.glb",
+    "walk_glb": "assets/characters-source/sb_grumpling_walk.glb",
+    "anim_task": "01a1c5f7-352d-72e1-9b51-11b80b866fef",
+    "idle_glb": "assets/characters-source/sb_grumpling_idle.glb",
+    "final": "assets/characters-source/sb_grumpling_idle.glb"
+  },
+  "wind-up-rat": {
+    "mesh_task": "01a1c5f4-3a42-770c-bb67-b37a5eb89824",
+    "mesh_glb": "assets/characters-source/sb_wind-up-rat_mesh.glb",
+    "final": "assets/characters-source/sb_wind-up-rat_mesh.glb"
+  },
+  "coal-imp": {
+    "mesh_task": "01a1c5f6-214c-7029-9340-563a8dd6eaa7",
+    "mesh_glb": "assets/characters-source/sb_coal-imp_mesh.glb",
+    "rig_task": "01a1c5f8-571f-7555-a0e1-fdcdb26f7de2",
+    "rig_glb": "assets/characters-source/sb_coal-imp_rig.glb",
+    "walk_glb": "assets/characters-source/sb_coal-imp_walk.glb",
+    "anim_task": "01a1c5f8-8d30-7216-81d2-0b8cc8f3f32a",
+    "idle_glb": "assets/characters-source/sb_coal-imp_idle.glb",
+    "final": "assets/characters-source/sb_coal-imp_idle.glb"
+  },
+  "snow-golem": {
+    "mesh_task": "01a1c5f6-263b-75cc-9a2d-f6b2b830e68f",
+    "mesh_glb": "assets/characters-source/sb_snow-golem_mesh.glb",
+    "rig_task": "01a1c5f8-34da-734b-846f-a964451eb604",
+    "rig_glb": "assets/characters-source/sb_snow-golem_rig.glb",
+    "walk_glb": "assets/characters-source/sb_snow-golem_walk.glb",
+    "anim_task": "01a1c5f8-6c9f-76bc-97b2-0a525fbfee6b",
+    "idle_glb": "assets/characters-source/sb_snow-golem_idle.glb",
+    "final": "assets/characters-source/sb_snow-golem_idle.glb"
+  },
+  "blizzard-wisp": {
+    "mesh_task": "01a1c5f6-4eb4-7760-b697-4fd072a49fd9",
+    "mesh_glb": "assets/characters-source/sb_blizzard-wisp_mesh.glb",
+    "final": "assets/characters-source/sb_blizzard-wisp_mesh.glb"
+  }
+}

@@ -1,0 +1,12 @@
+{"clips": [
+ {"file": "sb_polar-bear-baker_mx_happy_idle.glb", "name": "happy_idle", "label": "Happy idle", "source": "Mixamo: Happy Idle (Variation 1)"},
+ {"file": "sb_polar-bear-baker_mx_wave.glb", "name": "wave", "label": "Wave", "source": "Mixamo: Waving"},
+ {"file": "sb_polar-bear-baker_mx_cheer.glb", "name": "cheer", "label": "Cheer", "source": "Mixamo: Cheering (two fists pump)"},
+ {"file": "sb_polar-bear-baker_mx_clap.glb", "name": "clap", "label": "Clap", "source": "Mixamo: Clapping (while standing)"},
+ {"file": "sb_polar-bear-baker_mx_jump.glb", "name": "jump", "label": "Jump", "source": "Mixamo: Jumping (from action idle)"},
+ {"file": "sb_polar-bear-baker_mx_victory.glb", "name": "victory", "label": "Victory", "source": "Mixamo: Victory (celebrating after a win)"},
+ {"file": "sb_polar-bear-baker_mx_hit.glb", "name": "hit", "label": "Hit (oof!)", "source": "Mixamo: Hit Reaction"},
+ {"file": "sb_polar-bear-baker_mx_throw.glb", "name": "throw", "label": "Throw", "source": "Mixamo: Throw (from standard pose)"},
+ {"file": "sb_polar-bear-baker_mx_pick_up.glb", "name": "pick_up", "label": "Pick up", "source": "Mixamo: Picking Up (an object)"},
+ {"file": "sb_polar-bear-baker_mx_sleep.glb", "name": "sleep", "label": "Tuckered out", "source": "Mixamo: Sleeping Idle (sleeping deeply)"}
+]}

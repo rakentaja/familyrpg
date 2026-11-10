@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sleighbound — Reindeer Flyer rig review</title>
+<style>
+  :root{--ink:#2a2328;--paper:#f2eadb;--paper2:#f7f3ec;--sage:#a9bfa0;--mute:#5a4e58}
+  html,body{margin:0;height:100%;background:#e9e1d3;font-family:Georgia,serif;color:var(--ink);overflow:hidden}
+  .app{display:flex;flex-direction:column;height:100dvh}
+  main{position:relative;flex:1;min-height:0}
+  #c{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+  #info{position:absolute;top:10px;left:12px;font-size:13px;background:rgba(247,243,236,.9);border:1.5px solid var(--ink);border-radius:5px;padding:5px 9px}
+  .dock{background:var(--paper2);border-top:2px solid var(--ink);padding:8px 10px calc(8px + env(safe-area-inset-bottom));display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+  button{font:15px Georgia,serif;background:var(--paper);border:1.8px solid var(--ink);border-radius:6px 3px 7px 4px;padding:5px 12px;cursor:pointer;color:var(--ink);min-height:36px}
+  button.on{background:var(--sage)} #clips{display:flex;gap:6px} .sep{flex:1}
+</style></head>
+<body><div class="app"><main><canvas id="c"></canvas><div id="info">loading…</div></main>
+<div class="dock"><div id="clips"></div><span class="sep"></span><button id="bPause">Pause</button><button id="bSkel">Skeleton</button>
+<button id="bInk" class="on">Ink</button><button id="bHatch" class="on">Hatching</button><button id="bCam">Reset view</button></div></div>
+<script>window.SB_REINDEER = /*DATA*/;</script>
+<script type="module">/*APP*/</script>
+</body></html>

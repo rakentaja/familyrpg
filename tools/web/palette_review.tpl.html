@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Palette Snap Review</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=IM+Fell+English&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#2a2328;--paper:#f2eadb;--paper2:#f7f3ec;--rose:#d8a7a7;--roseInk:#8a4a4e;--sage:#a9bfa0;--lav:#b4abc6;--mute:#5a4e58;--bg:#e9e1d3}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);font-family:'IM Fell English',Georgia,serif;color:var(--ink);-webkit-tap-highlight-color:transparent}
+  #c{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-events:none;z-index:1}
+  .page{position:relative;padding:12px max(16px,env(safe-area-inset-left)) 24px}
+  header{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-bottom:10px}
+  h1{font-family:Cinzel,serif;font-size:17px;color:var(--roseInk);margin:0;letter-spacing:.04em}
+  .row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .seg{display:flex}.seg button{border-radius:0}.seg button:first-child{border-radius:6px 0 0 5px}.seg button:last-child{border-radius:0 6px 5px 0;margin-left:-1.8px}
+  button{font-family:Kalam,cursive;font-size:14px;background:var(--paper);border:1.8px solid var(--ink);border-radius:6px 3px 7px 4px;padding:3px 10px;cursor:pointer;color:var(--ink);white-space:nowrap;min-height:32px}
+  button.on{background:var(--sage)} button:disabled{opacity:.35;cursor:default}
+  .lbl{font-family:Kalam,cursive;font-size:13px;color:var(--mute);font-variant-numeric:tabular-nums}
+  input[type=range]{accent-color:#7f9a78;width:120px}
+  #status{font-family:Kalam,cursive;color:var(--roseInk)}
+  #swatches{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 12px;padding:7px;background:var(--paper2);border:1.5px solid var(--ink);border-radius:6px 4px 7px 5px}
+  .sw{display:flex;align-items:center;gap:5px;font-family:Kalam,cursive;font-size:11.5px;line-height:1.05;min-width:86px}
+  .sw i{width:22px;height:22px;border:1.5px solid var(--ink);border-radius:4px 3px 5px 3px;flex:none}
+  .sw small{color:var(--mute);font-size:10px}
+  #gridwrap{overflow-x:auto;border:1.5px solid var(--ink);border-radius:6px;background:var(--paper)}
+  #grid{display:grid;grid-template-columns:64px repeat(var(--cols),minmax(92px,1fr));min-width:calc(64px + var(--cols)*92px)}
+  .corner,.colh,.rowh{background:var(--paper2)}
+  .colh{border:0;border-bottom:1.5px solid var(--ink);border-left:1px solid rgba(42,35,40,.15);border-radius:0;font-size:12.5px;line-height:1.1;white-space:normal;padding:5px 3px;min-height:40px}
+  .colh:hover{background:var(--rose)}
+  .corner{border-bottom:1.5px solid var(--ink)}
+  .rowh{display:flex;align-items:center;justify-content:center;font-family:Cinzel,serif;font-size:12px;writing-mode:vertical-rl;transform:rotate(180deg);border-right:1.5px solid var(--ink);color:var(--roseInk);letter-spacing:.06em}
+  .cell{position:relative;aspect-ratio:3/4.4;border-left:1px solid rgba(42,35,40,.15);border-bottom:1px solid rgba(42,35,40,.15);cursor:pointer;touch-action:pan-y}
+  .cell::after,.paperfx::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:2;mix-blend-mode:multiply;opacity:.55;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .55  0 0 0 0 .47  0 0 0 0 .38  0 0 0 .35 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    box-shadow:inset 0 0 40px rgba(90,70,50,.22)}
+  #focus{display:none;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .focusing #focus{display:grid} .focusing #gridwrap{display:none} #fbar{display:none} .focusing #fbar{display:flex}
+  .fcol{display:flex;flex-direction:column;gap:6px;min-width:0}
+  .flab{font-family:Cinzel,serif;font-size:13px;color:var(--roseInk);text-align:center}
+  .cell.big{aspect-ratio:3/4;border:1.5px solid var(--ink);border-radius:6px;background:var(--paper)}
+  .tex{width:100%;aspect-ratio:1;object-fit:contain;border:1.5px solid var(--ink);border-radius:6px;background:#888;image-rendering:auto}
+  #ftitle{font-family:Cinzel,serif;font-size:16px}
+  .note{font-family:Kalam,cursive;font-size:12.5px;color:var(--mute);margin-top:8px}
+  @media (max-width:700px){#focus{grid-template-columns:1fr}.cell.big{aspect-ratio:4/5}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="page">
+  <header>
+    <h1>PALETTE SNAP · /*TITLE*/</h1>
+    <div class="seg"><button id="bToon" class="on">Toon</button><button id="bRaw">Raw texture</button></div>
+    <div class="row"><button id="bInk" class="on">Ink</button><button id="bHatch" class="on">Hatching</button></div>
+    <div class="row"><span class="lbl">Turn</span><input type="range" id="yaw" min="-180" max="180" step="5" value="0"><span class="lbl" id="yawv">0°</span></div>
+    <span id="status">loading…</span>
+  </header>
+  <div id="swatches"></div>
+  <div id="fbar" class="row" style="margin-bottom:8px"><button id="bBack">← All characters</button><span id="ftitle"></span>
+    <span class="lbl">original vs. snapped base-colour textures below</span></div>
+  <div id="gridwrap"><div id="grid"></div></div>
+  <div id="focus"></div>
+  <div class="note">/*NOTE*/ · click a character to compare large · drag a model to turn · T toggles raw texture · Esc back</div>
+</div>
+<script>window.SB_PAL = /*DATA*/;</script>
+<script type="module">/*APP*/</script>
+</body>
+</html>

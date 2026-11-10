@@ -1,0 +1,12 @@
+[
+  { "name": "idle_happy", "query": "happy idle" },
+  { "name": "wave",       "query": "waving" },
+  { "name": "cheer",      "query": "cheering", "inplace": true },
+  { "name": "jump",       "query": "jump", "inplace": true },
+  { "name": "victory",    "query": "victory", "inplace": true },
+  { "name": "hit",        "query": "hit reaction" },
+  { "name": "sleep",      "query": "sleeping idle" },
+  { "name": "throw",      "query": "throw" },
+  { "name": "pick_up",    "query": "picking up" },
+  { "name": "clap",       "query": "clapping" }
+]

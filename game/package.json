@@ -1,0 +1,19 @@
+{
+  "name": "familyrpg",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun build.ts",
+    "dev": "bun build.ts --serve",
+    "test": "bun test src"
+  },
+  "dependencies": {
+    "three": "0.170.0",
+    "nostr-tools": "2.10.4",
+    "qrcode-generator": "1.4.4"
+  },
+  "devDependencies": {
+    "@types/three": "0.170.0",
+    "typescript": "5.6.3"
+  }
+}

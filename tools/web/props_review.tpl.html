@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sleighbound Props</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=IM+Fell+English&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;height:100%;background:#e9e1d3;overflow:hidden;font-family:'IM Fell English',Georgia,serif;color:#2a2328}
+  #c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+  #paper{position:fixed;inset:0;pointer-events:none;mix-blend-mode:multiply;opacity:.55;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='260'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .55  0 0 0 0 .47  0 0 0 0 .38  0 0 0 .35 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    box-shadow:inset 0 0 160px rgba(90,70,50,.35)}
+  .panel{position:fixed;top:max(16px,env(safe-area-inset-top));left:16px;max-width:calc(100% - 64px);background:rgba(247,243,236,.92);border:2px solid #2a2328;
+    border-radius:4px 9px 5px 8px/8px 4px 9px 5px;padding:10px 14px;box-shadow:3px 4px 0 rgba(42,35,40,.25)}
+  h1{font-family:Cinzel,serif;font-size:17px;margin:0 0 2px;color:#8a4a4e;letter-spacing:.04em}
+  #count{font-size:12.5px;color:#5a4e58}
+  .bar{position:fixed;bottom:max(16px,env(safe-area-inset-bottom));left:16px;right:16px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  .bar button{font-family:Kalam,cursive;font-size:15px;background:#f7f3ec;border:2px solid #2a2328;border-radius:6px 3px 7px 4px;
+    padding:5px 12px;cursor:pointer;box-shadow:2px 3px 0 rgba(42,35,40,.25);color:#2a2328}
+  .bar button.on{background:#a9bfa0}
+  #loading{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-family:Kalam,cursive;font-size:22px}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="paper"></div>
+<div class="panel"><h1>SLEIGHBOUND · PROPS</h1><div id="count"></div></div>
+<div class="bar"><button id="bAll">Everything</button><span id="groups" style="display:contents"></span>
+  <button id="bHand" class="on">Clock hand</button><button id="bInk" class="on">Ink</button><button id="bHatch" class="on">Hatching</button></div>
+<div id="loading">Unpacking the props…</div>
+<script>window.SB_PROPS = /*DATA*/;</script>
+<script type="module">/*APP*/</script>
+</body>
+</html>

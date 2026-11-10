@@ -1,0 +1,1900 @@
+{
+  "meta": {
+    "id": "sleighbound",
+    "name": "Sleighbound",
+    "version": "0.2.0",
+    "engine": "hearthside@1",
+    "ageRating": "6+",
+    "author": "Tolga"
+  },
+  "labels": {
+    "hearts": "Cheer",
+    "sparks": "Twinkles",
+    "goal": "Presents",
+    "clock": "Midnight",
+    "traits": {
+      "brave": "Brave",
+      "clever": "Clever",
+      "kind": "Kind"
+    },
+    "heroes": "Heroes",
+    "foes": "Troublemakers",
+    "tuckered": "Tuckered Out",
+    "calmed": "all cheered up"
+  },
+  "theme": {
+    "title": "Sleighbound",
+    "subtitle": "The Night Before",
+    "premise": "It’s Christmas Eve. Grumbleweed, the Winter Troll, snatched the Star from the top of the great tree, and without it the sleigh can’t find its way. His Grumplings scattered the night’s presents across the snow. Recover the presents and bring back the Star before Midnight!",
+    "palette": {
+      "rose": "#D8A7A7",
+      "sage": "#A9BFA0",
+      "cream": "#F2EADB",
+      "lavender": "#B4ABC6",
+      "ink": "#2A2328"
+    }
+  },
+  "models": {
+    "char:reindeer-flyer": {
+      "url": "assets/characters/sb_reindeer-flyer.glb",
+      "anim": {
+        "idle": "@model",
+        "walk": "assets/animations/sb_reindeer-flyer_walk.glb",
+        "run": "assets/animations/sb_reindeer-flyer_run.glb"
+      }
+    },
+    "char:snow-sprite": {
+      "url": "assets/characters/sb_snow-sprite.glb",
+      "anim": {
+        "idle": "@model",
+        "walk": "assets/animations/sb_snow-sprite_walk.glb",
+        "run": "assets/animations/sb_snow-sprite_run.glb",
+        "wave": "assets/animations/sb_snow-sprite_mx_wave.glb",
+        "cheer": "assets/animations/sb_snow-sprite_mx_cheer.glb",
+        "clap": "assets/animations/sb_snow-sprite_mx_clap.glb",
+        "jump": "assets/animations/sb_snow-sprite_mx_jump.glb",
+        "victory": "assets/animations/sb_snow-sprite_mx_victory.glb",
+        "hit": "assets/animations/sb_snow-sprite_mx_hit.glb",
+        "throw": "assets/animations/sb_snow-sprite_mx_throw.glb",
+        "pick_up": "assets/animations/sb_snow-sprite_mx_pick_up.glb",
+        "sleep": "assets/animations/sb_snow-sprite_mx_sleep.glb"
+      }
+    },
+    "char:gingerbread-scout": {
+      "url": "assets/characters/sb_gingerbread-scout.glb",
+      "anim": {
+        "idle": "@model",
+        "walk": "assets/animations/sb_gingerbread-scout_walk.glb",
+        "run": "assets/animations/sb_gingerbread-scout_run.glb",
+        "wave": "assets/animations/sb_gingerbread-scout_mx_wave.glb",
+        "cheer": "assets/animations/sb_gingerbread-scout_mx_cheer.glb",
+        "clap": "assets/animations/sb_gingerbread-scout_mx_clap.glb",
+        "jump": "assets/animations/sb_gingerbread-scout_mx_jump.glb",
+        "victory": "assets/animations/sb_gingerbread-scout_mx_victory.glb",
+        "hit": "assets/animations/sb_gingerbread-scout_mx_hit.glb",
+        "throw": "assets/animations/sb_gingerbread-scout_mx_throw.glb",
+        "pick_up": "assets/animations/sb_gingerbread-scout_mx_pick_up.glb",
+        "sleep": "assets/animations/sb_gingerbread-scout_mx_sleep.glb"
+      }
+    },
+    "char:toy-soldier": {
+      "url": "assets/characters/sb_toy-soldier.glb",
+      "anim": {
+        "idle": "@model",
+        "walk": "assets/animations/sb_toy-soldier_walk.glb",
+        "run": "assets/animations/sb_toy-soldier_run.glb",
+        "wave": "assets/animations/sb_toy-soldier_mx_wave.glb",
+        "cheer": "assets/animations/sb_toy-soldier_mx_cheer.glb",
+        "clap": "assets/animations/sb_toy-soldier_mx_clap.glb",
+        "jump": "assets/animations/sb_toy-soldier_mx_jump.glb",
+        "victory": "assets/animations/sb_toy-soldier_mx_victory.glb",
+        "hit": "assets/animations/sb_toy-soldier_mx_hit.glb",
+        "throw": "assets/animations/sb_toy-soldier_mx_throw.glb",
+        "pick_up": "assets/animations/sb_toy-soldier_mx_pick_up.glb",
+        "sleep": "assets/animations/sb_toy-soldier_mx_sleep.glb"
+      }
+    },
+    "char:carol-singer": {
+      "url": "assets/characters/sb_carol-singer.glb",
+      "anim": {
+        "idle": "@model",
+        "walk": "assets/animations/sb_carol-singer_walk.glb",
+        "run": "assets/animations/sb_carol-singer_run.glb",
+        "wave": "assets/animations/sb_carol-singer_mx_wave.glb",
+        "cheer": "assets/animations/sb_carol-singer_mx_cheer.glb",
+        "clap": "assets/animations/sb_carol-singer_mx_clap.glb",
+        "jump": "assets/animations/sb_carol-singer_mx_jump.glb",
+        "victory": "assets/animations/sb_carol-singer_mx_victory.glb",
+        "hit": "assets/animations/sb_carol-singer_mx_hit.glb",
+        "throw": "assets/animations/sb_carol-singer_mx_throw.glb",
+        "pick_up": "assets/animations/sb_carol-singer_mx_pick_up.glb",
+        "sleep": "assets/animations/sb_carol-singer_mx_sleep.glb"
+      }
+    },
+    "char:polar-bear-baker": {
+      "url": "assets/characters/sb_polar-bear-baker.glb",
+      "anim": {
+        "idle": "@model",
+        "walk": "assets/animations/sb_polar-bear-baker_walk.glb",
+        "run": "assets/animations/sb_polar-bear-baker_run.glb",
+        "wave": "assets/animations/sb_polar-bear-baker_mx_wave.glb",
+        "cheer": "assets/animations/sb_polar-bear-baker_mx_cheer.glb",
+        "clap": "assets/animations/sb_polar-bear-baker_mx_clap.glb",
+        "jump": "assets/animations/sb_polar-bear-baker_mx_jump.glb",
+        "victory": "assets/animations/sb_polar-bear-baker_mx_victory.glb",
+        "hit": "assets/animations/sb_polar-bear-baker_mx_hit.glb",
+        "throw": "assets/animations/sb_polar-bear-baker_mx_throw.glb",
+        "pick_up": "assets/animations/sb_polar-bear-baker_mx_pick_up.glb",
+        "sleep": "assets/animations/sb_polar-bear-baker_mx_sleep.glb"
+      }
+    },
+    "char:star-keeper": {
+      "url": "assets/characters/sb_star-keeper.glb",
+      "anim": {
+        "idle": "@model",
+        "walk": "assets/animations/sb_star-keeper_walk.glb",
+        "run": "assets/animations/sb_star-keeper_run.glb",
+        "wave": "assets/animations/sb_star-keeper_mx_wave.glb",
+        "cheer": "assets/animations/sb_star-keeper_mx_cheer.glb",
+        "clap": "assets/animations/sb_star-keeper_mx_clap.glb",
+        "jump": "assets/animations/sb_star-keeper_mx_jump.glb",
+        "victory": "assets/animations/sb_star-keeper_mx_victory.glb",
+        "hit": "assets/animations/sb_star-keeper_mx_hit.glb",
+        "throw": "assets/animations/sb_star-keeper_mx_throw.glb",
+        "pick_up": "assets/animations/sb_star-keeper_mx_pick_up.glb",
+        "sleep": "assets/animations/sb_star-keeper_mx_sleep.glb"
+      }
+    },
+    "char:grumpling": {
+      "url": "assets/characters/sb_grumpling.glb",
+      "anim": {
+        "idle": "@model",
+        "walk": "assets/animations/sb_grumpling_walk.glb",
+        "run": "assets/animations/sb_grumpling_run.glb",
+        "wave": "assets/animations/sb_grumpling_mx_wave.glb",
+        "cheer": "assets/animations/sb_grumpling_mx_cheer.glb",
+        "clap": "assets/animations/sb_grumpling_mx_clap.glb",
+        "jump": "assets/animations/sb_grumpling_mx_jump.glb",
+        "victory": "assets/animations/sb_grumpling_mx_victory.glb",
+        "hit": "assets/animations/sb_grumpling_mx_hit.glb",
+        "throw": "assets/animations/sb_grumpling_mx_throw.glb",
+        "pick_up": "assets/animations/sb_grumpling_mx_pick_up.glb",
+        "sleep": "assets/animations/sb_grumpling_mx_sleep.glb"
+      }
+    },
+    "char:coal-imp": {
+      "url": "assets/characters/sb_coal-imp.glb",
+      "anim": {
+        "idle": "@model",
+        "walk": "assets/animations/sb_coal-imp_walk.glb",
+        "run": "assets/animations/sb_coal-imp_run.glb",
+        "wave": "assets/animations/sb_coal-imp_mx_wave.glb",
+        "cheer": "assets/animations/sb_coal-imp_mx_cheer.glb",
+        "clap": "assets/animations/sb_coal-imp_mx_clap.glb",
+        "jump": "assets/animations/sb_coal-imp_mx_jump.glb",
+        "victory": "assets/animations/sb_coal-imp_mx_victory.glb",
+        "hit": "assets/animations/sb_coal-imp_mx_hit.glb",
+        "throw": "assets/animations/sb_coal-imp_mx_throw.glb",
+        "pick_up": "assets/animations/sb_coal-imp_mx_pick_up.glb",
+        "sleep": "assets/animations/sb_coal-imp_mx_sleep.glb"
+      }
+    },
+    "char:wind-up-rat": {
+      "url": "assets/characters/sb_wind-up-rat.glb",
+      "scale": 0.36
+    },
+    "char:blizzard-wisp": {
+      "url": "assets/characters/sb_blizzard-wisp.glb",
+      "scale": 0.58
+    },
+    "char:snow-golem": {
+      "url": "assets/characters/sb_snow-golem.glb",
+      "anim": {
+        "idle": "@model",
+        "walk": "assets/animations/sb_snow-golem_walk.glb",
+        "run": "assets/animations/sb_snow-golem_run.glb",
+        "wave": "assets/animations/sb_snow-golem_mx_wave.glb",
+        "cheer": "assets/animations/sb_snow-golem_mx_cheer.glb",
+        "clap": "assets/animations/sb_snow-golem_mx_clap.glb",
+        "jump": "assets/animations/sb_snow-golem_mx_jump.glb",
+        "victory": "assets/animations/sb_snow-golem_mx_victory.glb",
+        "hit": "assets/animations/sb_snow-golem_mx_hit.glb",
+        "throw": "assets/animations/sb_snow-golem_mx_throw.glb",
+        "pick_up": "assets/animations/sb_snow-golem_mx_pick_up.glb",
+        "sleep": "assets/animations/sb_snow-golem_mx_sleep.glb"
+      }
+    },
+    "char:grumbleweed": {
+      "url": "assets/characters/sb_grumbleweed.glb",
+      "anim": {
+        "idle": "@model",
+        "walk": "assets/animations/sb_grumbleweed_walk.glb",
+        "run": "assets/animations/sb_grumbleweed_run.glb",
+        "wave": "assets/animations/sb_grumbleweed_mx_wave.glb",
+        "cheer": "assets/animations/sb_grumbleweed_mx_cheer.glb",
+        "clap": "assets/animations/sb_grumbleweed_mx_clap.glb",
+        "jump": "assets/animations/sb_grumbleweed_mx_jump.glb",
+        "victory": "assets/animations/sb_grumbleweed_mx_victory.glb",
+        "hit": "assets/animations/sb_grumbleweed_mx_hit.glb",
+        "throw": "assets/animations/sb_grumbleweed_mx_throw.glb",
+        "pick_up": "assets/animations/sb_grumbleweed_mx_pick_up.glb",
+        "sleep": "assets/animations/sb_grumbleweed_mx_sleep.glb"
+      }
+    },
+    "prop:boss_ice_wall": {
+      "url": "assets/props/sb_boss_ice_wall.glb"
+    },
+    "prop:candy_cane_hook": {
+      "url": "assets/props/sb_candy_cane_hook.glb"
+    },
+    "prop:candy_cane_tree": {
+      "url": "assets/props/sb_candy_cane_tree.glb"
+    },
+    "prop:cave_entrance": {
+      "url": "assets/props/sb_cave_entrance.glb"
+    },
+    "prop:cave_wall": {
+      "url": "assets/props/sb_cave_wall.glb"
+    },
+    "prop:chimney": {
+      "url": "assets/props/sb_chimney.glb"
+    },
+    "prop:coal_lump": {
+      "url": "assets/props/sb_coal_lump.glb"
+    },
+    "prop:cocoa_mug": {
+      "url": "assets/props/sb_cocoa_mug.glb"
+    },
+    "prop:cocoa_stand": {
+      "url": "assets/props/sb_cocoa_stand.glb"
+    },
+    "prop:cracked_ice_1": {
+      "url": "assets/props/sb_cracked_ice_1.glb"
+    },
+    "prop:cracked_ice_2": {
+      "url": "assets/props/sb_cracked_ice_2.glb"
+    },
+    "prop:crate": {
+      "url": "assets/props/sb_crate.glb"
+    },
+    "prop:crumb_trail": {
+      "url": "assets/props/sb_crumb_trail.glb"
+    },
+    "prop:dice": {
+      "url": "assets/props/sb_dice.glb"
+    },
+    "prop:fence": {
+      "url": "assets/props/sb_fence.glb"
+    },
+    "prop:freeze_overlay": {
+      "url": "assets/props/sb_freeze_overlay.glb"
+    },
+    "prop:gingerbread_house": {
+      "url": "assets/props/sb_gingerbread_house.glb"
+    },
+    "prop:great_tree": {
+      "url": "assets/props/sb_great_tree.glb"
+    },
+    "prop:gumdrop_bush": {
+      "url": "assets/props/sb_gumdrop_bush.glb"
+    },
+    "prop:icicles": {
+      "url": "assets/props/sb_icicles.glb"
+    },
+    "prop:island": {
+      "url": "assets/props/sb_island.glb"
+    },
+    "prop:jingle_bell": {
+      "url": "assets/props/sb_jingle_bell.glb"
+    },
+    "prop:lamp_post": {
+      "url": "assets/props/sb_lamp_post.glb"
+    },
+    "prop:midnight_clock": {
+      "url": "assets/props/sb_midnight_clock.glb"
+    },
+    "prop:pine_tree": {
+      "url": "assets/props/sb_pine_tree.glb"
+    },
+    "prop:present": {
+      "url": "assets/props/sb_present.glb"
+    },
+    "prop:present_cream": {
+      "url": "assets/props/sb_present_cream.glb"
+    },
+    "prop:present_gold": {
+      "url": "assets/props/sb_present_gold.glb"
+    },
+    "prop:present_ice": {
+      "url": "assets/props/sb_present_ice.glb"
+    },
+    "prop:present_lavender": {
+      "url": "assets/props/sb_present_lavender.glb"
+    },
+    "prop:present_rose": {
+      "url": "assets/props/sb_present_rose.glb"
+    },
+    "prop:present_sage": {
+      "url": "assets/props/sb_present_sage.glb"
+    },
+    "prop:rock": {
+      "url": "assets/props/sb_rock.glb"
+    },
+    "prop:roof_gap_edge": {
+      "url": "assets/props/sb_roof_gap_edge.glb"
+    },
+    "prop:roof_segment": {
+      "url": "assets/props/sb_roof_segment.glb"
+    },
+    "prop:shelves": {
+      "url": "assets/props/sb_shelves.glb"
+    },
+    "prop:sled": {
+      "url": "assets/props/sb_sled.glb"
+    },
+    "prop:sleigh": {
+      "url": "assets/props/sb_sleigh.glb"
+    },
+    "prop:snowball": {
+      "url": "assets/props/sb_snowball.glb"
+    },
+    "prop:star": {
+      "url": "assets/props/sb_star.glb"
+    },
+    "prop:sticky_path": {
+      "url": "assets/props/sb_sticky_path.glb"
+    },
+    "prop:tile_ice": {
+      "url": "assets/props/sb_tile_ice.glb"
+    },
+    "prop:tile_snow": {
+      "url": "assets/props/sb_tile_snow.glb"
+    },
+    "prop:toy_pile": {
+      "url": "assets/props/sb_toy_pile.glb"
+    },
+    "prop:twinkle_token": {
+      "url": "assets/props/sb_twinkle_token.glb"
+    },
+    "prop:water_hole": {
+      "url": "assets/props/sb_water_hole.glb"
+    },
+    "prop:workbench": {
+      "url": "assets/props/sb_workbench.glb"
+    },
+    "prop:workshop_door": {
+      "url": "assets/props/sb_workshop_door.glb"
+    },
+    "token:goal": {
+      "url": "assets/props/sb_present_rose.glb"
+    },
+    "token:item": {
+      "url": "assets/props/sb_present.glb"
+    },
+    "token:star": {
+      "url": "assets/props/sb_star.glb"
+    },
+    "token:clue": {
+      "url": "assets/props/sb_twinkle_token.glb"
+    },
+    "token:exit": {
+      "url": "assets/props/sb_crumb_trail.glb"
+    }
+  },
+  "roles": [
+    {
+      "id": "reindeer-flyer",
+      "name": "Reindeer Flyer",
+      "blurb": "Fast hooves, faster wings. Loves a running start.",
+      "model": "char:reindeer-flyer",
+      "knack": {
+        "id": "fly",
+        "name": "Fly",
+        "text": "Fly up to 8 squares over anything. A friend next to you who is Tuckered Out comes along.",
+        "target": "cell",
+        "effects": [
+          {
+            "do": "move",
+            "n": 8,
+            "over": true,
+            "carryAlly": true
+          }
+        ]
+      },
+      "start": "harness-bell",
+      "suggested": {
+        "brave": 3,
+        "clever": 2,
+        "kind": 1
+      }
+    },
+    {
+      "id": "snow-sprite",
+      "name": "Snow Sprite",
+      "blurb": "A tiny swirl of frost with a big imagination.",
+      "model": "char:snow-sprite",
+      "knack": {
+        "id": "freeze",
+        "name": "Freeze",
+        "text": "Freeze a foe for a round — or turn water (and cracks) into solid ice.",
+        "target": "any",
+        "effects": [
+          {
+            "do": "freeze",
+            "what": "foe",
+            "range": 4,
+            "rounds": 1
+          },
+          {
+            "do": "freeze",
+            "what": "water",
+            "range": 1
+          }
+        ]
+      },
+      "start": "snowflake-charm",
+      "suggested": {
+        "brave": 1,
+        "clever": 3,
+        "kind": 2
+      }
+    },
+    {
+      "id": "gingerbread-scout",
+      "name": "Gingerbread Scout",
+      "blurb": "Crunchy, quick and never, ever lost.",
+      "model": "char:gingerbread-scout",
+      "knack": {
+        "id": "crumb-trail",
+        "name": "Crumb Trail",
+        "text": "Jump back to any square you visited this scene.",
+        "target": "cell",
+        "effects": [
+          {
+            "do": "teleportVisited"
+          }
+        ]
+      },
+      "start": "gumdrop",
+      "suggested": {
+        "brave": 2,
+        "clever": 3,
+        "kind": 1
+      }
+    },
+    {
+      "id": "toy-soldier",
+      "name": "Toy Soldier",
+      "blurb": "Wind-up key, steady march, brave heart.",
+      "model": "char:toy-soldier",
+      "knack": {
+        "id": "stand-guard",
+        "name": "Stand Guard",
+        "text": "Friends next to you can’t lose Cheer this round.",
+        "effects": [
+          {
+            "do": "guard",
+            "rounds": 1
+          }
+        ]
+      },
+      "start": "drum",
+      "suggested": {
+        "brave": 3,
+        "clever": 1,
+        "kind": 2
+      }
+    },
+    {
+      "id": "carol-singer",
+      "name": "Carol Singer",
+      "blurb": "One song and everyone feels warmer.",
+      "model": "char:carol-singer",
+      "knack": {
+        "id": "sing",
+        "name": "Sing",
+        "text": "Every friend within 3 squares gets 1 Cheer back.",
+        "effects": [
+          {
+            "do": "heal",
+            "n": 1,
+            "who": "alliesInRange",
+            "range": 3
+          }
+        ]
+      },
+      "start": "songbook",
+      "suggested": {
+        "brave": 1,
+        "clever": 2,
+        "kind": 3
+      }
+    },
+    {
+      "id": "polar-bear-baker",
+      "name": "Polar Bear Baker",
+      "blurb": "Big paws, warm ovens, endless cookies.",
+      "model": "char:polar-bear-baker",
+      "knack": {
+        "id": "cookie-break",
+        "name": "Cookie Break",
+        "text": "Hand 2 Cookies to any hero (even yourself).",
+        "target": "hero",
+        "effects": [
+          {
+            "do": "giveItem",
+            "item": "cookie",
+            "n": 2,
+            "who": "allyChoice"
+          }
+        ]
+      },
+      "start": "rolling-pin",
+      "suggested": {
+        "brave": 2,
+        "clever": 1,
+        "kind": 3
+      }
+    },
+    {
+      "id": "star-keeper",
+      "name": "Star Keeper",
+      "blurb": "Keeps a little starlight in a pocket, just in case.",
+      "model": "char:star-keeper",
+      "knack": {
+        "id": "shine",
+        "name": "Shine",
+        "text": "Reveal hidden things within 4 squares; foes within 4 lose 1 Grump.",
+        "effects": [
+          {
+            "do": "reveal",
+            "range": 4
+          },
+          {
+            "do": "removeGrump",
+            "n": 1,
+            "who": "foesInRange",
+            "range": 4
+          }
+        ]
+      },
+      "start": "lantern",
+      "suggested": {
+        "brave": 2,
+        "clever": 2,
+        "kind": 2
+      }
+    }
+  ],
+  "items": [
+    {
+      "id": "hot-cocoa",
+      "name": "Hot Cocoa",
+      "text": "Sip it: get 2 Cheer back.",
+      "count": 4,
+      "effects": [
+        {
+          "do": "heal",
+          "n": 2,
+          "who": "self"
+        }
+      ],
+      "icon": "cocoa",
+      "model": "prop:cocoa_mug"
+    },
+    {
+      "id": "cookie",
+      "name": "Cookie",
+      "text": "Get 1 Cheer back — or give it to a friend next to you.",
+      "count": 4,
+      "target": "hero",
+      "effects": [
+        {
+          "do": "heal",
+          "n": 1,
+          "who": "ally"
+        }
+      ],
+      "icon": "cookie",
+      "model": "prop:crumb_trail"
+    },
+    {
+      "id": "snowball",
+      "name": "Snowball",
+      "text": "Throw it at a foe up to 4 squares away. On 6 or more they lose 1 Grump.",
+      "count": 5,
+      "target": "foe",
+      "effects": [
+        {
+          "do": "removeGrump",
+          "n": 1,
+          "who": "target",
+          "range": 4,
+          "on": 6
+        }
+      ],
+      "icon": "snowball",
+      "model": "prop:snowball"
+    },
+    {
+      "id": "candy-cane-hook",
+      "name": "Candy Cane Hook",
+      "text": "Pull a friend, a foe or a present 3 squares toward you.",
+      "count": 2,
+      "target": "any",
+      "effects": [
+        {
+          "do": "pull",
+          "n": 3,
+          "range": 6
+        }
+      ],
+      "icon": "hook",
+      "model": "prop:candy_cane_hook"
+    },
+    {
+      "id": "jingle-bell",
+      "name": "Jingle Bell",
+      "text": "Everyone moves 2 extra squares this round.",
+      "count": 2,
+      "effects": [
+        {
+          "do": "moveBonusAll",
+          "n": 2
+        }
+      ],
+      "icon": "bell",
+      "model": "prop:jingle_bell"
+    },
+    {
+      "id": "mystery-present",
+      "name": "Mystery Present",
+      "text": "Unwrap it: look at 2 items and keep one.",
+      "count": 3,
+      "effects": [
+        {
+          "do": "drawItems",
+          "n": 2,
+          "keep": 1
+        }
+      ],
+      "icon": "gift",
+      "model": "prop:present"
+    },
+    {
+      "id": "sled",
+      "name": "Sled",
+      "text": "Zoom up to 10 squares in a straight line.",
+      "count": 1,
+      "target": "cell",
+      "effects": [
+        {
+          "do": "move",
+          "n": 10,
+          "line": true
+        }
+      ],
+      "icon": "sled",
+      "model": "prop:sled"
+    },
+    {
+      "id": "harness-bell",
+      "name": "Harness Bell",
+      "text": "Jingle-jangle! Move 3 more squares this turn.",
+      "count": 0,
+      "effects": [
+        {
+          "do": "move",
+          "n": 3
+        }
+      ],
+      "icon": "bell",
+      "model": "prop:jingle_bell"
+    },
+    {
+      "id": "snowflake-charm",
+      "name": "Snowflake Charm",
+      "text": "Freeze a foe up to 3 squares away for a round.",
+      "count": 0,
+      "target": "foe",
+      "effects": [
+        {
+          "do": "freeze",
+          "what": "foe",
+          "range": 3,
+          "rounds": 1
+        }
+      ],
+      "icon": "charm",
+      "model": "prop:freeze_overlay"
+    },
+    {
+      "id": "gumdrop",
+      "name": "Gumdrop",
+      "text": "Chewy! You or a friend next to you gets 1 Cheer back.",
+      "count": 0,
+      "target": "hero",
+      "effects": [
+        {
+          "do": "heal",
+          "n": 1,
+          "who": "ally"
+        }
+      ],
+      "icon": "gumdrop",
+      "model": "prop:gumdrop_bush"
+    },
+    {
+      "id": "drum",
+      "name": "Drum",
+      "text": "Rat-a-tat! Everyone marches 1 extra square this round.",
+      "count": 0,
+      "effects": [
+        {
+          "do": "moveBonusAll",
+          "n": 1
+        }
+      ],
+      "icon": "drum"
+    },
+    {
+      "id": "songbook",
+      "name": "Songbook",
+      "text": "+2 on your next Kind roll.",
+      "count": 0,
+      "effects": [
+        {
+          "do": "bonus",
+          "trait": "kind",
+          "n": 2,
+          "rounds": 2
+        }
+      ],
+      "icon": "book"
+    },
+    {
+      "id": "rolling-pin",
+      "name": "Rolling Pin",
+      "text": "+2 on your next Brave roll.",
+      "count": 0,
+      "effects": [
+        {
+          "do": "bonus",
+          "trait": "brave",
+          "n": 2,
+          "rounds": 2
+        }
+      ],
+      "icon": "pin"
+    },
+    {
+      "id": "lantern",
+      "name": "Lantern",
+      "text": "Shine it around: reveal hidden things within 3 squares.",
+      "count": 0,
+      "effects": [
+        {
+          "do": "reveal",
+          "range": 3
+        }
+      ],
+      "icon": "lantern",
+      "model": "prop:lamp_post"
+    }
+  ],
+  "foes": [
+    {
+      "id": "grumpling",
+      "name": "Grumpling",
+      "blurb": "Grabs presents and runs. Secretly just wants a hug.",
+      "grump": 1,
+      "move": 4,
+      "weak": "kind",
+      "behaviour": "grabAndRun",
+      "model": "char:grumpling"
+    },
+    {
+      "id": "coal-imp",
+      "name": "Coal Imp",
+      "blurb": "Throws lumps of coal from 3 squares away.",
+      "grump": 2,
+      "move": 3,
+      "weak": "brave",
+      "behaviour": "throwRange",
+      "range": 3,
+      "model": "char:coal-imp"
+    },
+    {
+      "id": "wind-up-rat",
+      "name": "Wind-up Rat",
+      "blurb": "Zips around in packs of three. Bumps into everything.",
+      "grump": 1,
+      "move": 6,
+      "weak": "clever",
+      "behaviour": "swarm",
+      "model": "char:wind-up-rat"
+    },
+    {
+      "id": "blizzard-wisp",
+      "name": "Blizzard Wisp",
+      "blurb": "A puff of storm that blows heroes 2 squares away.",
+      "grump": 2,
+      "move": 3,
+      "weak": "brave",
+      "behaviour": "pushHeroes",
+      "model": "char:blizzard-wisp"
+    },
+    {
+      "id": "snow-golem",
+      "name": "Snow Golem",
+      "blurb": "Huge, slow, and very good at standing in the way.",
+      "grump": 4,
+      "move": 2,
+      "weak": "clever",
+      "behaviour": "blocker",
+      "model": "char:snow-golem"
+    },
+    {
+      "id": "grumbleweed",
+      "name": "Grumbleweed",
+      "blurb": "The Winter Troll. Grumpy on the outside, lonely on the inside.",
+      "grump": 8,
+      "move": 2,
+      "weak": "kind",
+      "behaviour": "boss",
+      "range": 4,
+      "model": "char:grumbleweed",
+      "boss": {
+        "kindFinish": true,
+        "phases": [
+          {
+            "name": "Snowball Storm",
+            "text": "Grumbleweed scoops up snow and throws big snowballs!",
+            "atGrump": 8,
+            "behaviour": "throwRange"
+          },
+          {
+            "name": "Grumpling Call",
+            "text": "Grumbleweed whistles — Grumplings come running to help him!",
+            "atGrump": 5,
+            "behaviour": "swarm",
+            "summon": "grumpling"
+          },
+          {
+            "name": "The Big Sulk",
+            "text": "Grumbleweed hides behind a wall of ice and sulks. Something Clever could crack it…",
+            "atGrump": 2,
+            "behaviour": "blocker"
+          }
+        ]
+      }
+    }
+  ],
+  "tiles": [
+    {
+      "id": "snow",
+      "char": ".",
+      "name": "Snow",
+      "walk": true,
+      "model": "prop:tile_snow",
+      "color": "#F2EADB"
+    },
+    {
+      "id": "floor",
+      "char": ",",
+      "name": "Workshop floor",
+      "walk": true,
+      "color": "#D9C2A3"
+    },
+    {
+      "id": "snow-block",
+      "char": "o",
+      "name": "Snowy obstacle",
+      "walk": false,
+      "model": "prop:tile_snow",
+      "color": "#F2EADB"
+    },
+    {
+      "id": "floor-block",
+      "char": "x",
+      "name": "Workshop clutter",
+      "walk": false,
+      "color": "#D9C2A3"
+    },
+    {
+      "id": "ice",
+      "char": "i",
+      "name": "Ice",
+      "walk": true,
+      "slippery": true,
+      "model": "prop:tile_ice",
+      "color": "#E3E8EC"
+    },
+    {
+      "id": "crack",
+      "char": "c",
+      "name": "Cracked ice",
+      "walk": false,
+      "hazard": "crack",
+      "model": "prop:cracked_ice_1",
+      "color": "#D5DEE4"
+    },
+    {
+      "id": "crack-wide",
+      "char": "k",
+      "name": "Very cracked ice",
+      "walk": false,
+      "hazard": "crack",
+      "model": "prop:cracked_ice_2",
+      "color": "#D5DEE4"
+    },
+    {
+      "id": "water",
+      "char": "~",
+      "name": "Icy water",
+      "walk": false,
+      "water": true,
+      "model": "prop:water_hole",
+      "color": "#8FA9B8"
+    },
+    {
+      "id": "island",
+      "char": "I",
+      "name": "Little island",
+      "walk": true,
+      "model": "prop:island",
+      "color": "#F2EADB"
+    },
+    {
+      "id": "roof",
+      "char": "r",
+      "name": "Rooftop",
+      "walk": true,
+      "color": "#D8A7A7"
+    },
+    {
+      "id": "chimney",
+      "char": "h",
+      "name": "Chimney",
+      "walk": false,
+      "color": "#D8A7A7"
+    },
+    {
+      "id": "gap",
+      "char": "g",
+      "name": "Gap between roofs",
+      "walk": false,
+      "flyOnly": true,
+      "color": "#2A2328"
+    },
+    {
+      "id": "cave",
+      "char": "f",
+      "name": "Cave floor",
+      "walk": true,
+      "model": "prop:tile_snow",
+      "color": "#B4ABC6"
+    },
+    {
+      "id": "cave-wall",
+      "char": "#",
+      "name": "Ice cave wall",
+      "walk": false,
+      "blocks": true,
+      "model": "prop:cave_wall",
+      "color": "#B4ABC6"
+    },
+    {
+      "id": "sticky",
+      "char": "s",
+      "name": "Sticky candy path",
+      "walk": true,
+      "model": "prop:sticky_path",
+      "color": "#D8A7A7"
+    }
+  ],
+  "events": [
+    {
+      "id": "gust",
+      "name": "Gust",
+      "text": "Everyone slides 1 square in the wind’s direction.",
+      "count": 2,
+      "effects": [
+        {
+          "do": "slideAll",
+          "n": 1
+        }
+      ]
+    },
+    {
+      "id": "grumpling-ambush",
+      "name": "Grumpling Ambush",
+      "text": "Two Grumplings pop up at the edge of the map!",
+      "count": 2,
+      "effects": [
+        {
+          "do": "spawn",
+          "foe": "grumpling",
+          "n": 2,
+          "at": "edge"
+        }
+      ]
+    },
+    {
+      "id": "northern-lights",
+      "name": "Northern Lights",
+      "text": "The sky glows green and pink. +1 Twinkle!",
+      "count": 3,
+      "effects": [
+        {
+          "do": "addSpark",
+          "n": 1
+        }
+      ]
+    },
+    {
+      "id": "cocoa-stand",
+      "name": "Cocoa Stand",
+      "text": "Someone left a Hot Cocoa out for you!",
+      "count": 2,
+      "effects": [
+        {
+          "do": "placeItem",
+          "item": "hot-cocoa",
+          "at": "random"
+        }
+      ]
+    },
+    {
+      "id": "bells",
+      "name": "Bells in the Distance",
+      "text": "Ding, dong… Midnight creeps 1 step closer.",
+      "count": 2,
+      "effects": [
+        {
+          "do": "advanceClock",
+          "n": 1
+        }
+      ]
+    },
+    {
+      "id": "snow-angel",
+      "name": "Snow Angel",
+      "text": "The next hero who gets Tuckered Out pops right back up.",
+      "count": 2,
+      "effects": [
+        {
+          "do": "freeRevive"
+        }
+      ]
+    },
+    {
+      "id": "quiet-night",
+      "name": "Quiet Night",
+      "text": "Nothing happens. Phew!",
+      "count": 3,
+      "effects": [
+        {
+          "do": "nothing"
+        }
+      ]
+    }
+  ],
+  "twists": [
+    "Your hat flies off and you have to chase it!",
+    "You let out a big, loud, silly sneeze.",
+    "Snow tumbles off a branch right onto your head.",
+    "Your boots squeak so loudly that everyone giggles.",
+    "A snowflake lands right on the tip of your nose.",
+    "Your scarf gets tangled around your arms.",
+    "You slip and land on your bottom — luckily the snow is soft.",
+    "Something rustles nearby… it was only the wind.",
+    "Your mittens are soggy now. Brrr!",
+    "You drop something and have to scramble to pick it up.",
+    "A gust of wind spins you right round.",
+    "Faraway jingling makes you lose your place.",
+    "A curious snow bunny starts following you.",
+    "Your tummy rumbles — very loudly.",
+    "Icicles tinkle overhead and make you jump."
+  ],
+  "adventures": [
+    {
+      "id": "the-night-before",
+      "name": "The Night Before",
+      "blurb": "Four short scenes from the Toy Workshop to the Troll’s Ice Cave.",
+      "goalMax": 6,
+      "clockMax": 12,
+      "clockEvery": 3,
+      "scenes": [
+        {
+          "id": "workshop-chaos",
+          "name": "Workshop Chaos",
+          "type": "explore",
+          "intro": "The Toy Workshop is where every toy in the world is built — but tonight three Wind-up Rats are zooming between the workbenches! Two presents are lost in the mess. Find them, and find out where the Troll went.",
+          "map": [
+            ",,,,x,,,,",
+            ",xx,,,xx,",
+            ",,,,,,,,,",
+            "xx,,,,,,x",
+            ",,,,xx,,,",
+            ",,,,,,,,,",
+            ",x,,,,,x,",
+            ",x,,,,,x,",
+            ",,,,,,,,,",
+            ",,,,,,,,,",
+            "x,,,,,,,,"
+          ],
+          "props": [
+            {
+              "model": "prop:workshop_door",
+              "x": 4,
+              "y": 0
+            },
+            {
+              "model": "prop:shelves",
+              "x": 1,
+              "y": 1
+            },
+            {
+              "model": "prop:shelves",
+              "x": 2,
+              "y": 1
+            },
+            {
+              "model": "prop:shelves",
+              "x": 6,
+              "y": 1
+            },
+            {
+              "model": "prop:shelves",
+              "x": 7,
+              "y": 1
+            },
+            {
+              "model": "prop:workbench",
+              "x": 0.5,
+              "y": 3
+            },
+            {
+              "model": "prop:crate",
+              "x": 8,
+              "y": 3
+            },
+            {
+              "model": "prop:workbench",
+              "x": 4.5,
+              "y": 4
+            },
+            {
+              "model": "prop:toy_pile",
+              "x": 1,
+              "y": 6
+            },
+            {
+              "model": "prop:toy_pile",
+              "x": 7,
+              "y": 6
+            },
+            {
+              "model": "prop:crate",
+              "x": 1,
+              "y": 7
+            },
+            {
+              "model": "prop:crate",
+              "x": 7,
+              "y": 7
+            },
+            {
+              "model": "prop:midnight_clock",
+              "x": 0,
+              "y": 10
+            }
+          ],
+          "start": [
+            {
+              "x": 3,
+              "y": 10
+            },
+            {
+              "x": 4,
+              "y": 10
+            },
+            {
+              "x": 5,
+              "y": 10
+            },
+            {
+              "x": 2,
+              "y": 10
+            },
+            {
+              "x": 6,
+              "y": 10
+            },
+            {
+              "x": 3,
+              "y": 9
+            },
+            {
+              "x": 4,
+              "y": 9
+            },
+            {
+              "x": 5,
+              "y": 9
+            }
+          ],
+          "foes": [
+            {
+              "foe": "wind-up-rat",
+              "x": 3,
+              "y": 2
+            },
+            {
+              "foe": "wind-up-rat",
+              "x": 4,
+              "y": 2
+            },
+            {
+              "foe": "wind-up-rat",
+              "x": 5,
+              "y": 2
+            }
+          ],
+          "tokens": [
+            {
+              "kind": "goal",
+              "x": 0,
+              "y": 0,
+              "label": "a rose-pink present"
+            },
+            {
+              "kind": "goal",
+              "x": 7,
+              "y": 6,
+              "hidden": true,
+              "label": "a present buried in the toy pile"
+            },
+            {
+              "kind": "npc",
+              "x": 8,
+              "y": 10,
+              "label": "Dapple the Rocking Horse",
+              "text": "Neigh! The big Troll stomped off toward the Frozen Lake with the Star — and one present is hiding in the toy pile!"
+            },
+            {
+              "kind": "item",
+              "x": 3,
+              "y": 5,
+              "label": "a sack of toys"
+            }
+          ],
+          "goal": {
+            "text": "Find the 2 lost presents.",
+            "collectGoal": 2
+          },
+          "win": "Both presents are safe! Dapple points the way: across the Frozen Lake.",
+          "twists": [
+            "A wind-up toy marches across your feet.",
+            "A jack-in-the-box springs open — boing!",
+            "A stack of blocks wobbles and falls over."
+          ],
+          "tableMomentAfter": "wrap-it"
+        },
+        {
+          "id": "frozen-lake",
+          "name": "Frozen Lake",
+          "type": "challenge",
+          "intro": "The lake is frozen, shiny and very slippery — step on the ice and you slide until you bump into something! The ice is cracking in two places. Test the ice carefully: 4 steady tries before it wobbles 3 times. One present sits on the little island.",
+          "map": [
+            "o..o.o..o",
+            ".........",
+            "~iiiiiii~",
+            "~ckkcckc~",
+            "~iiiiiii~",
+            "~ii~iIi~~",
+            "~iiiiiii~",
+            "~kcckkcc~",
+            "~iiiiiii~",
+            "~iiiiiii~",
+            ".........",
+            "..o...o.."
+          ],
+          "props": [
+            {
+              "model": "prop:great_tree",
+              "x": 4,
+              "y": -4
+            },
+            {
+              "model": "prop:pine_tree",
+              "x": 0,
+              "y": 0
+            },
+            {
+              "model": "prop:pine_tree",
+              "x": 3,
+              "y": 0
+            },
+            {
+              "model": "prop:pine_tree",
+              "x": 5,
+              "y": 0
+            },
+            {
+              "model": "prop:pine_tree",
+              "x": 8,
+              "y": 0
+            },
+            {
+              "model": "prop:lamp_post",
+              "x": 2,
+              "y": 11
+            },
+            {
+              "model": "prop:lamp_post",
+              "x": 6,
+              "y": 11
+            },
+            {
+              "model": "prop:rock",
+              "x": 8,
+              "y": 10
+            },
+            {
+              "model": "prop:icicles",
+              "x": 0,
+              "y": 5,
+              "rot": 90
+            }
+          ],
+          "start": [
+            {
+              "x": 3,
+              "y": 10
+            },
+            {
+              "x": 4,
+              "y": 10
+            },
+            {
+              "x": 5,
+              "y": 10
+            },
+            {
+              "x": 2,
+              "y": 10
+            },
+            {
+              "x": 6,
+              "y": 10
+            },
+            {
+              "x": 3,
+              "y": 11
+            },
+            {
+              "x": 4,
+              "y": 11
+            },
+            {
+              "x": 5,
+              "y": 11
+            }
+          ],
+          "foes": [
+            {
+              "foe": "blizzard-wisp",
+              "x": 2,
+              "y": 5
+            },
+            {
+              "foe": "blizzard-wisp",
+              "x": 6,
+              "y": 4
+            }
+          ],
+          "tokens": [
+            {
+              "kind": "goal",
+              "x": 5,
+              "y": 5,
+              "label": "the present on the island"
+            },
+            {
+              "kind": "item",
+              "x": 1,
+              "y": 10,
+              "item": "sled"
+            },
+            {
+              "kind": "exit",
+              "x": 1,
+              "y": 1,
+              "label": "the far shore"
+            },
+            {
+              "kind": "exit",
+              "x": 2,
+              "y": 1,
+              "label": "the far shore"
+            },
+            {
+              "kind": "exit",
+              "x": 3,
+              "y": 1,
+              "label": "the far shore"
+            },
+            {
+              "kind": "exit",
+              "x": 4,
+              "y": 1,
+              "label": "the far shore"
+            },
+            {
+              "kind": "exit",
+              "x": 5,
+              "y": 1,
+              "label": "the far shore"
+            },
+            {
+              "kind": "exit",
+              "x": 6,
+              "y": 1,
+              "label": "the far shore"
+            },
+            {
+              "kind": "exit",
+              "x": 7,
+              "y": 1,
+              "label": "the far shore"
+            }
+          ],
+          "goal": {
+            "text": "Test the ice: 4 steady tries before 3 wobbles. Grab the island present if you can!",
+            "challenge": {
+              "need": 4,
+              "maxTrouble": 3,
+              "trait": "brave",
+              "text": "Test the ice"
+            }
+          },
+          "win": "The cracks freeze solid behind you and everyone slides safely to the far shore. Wheee!",
+          "lose": "The ice is too wobbly! Everyone takes the long, chilly way round — the night is getting late.",
+          "twists": [
+            "A fish blinks up at you through the ice.",
+            "Your feet slide in two different directions!",
+            "The ice makes a long, low creak."
+          ],
+          "tableMomentAfter": "draw-ornament",
+          "troubleClock": 1
+        },
+        {
+          "id": "rooftop-run",
+          "name": "Rooftop Run",
+          "type": "showdown",
+          "intro": "Over the Gingerbread Village roofs! Coal Imps sit by the chimneys, guarding two presents — and a Grumpling is sneaking about. Some gaps are too wide to walk across: fly, leap, or find the narrow ridge.",
+          "map": [
+            "rrrrrrrrr",
+            "rhrrrrrhr",
+            "rrrrrrrrr",
+            "gggrggggg",
+            "rrrrrrrrr",
+            "rrrhrrrrr",
+            "rrrrrrrrr",
+            "gggggrggg",
+            "rrrrrrrrr",
+            "rrrrrrrrr",
+            "rrrrrrrrr"
+          ],
+          "props": [
+            {
+              "model": "prop:chimney",
+              "x": 1,
+              "y": 1
+            },
+            {
+              "model": "prop:chimney",
+              "x": 7,
+              "y": 1
+            },
+            {
+              "model": "prop:chimney",
+              "x": 3,
+              "y": 5
+            },
+            {
+              "model": "prop:roof_gap_edge",
+              "x": 3,
+              "y": 3,
+              "rot": 90
+            },
+            {
+              "model": "prop:roof_gap_edge",
+              "x": 5,
+              "y": 7,
+              "rot": 90
+            },
+            {
+              "model": "prop:gingerbread_house",
+              "x": -2,
+              "y": 5
+            },
+            {
+              "model": "prop:gingerbread_house",
+              "x": 10,
+              "y": 2
+            },
+            {
+              "model": "prop:lamp_post",
+              "x": -1,
+              "y": 9
+            },
+            {
+              "model": "prop:candy_cane_tree",
+              "x": 10,
+              "y": 8
+            }
+          ],
+          "start": [
+            {
+              "x": 3,
+              "y": 10
+            },
+            {
+              "x": 4,
+              "y": 10
+            },
+            {
+              "x": 5,
+              "y": 10
+            },
+            {
+              "x": 2,
+              "y": 10
+            },
+            {
+              "x": 6,
+              "y": 10
+            },
+            {
+              "x": 3,
+              "y": 9
+            },
+            {
+              "x": 4,
+              "y": 9
+            },
+            {
+              "x": 5,
+              "y": 9
+            }
+          ],
+          "foes": [
+            {
+              "foe": "coal-imp",
+              "x": 2,
+              "y": 1
+            },
+            {
+              "foe": "coal-imp",
+              "x": 6,
+              "y": 1
+            },
+            {
+              "foe": "grumpling",
+              "x": 6,
+              "y": 5
+            }
+          ],
+          "tokens": [
+            {
+              "kind": "goal",
+              "x": 0,
+              "y": 0,
+              "label": "a sage-green present",
+              "guardedBy": "coal-imp"
+            },
+            {
+              "kind": "goal",
+              "x": 8,
+              "y": 0,
+              "label": "a golden present",
+              "guardedBy": "coal-imp"
+            },
+            {
+              "kind": "item",
+              "x": 8,
+              "y": 9,
+              "item": "jingle-bell"
+            },
+            {
+              "kind": "item",
+              "x": 0,
+              "y": 9,
+              "item": "snowball"
+            },
+            {
+              "kind": "item",
+              "x": 4,
+              "y": 4
+            }
+          ],
+          "goal": {
+            "text": "Get the 2 presents the Coal Imps are guarding.",
+            "collectGoal": 2
+          },
+          "win": "Both presents are back! From the top of the roofs you can see a glow coming from an ice cave…",
+          "twists": [
+            "A puff of chimney smoke makes you cough.",
+            "A roof tile wobbles under your foot.",
+            "Someone inside a gingerbread house waves at you."
+          ],
+          "tableMomentAfter": "hum-a-tune"
+        },
+        {
+          "id": "ice-cave",
+          "name": "The Ice Cave",
+          "type": "boss",
+          "intro": "Deep in the Ice Cave sits Grumbleweed the Winter Troll, hugging the Star. A Snow Golem stands in the way. Calm him down — and maybe, just maybe, a Kind word is what he really needs. His own little present is hidden somewhere in here too.",
+          "map": [
+            "#fffffff#",
+            "fffffffff",
+            "ff#fff#ff",
+            "fffffffff",
+            "##fffff##",
+            "#fffifff#",
+            "ffiiiiiff",
+            "f#fffff#f",
+            "fffffffff",
+            "fffffffff",
+            "##fffff##"
+          ],
+          "props": [
+            {
+              "model": "prop:icicles",
+              "x": 0,
+              "y": 4
+            },
+            {
+              "model": "prop:icicles",
+              "x": 8,
+              "y": 4
+            },
+            {
+              "model": "prop:icicles",
+              "x": 2,
+              "y": 2
+            },
+            {
+              "model": "prop:icicles",
+              "x": 6,
+              "y": 2
+            },
+            {
+              "model": "prop:cave_entrance",
+              "x": 4,
+              "y": 11
+            },
+            {
+              "model": "prop:rock",
+              "x": 1,
+              "y": 7
+            },
+            {
+              "model": "prop:rock",
+              "x": 7,
+              "y": 7
+            }
+          ],
+          "start": [
+            {
+              "x": 3,
+              "y": 9
+            },
+            {
+              "x": 4,
+              "y": 9
+            },
+            {
+              "x": 5,
+              "y": 9
+            },
+            {
+              "x": 2,
+              "y": 9
+            },
+            {
+              "x": 6,
+              "y": 9
+            },
+            {
+              "x": 3,
+              "y": 8
+            },
+            {
+              "x": 4,
+              "y": 8
+            },
+            {
+              "x": 5,
+              "y": 8
+            }
+          ],
+          "spawnPoints": [
+            {
+              "x": 1,
+              "y": 1
+            },
+            {
+              "x": 7,
+              "y": 1
+            }
+          ],
+          "foes": [
+            {
+              "foe": "grumbleweed",
+              "x": 4,
+              "y": 1,
+              "carrying": 0
+            },
+            {
+              "foe": "snow-golem",
+              "x": 4,
+              "y": 4
+            }
+          ],
+          "tokens": [
+            {
+              "kind": "star",
+              "x": 4,
+              "y": 1,
+              "label": "the Star"
+            },
+            {
+              "kind": "goal",
+              "x": 0,
+              "y": 1,
+              "label": "Grumbleweed’s own present"
+            },
+            {
+              "kind": "item",
+              "x": 8,
+              "y": 8,
+              "item": "hot-cocoa"
+            }
+          ],
+          "goal": {
+            "text": "Calm Grumbleweed and bring back the Star. (A Kind word at the very end might make a new friend!)",
+            "bossKindFinish": true
+          },
+          "win": "The Star is back in your hands, glowing warm and bright. Time to fly!",
+          "twists": [
+            "Grumbleweed’s grumble echoes around the cave.",
+            "An icicle drops — plink! — right beside you.",
+            "The Star flickers as if it’s saying hello."
+          ]
+        }
+      ],
+      "endings": [
+        {
+          "id": "best-night",
+          "when": "invited && star && goal>=5",
+          "text": "The Star shines on the great tree, the sleigh is full, and Grumbleweed — wearing a paper crown — waves everyone off. Next year he’ll pull the sleigh himself! The best Christmas Eve ever."
+        },
+        {
+          "id": "new-friend",
+          "when": "invited && star",
+          "text": "The sleigh lifts off under the Star with a new friend aboard: Grumbleweed, who has never smiled so much. Some homes will get their presents a little late, but nobody will forget this night."
+        },
+        {
+          "id": "full-sleigh",
+          "when": "star && goal>=5",
+          "text": "The Star blazes on the tree, the sleigh is packed with presents, and off it flies. Almost every home gets its gifts by morning!"
+        },
+        {
+          "id": "sleigh-flies",
+          "when": "star && goal>=2",
+          "text": "With the Star back on the tree, the sleigh finds its way. Not every present made it, but lots of homes wake up to a happy surprise."
+        },
+        {
+          "id": "star-home",
+          "when": "star",
+          "text": "The Star is home and the sleigh flies! It’s a light load this year — so everyone writes extra-cheerful cards to go with the few presents."
+        },
+        {
+          "id": "moonlight",
+          "when": "!star && goal>=3",
+          "text": "Midnight comes before the Star does, but the moon shines extra bright tonight. The sleigh follows it, slowly and carefully, with the presents you saved."
+        },
+        {
+          "id": "cosy",
+          "when": "always",
+          "text": "Midnight arrives and the sleigh stays home this year. Everyone shares hot cocoa by the fire and plans an even better adventure for next Christmas Eve."
+        }
+      ]
+    }
+  ],
+  "tableMoments": [
+    {
+      "id": "wrap-it",
+      "name": "Wrap it!",
+      "kind": "charades",
+      "text": "The performer acts out the secret gift without words. First to guess it wins a Twinkle for the team!",
+      "seconds": 60,
+      "reward": 1,
+      "prompts": [
+        "a teddy bear",
+        "a bicycle",
+        "a kite",
+        "a drum",
+        "a rocking horse",
+        "a skateboard",
+        "a puppy",
+        "a jigsaw puzzle",
+        "roller skates",
+        "a toy train",
+        "a yo-yo",
+        "a paint set",
+        "a magic wand",
+        "a telescope",
+        "a snow globe",
+        "a robot",
+        "a jack-in-the-box"
+      ]
+    },
+    {
+      "id": "draw-ornament",
+      "name": "Draw the Ornament",
+      "kind": "draw",
+      "text": "The performer has 30 seconds to draw the secret ornament. Everyone votes for who guessed it first!",
+      "seconds": 30,
+      "reward": 1,
+      "prompts": [
+        "a star",
+        "a bell",
+        "a candy cane",
+        "a snowflake",
+        "a round bauble",
+        "a pine cone",
+        "a gingerbread person",
+        "a stocking",
+        "a little sleigh",
+        "a mitten",
+        "a holly leaf",
+        "a snowman",
+        "a big bow",
+        "an icicle",
+        "a wreath",
+        "a toy drum"
+      ]
+    },
+    {
+      "id": "hum-a-tune",
+      "name": "Hum-a-tune",
+      "kind": "hum",
+      "text": "The performer hums the secret song — no words allowed! First to name it wins a Twinkle.",
+      "seconds": 30,
+      "reward": 1,
+      "prompts": [
+        "Jingle Bells",
+        "Deck the Halls",
+        "We Wish You a Merry Christmas",
+        "Silent Night",
+        "O Christmas Tree",
+        "Joy to the World",
+        "Hark! The Herald Angels Sing",
+        "The First Noel",
+        "Good King Wenceslas",
+        "O Come, All Ye Faithful",
+        "Away in a Manger",
+        "God Rest Ye Merry, Gentlemen",
+        "Up on the Housetop",
+        "Jolly Old Saint Nicholas",
+        "The Twelve Days of Christmas",
+        "Angels We Have Heard on High"
+      ]
+    }
+  ]
+}
