@@ -1,9 +1,9 @@
 name: Deploy game to GitHub Pages
 
-# Builds main at / and (if it exists) the v2 branch at /v2/ as a preview. Same file on both branches.
+# Builds main at / and (if it exists) the v2 branch at /v2/ as a preview. To refresh the preview after pushing v2, run this workflow manually (workflow_dispatch on main).
 on:
   push:
-    branches: [main, v2]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
