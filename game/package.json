@@ -8,9 +8,10 @@
     "test": "bun test src"
   },
   "dependencies": {
-    "three": "0.170.0",
+    "cannon-es": "0.20.0",
     "nostr-tools": "2.10.4",
-    "qrcode-generator": "1.4.4"
+    "qrcode-generator": "1.4.4",
+    "three": "0.170.0"
   },
   "devDependencies": {
     "@types/three": "0.170.0",
