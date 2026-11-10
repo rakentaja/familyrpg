@@ -359,7 +359,7 @@ body[data-screen=home] .toasts,body[data-screen=lobby] .toasts{bottom:calc(var(-
 /* roll card — one compact floating card, never a modal */
 .roll-layer{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:center;padding:0 calc(var(--sar) + 10px) calc(var(--sab) + 10px) calc(var(--sal) + 10px);z-index:4}
 .roll-card{width:min(100%,360px);padding:8px 10px;display:flex;flex-direction:column;gap:6px;font-size:16px;animation:pop .2s;background-color:rgba(247,243,236,.96)}
-.roll-card.ready{margin-bottom:min(150px,20dvh)}
+.roll-card.ready{margin-bottom:clamp(150px,34dvh,300px)}
 .rc-head{display:flex;align-items:center;gap:8px;min-height:32px}
 .rc-head .grow{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rc-head small{color:var(--mute);font-size:.88em}
@@ -472,6 +472,61 @@ body[data-screen=play] .toasts{bottom:calc(var(--sab) + 42dvh)}
 .hs-traits,.hs-pocket{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:.93em}
 .hs-traits li{display:flex;align-items:center;gap:8px}
 .hero-sheet .btn{align-self:flex-start;margin-top:4px}
+/* ---------- build tools (the Guide's library drawer, piece card, scene editor) ---------- */
+.lib-drawer{position:absolute;left:0;right:0;bottom:0;z-index:7;border-radius:14px 14px 0 0;padding:6px 8px calc(var(--sab) + 8px);
+  background-color:rgba(247,243,236,.97);box-shadow:0 -3px 0 var(--ink)}
+.lib-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:0 calc(var(--sar)) 4px calc(var(--sal))}
+.lib-tabs{display:flex;gap:4px;flex:1 0 auto}
+.lib-tab{border:2px solid var(--ink);background:var(--paper);border-radius:12px;padding:3px 10px;font:inherit;font-size:.85em;cursor:pointer;min-height:36px}
+.lib-tab.on{background:var(--lav);font-weight:700}
+.lib-hide{order:3;display:flex;align-items:center;gap:4px;font-size:.8em;color:var(--mute);white-space:nowrap}
+.lib-hide input{width:20px;height:20px;accent-color:var(--lavInk)}
+.lib-done{order:2;min-height:36px}
+.lib-strip{display:flex;gap:8px;overflow-x:auto;overscroll-behavior-x:contain;padding:4px calc(var(--sar) + 2px) 4px calc(var(--sal) + 2px);scroll-snap-type:x proximity;scrollbar-width:thin}
+.lib-card{flex:0 0 84px;scroll-snap-align:start;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px 5px;cursor:pointer;
+  border:2px solid var(--ink);border-radius:var(--r);background:var(--paper2);font:inherit;font-size:.72em;line-height:1.1;color:var(--ink)}
+.lib-card.armed{background:var(--butter);box-shadow:0 0 0 3px var(--lavInk);transform:translateY(-2px)}
+.lib-pic{width:68px;height:68px;display:flex;align-items:center;justify-content:center}
+.lib-pic img{width:100%;height:100%;object-fit:contain}
+.lib-pic .ic{width:40px;height:40px}
+.lib-wait{width:26px;height:26px;border-radius:50%;border:3px solid var(--lav);border-top-color:transparent;animation:spin 1s linear infinite}
+.lib-name{max-width:100%;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;text-align:center;min-height:2.2em}
+.piece-card{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(var(--drawer-h,170px) + 8px);z-index:8;width:min(calc(100vw - 16px),420px);
+  padding:8px 10px;display:flex;flex-direction:column;gap:6px;background-color:rgba(247,243,236,.97);animation:pop .15s}
+.pc-head{display:flex;align-items:center;gap:8px}
+.pc-state{font-size:.75em;color:var(--sageInk);white-space:nowrap}.pc-state.hid{color:var(--lavInk)}
+.pc-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.pc-row .btn.small{min-height:40px}
+.pc-texts{display:flex;flex-direction:column;gap:4px}
+.pc-texts textarea,.pc-texts input,.ed-field input,.ed-field textarea,.ed-field select,.adv-pick select{font:inherit;font-size:.9em;border:2px solid var(--ink);border-radius:8px;padding:4px 8px;background:#fffdf8;width:100%}
+.pc-texts .btn{align-self:flex-end}
+.btn.danger{color:var(--danger)}
+.ed-bar{position:absolute;top:calc(var(--sat) + 6px);left:calc(var(--sal) + 6px);right:calc(var(--sar) + 6px);z-index:7;display:flex;align-items:center;gap:6px}
+.ed-bar .btn{min-height:40px;background-color:rgba(247,243,236,.95)}
+.ed-bar .btn.primary{background-color:var(--sage)}
+.ed-title{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;position:relative;border:2px solid var(--ink);border-radius:var(--r);
+  background:rgba(247,243,236,.95);font:inherit;padding:2px 34px 2px 10px;cursor:pointer;text-align:left}
+.ed-title small{font-size:.68em;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.ed-title b{font-size:.92em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.ed-title .ic{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:22px;height:22px}
+.ed-sheet{position:absolute;top:calc(var(--sat) + 56px);left:calc(var(--sal) + 6px);right:calc(var(--sar) + 6px);margin:0 auto;max-width:460px;z-index:9;
+  max-height:calc(100dvh - var(--sat) - var(--drawer-h,170px) - 70px);overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px;background-color:rgba(247,243,236,.98)}
+.ed-sheet h4{font-family:var(--title);font-size:.9em;color:var(--roseInk);letter-spacing:.05em;margin:4px 0 0}
+.ed-field{display:flex;flex-direction:column;gap:2px;font-size:.85em}
+.ed-field>span{color:var(--mute)}
+.ed-row{display:flex;gap:6px 14px;align-items:center;flex-wrap:wrap}.ed-row.wrap{flex-wrap:wrap;gap:6px}
+.ed-step{display:flex;align-items:center;gap:4px;font-size:.85em}.ed-step b{min-width:3.2em;text-align:center}
+.ed-note{font-size:.78em;color:var(--mute)}
+.adventures .adv-cols{max-width:980px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr);gap:0 16px}
+@media (min-width:820px){.adventures .adv-cols{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr)}}
+.adv-head{display:flex;align-items:center;gap:10px}
+.adv-head small{display:block;color:var(--mute);font-size:.78em}
+.adv-blurb{font-size:.85em;color:var(--mute);margin:6px 0 0}
+.adv-actions{margin-top:8px;gap:6px}
+.adv-share .code{font-size:1.05em}
+.adv-pick select{margin:4px 0}
+.spinner.small{display:inline-block;width:18px;height:18px;vertical-align:middle}
+
 `;
 
 export function injectStyles() {

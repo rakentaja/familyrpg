@@ -2,6 +2,7 @@
 import type { GameState } from '../rules/types';
 import type { Peer } from '../contracts';
 import type { Ctx } from './ctx';
+import { allAdventures } from './adventures';
 import { h, btn, replaceKids } from './dom';
 import { icon } from './icons';
 import { avatar, role, traitBadge, TRAITS, twoTap } from './common';
@@ -15,6 +16,7 @@ export function lobbyScreen(ctx: Ctx) {
   const online = store.role !== 'local';
   let peers: Peer[] = [];
 
+  const advBox = h('div', { class: 'paper card-block adv-pick' });
   const playersBox = h('ul', { class: 'players' });
   const guideBox = h('div', { class: 'guide-pick' });
   const heroesBox = h('div', { class: 'heroes' });
@@ -60,8 +62,22 @@ export function lobbyScreen(ctx: Ctx) {
           online ? playersBox : h('p', { class: 'hint' }, 'This device is the Guide and plays every hero. Pass it around the table!'),
           online ? guideBox : null)),
       h('div', { class: 'col' },
-        h('div', { class: 'paper card-block' }, h('h2', null, pack.labels.heroes || 'Heroes'), heroesBox))),
+        h('div', { class: 'paper card-block' }, h('h2', null, pack.labels.heroes || 'Heroes'), heroesBox),
+        advBox)),
     startBox);
+
+  function paintAdventure(s: GameState) {
+    const cur = s.adv ?? pack.adventures.find((a) => a.id === s.adventureId) ?? pack.adventures[0];
+    if (!store.isHost()) { replaceKids(advBox, h('h2', null, 'Adventure'), h('p', null, h('b', null, cur?.name ?? ''))); return; }
+    const all = allAdventures(pack);
+    const sel = h('select', { 'aria-label': 'Adventure', onchange: (e: Event) => {
+      const a = all.find((x) => x.adv.id === (e.target as HTMLSelectElement).value);
+      if (a) { sfx.tap(); store.dispatch({ t: 'setAdventure', adv: a.adv }); }
+    } }, all.map((e) => h('option', { value: e.adv.id, selected: e.adv.id === cur?.id }, e.adv.name + (e.builtIn ? (e.edited ? ' (changed)' : '') : ' (mine)'))));
+    replaceKids(advBox, h('h2', null, 'Adventure'), sel,
+      cur?.blurb ? h('p', { class: 'hint' }, cur.blurb) : null,
+      h('p', { class: 'hint' }, `${cur?.scenes.length ?? 0} scenes. Make or change adventures under “My adventures” on the first screen.`));
+  }
 
   function isOnline(id: string) {
     if (id === store.me) return true;
@@ -76,6 +92,7 @@ export function lobbyScreen(ctx: Ctx) {
     const kid = s.settings.kidMode;
     const guide = s.players.find((p) => p.guide);
 
+    paintAdventure(s);
     // players
     playersBox.replaceChildren(...s.players.map((p) => h('li', { class: 'player' },
       h('span', { class: 'online' + (isOnline(p.id) ? ' on' : ''), title: isOnline(p.id) ? 'Online' : 'Away' }),

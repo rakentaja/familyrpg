@@ -1,6 +1,6 @@
 // App shell: owns the store/net lifecycle and switches between Home, Lobby and the game (the 3D table).
 import type { NetApi, RoomInfo, SceneCallbacks, SceneView } from '../contracts';
-import type { GameState, Pack } from '../rules/types';
+import type { Adventure, GameState, Pack } from '../rules/types';
 import { rules } from '../rules';
 import { createNostrNet } from '../net/nostr';
 import { createLocalNet } from '../net/local';
@@ -13,6 +13,8 @@ import { playScreen, type PlayScreen } from './play';
 import { toast, sfx, stopSpeaking } from './feedback';
 import { keepAwake } from './pwa';
 import { safe } from './common';
+import { adventuresScreen } from './advscreen';
+import { getAdventure } from './adventures';
 
 type Screen = { el: HTMLElement; update?(s: GameState, prev: GameState | null): void; destroy?(): void };
 type NetExtras = NetApi & { onInfo?(cb: (i: RoomInfo | null) => void): () => void; setName?(name: string): void };
@@ -20,7 +22,7 @@ type NetExtras = NetApi & { onInfo?(cb: (i: RoomInfo | null) => void): () => voi
 export function createApp(opts: { pack: Pack; scene: SceneView; root: HTMLElement; sceneReady: Promise<void>; progress(cb: (p: number) => void): void }) {
   const { pack, scene, root } = opts;
   let screen: Screen | null = null;
-  let screenKind: 'home' | 'lobby' | 'play' | 'joining' | null = null;
+  let screenKind: 'home' | 'lobby' | 'play' | 'joining' | 'adventures' | null = null;
   let net: NetApi | null = null;
   let unsub: (() => void) | null = null;
   const offs: (() => void)[] = [];
@@ -36,7 +38,7 @@ export function createApp(opts: { pack: Pack; scene: SceneView; root: HTMLElemen
     get sceneProgress() { return progress; },
     sceneReady: opts.sceneReady,
     onSceneProgress(cb) { progressCbs.add(cb); return () => { progressCbs.delete(cb); }; },
-    hostOnline, join, playLocal, leave, playAgain,
+    hostOnline, join, playLocal, leave, playAgain, openAdventures, editAdventure,
   };
 
   // ---------------------------------------------------------------- scene callbacks → the play screen
@@ -139,10 +141,29 @@ export function createApp(opts: { pack: Pack; scene: SceneView; root: HTMLElemen
     } else screen?.update?.(s, prev);
   }
 
-  /** A fresh table. The host (this device) is the Guide unless rules picked someone already. */
-  function freshGame(hostId: string, adventureId?: string): GameState {
-    const s = rules.createGame(pack, { hostId, hostName: myName(), hostColor: myColor(), at: Date.now(), adventureId });
-    return s;
+  /** A fresh table. The host (this device) is the Guide unless rules picked someone already.
+   *  Uses my edited version of an adventure if I have one. */
+  function freshGame(hostId: string, adventureId?: string, adventure?: Adventure): GameState {
+    const adv = adventure ?? getAdventure(pack, adventureId ?? pack.adventures[0]?.id ?? '') ?? undefined;
+    return rules.createGame(pack, { hostId, hostName: myName(), hostColor: myColor(), at: Date.now(), adventureId, adventure: adv });
+  }
+
+  /** My adventures (from the home screen, or the editor's Done). */
+  function openAdventures(importCode?: string) {
+    if (ctx.store) { stopSpeaking(); detach(true); clearSession(); }
+    keepAwake(false);
+    setSceneVisible(false);
+    show('adventures', adventuresScreen(ctx, { importCode, back: () => goHome() }));
+  }
+
+  /** The scene editor: a local table with just me (host + Guide), no heroes, opened on scene 1. */
+  async function editAdventure(adv: Adventure) {
+    const n = createLocalNet();
+    await n.host().catch(() => null);
+    const s0 = freshGame(n.myId, adv.id, adv);
+    const res = rules.reduce(s0, { t: 'edit', by: n.myId, at: Date.now() }, pack);
+    if (!res.ok) { toast(res.error || 'Could not open the editor', 'error'); n.leave(); return; }
+    attach('local', n, res.state);
   }
   function ensureGuide(store: AppStore) {
     const s = store.state;
@@ -191,7 +212,7 @@ export function createApp(opts: { pack: Pack; scene: SceneView; root: HTMLElemen
     const store = ctx.store;
     if (!store || !store.isHost()) return;
     const old = store.state;
-    const fresh = freshGame(store.me, old?.adventureId);
+    const fresh = freshGame(store.me, old?.adventureId, old?.adv);
     // keep the family together: same players (and Guide), same settings, same heroes
     if (old?.players.length) fresh.players = old.players.map((p) => ({ ...p }));
     if (old?.settings) fresh.settings = { ...old.settings };
@@ -202,6 +223,12 @@ export function createApp(opts: { pack: Pack; scene: SceneView; root: HTMLElemen
 
   // ---------------------------------------------------------------- boot routing
   async function start() {
+    const adv = /#adv=([^&]+)/.exec(location.hash);
+    if (adv) {
+      history.replaceState(null, '', location.pathname + location.search);
+      openAdventures(decodeURIComponent(adv[1]!));
+      return;
+    }
     const m = /#join=([^&]+)/.exec(location.hash);
     if (m) {
       const code = decodeURIComponent(m[1]);
@@ -241,6 +268,8 @@ export function createApp(opts: { pack: Pack; scene: SceneView; root: HTMLElemen
   }
 
   addEventListener('hashchange', () => {
+    const a = /#adv=([^&]+)/.exec(location.hash);
+    if (a && !ctx.store) { history.replaceState(null, '', location.pathname + location.search); openAdventures(decodeURIComponent(a[1]!)); return; }
     const m = /#join=([^&]+)/.exec(location.hash);
     if (m && !ctx.store) join(decodeURIComponent(m[1])).catch((err) => toast(String(err?.message || err), 'error'));
   });

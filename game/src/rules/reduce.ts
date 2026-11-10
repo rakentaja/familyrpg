@@ -12,6 +12,7 @@ import {
 } from './core';
 import { applyEffects, flipEvent, hasRoll, walkFoeTo, walkHero } from './effects';
 import { readyRoll, resolveRoll, rollFor, setHelp, sparkRoll, throwRoll } from './rolls';
+import { cleanAdventure, layoutOp, mirrorLayout, openScene, withUids } from './layout';
 
 export function reduce(state: GameState, env: Envelope, pack: Pack): { ok: boolean; error?: string; state: GameState } {
   if (!state || !pack || !env || typeof env !== 'object' || typeof env.t !== 'string' || typeof env.by !== 'string') {
@@ -159,6 +160,25 @@ function apply(c: Ctx, a: Envelope) {
       if (!h) fail('No such hero.');
       mayOwn(c, a.owner);
       h!.owner = a.owner;
+      return;
+    }
+    case 'setAdventure': {
+      needPhase(c, 'lobby');
+      if (!isHost(s, c.by)) fail('Only the host can pick the adventure.');
+      const adv = cleanAdventure(a.adv, pack);
+      if (!adv) fail('That adventure looks broken.');
+      s.adv = withUids(adv!);
+      s.adventureId = adv!.id;
+      s.meters.goalMax = adv!.goalMax;
+      s.settings.minutes = adv!.minutes;
+      s.clock.totalMs = adv!.minutes * 60000;
+      return;
+    }
+    case 'edit': {
+      needPhase(c, 'lobby');
+      if (!isHost(s, c.by)) fail('Only the host can edit.');
+      if (!adventure(s, pack)?.scenes.length) fail('This adventure has no scenes.');
+      openScene(c, 0);
       return;
     }
     case 'start': {
@@ -399,7 +419,9 @@ function apply(c: Ctx, a: Envelope) {
       // the host's device may send a bare clock tick (step 0) so Midnight can strike with nobody acting
       const tick = a.op.k === 'clock' && a.op.op === 'step' && !a.op.delta && c.s.players.some((p) => p.id === c.by && p.host);
       if (!tick) guideOnly(c);
+      if (layoutOp(c, a.op)) return;
       guideOp(c, a.op);
+      mirrorLayout(c, a.op);
       return;
     }
   }

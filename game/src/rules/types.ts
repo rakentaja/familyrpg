@@ -50,9 +50,10 @@ export interface Area {                                              // ground r
   id: string; kind: AreaKind;
   shape: 'rect' | 'circle'; x: number; z: number; w?: number; d?: number; r?: number; rot?: number; // rect = w×d centred at x,z
 }
-export interface Placement { model: string; x: number; z: number; rot?: number /* degrees */; scale?: number; block?: number /* blocking radius m, 0 = walk-through; default from footprint */; story?: string /* tap text */; search?: string /* token uid revealed by searching here */ }
-export interface SceneToken { uid: string; kind: 'goal' | 'item' | 'star' | 'clue' | 'npc' | 'exit'; x: number; z: number; item?: string; hidden?: boolean; label?: string; text?: string; model?: string }
-export interface SceneFoe { uid: string; foe: string; x: number; z: number; rot?: number; carrying?: string /* token uid */ }
+export interface Placement { uid?: string; hidden?: boolean /* only the Guide sees it */; model: string; x: number; z: number; rot?: number /* degrees */; scale?: number; block?: number /* blocking radius m, 0 = walk-through; default from footprint */; story?: string /* tap text */; search?: string /* token uid revealed by searching here */ }
+export type TokenKind = 'goal' | 'item' | 'star' | 'clue' | 'npc' | 'exit' | 'start';   // start = hero start spot (editor only)
+export interface SceneToken { uid: string; kind: TokenKind; x: number; z: number; item?: string; hidden?: boolean; label?: string; text?: string; model?: string }
+export interface SceneFoe { uid: string; foe: string; x: number; z: number; rot?: number; hidden?: boolean; carrying?: string /* token uid */ }
 export interface PackScene {
   id: string; name: string; type: 'explore' | 'challenge' | 'showdown' | 'boss';
   intro: string;
@@ -69,6 +70,7 @@ export interface PackScene {
   win: string; lose?: string; tableMomentAfter?: string;
   troubleClock?: number;                                             // extra Midnight steps on a miss here
 }
+export interface Adventure { id: string; name: string; blurb: string; goalMax: number; minutes: number; scenes: PackScene[]; endings: { id: string; when: string; text: string }[] }
 export interface PackTableMoment { id: string; name: string; kind: 'charades' | 'draw' | 'hum'; text: string; prompts: string[]; seconds: number; reward: number }
 export interface PackEvent { id: string; name: string; text: string; count: number; effects: Effect[] }
 export interface Pack {
@@ -77,7 +79,7 @@ export interface Pack {
   theme: { title: string; subtitle: string; premise: string; palette: Record<string, string> };
   models: Record<string, { url: string; scale?: number; rot?: number; anim?: Record<string, string>; block?: number /* default blocking radius m for props */ }>;
   roles: PackRole[]; items: PackItem[]; foes: PackFoe[]; events: PackEvent[];
-  adventures: { id: string; name: string; blurb: string; goalMax: number; minutes: number; scenes: PackScene[]; endings: { id: string; when: string; text: string }[] }[];
+  adventures: Adventure[];
   tableMoments: PackTableMoment[];
   ranges: { move: number; reach: number; help: number };             // metres: move ring (4), interact/attack reach (~1.5), etc.
 }
@@ -93,7 +95,7 @@ export interface Hero {
   pos: P; facing: number /* radians, 0 = +z */; pocket: string[]; knackUsed: boolean; visited: P[];
   status: { guardUntil?: number; bonus?: { trait: Trait | 'any'; n: number; rolls: number }; moveBonus?: number };
 }
-export interface Foe { uid: string; foe: string; pos: P; facing: number; hearts: number; maxHearts: number; down: boolean; frozenUntil?: number; carrying?: string; phase?: number }
+export interface Foe { uid: string; foe: string; pos: P; facing: number; hidden?: boolean; hearts: number; maxHearts: number; down: boolean; frozenUntil?: number; carrying?: string; phase?: number }
 export interface Token { uid: string; kind: SceneToken['kind']; pos: P | null; item?: string; hidden?: boolean; label?: string; text?: string; model?: string; carriedBy?: string }
 export type RollPurpose =
   | { kind: 'attack'; foeUid: string }
@@ -122,6 +124,9 @@ export interface FxEvent {
 export interface GameState {
   v: number; seed: number; now: number;                              // now = timestamp of the last applied action
   packId: string; adventureId: string; settings: Settings;
+  adv?: Adventure;                                                   // the adventure being played (a copy the host can edit live)
+  mode?: 'edit';                                                     // scene editor: no heroes, no clock, nothing ends the scene
+  seq?: number;                                                      // uid counter for pieces the Guide adds
   phase: Phase;
   players: Player[]; heroes: Hero[]; foes: Foe[]; tokens: Token[];
   scene: {
@@ -157,6 +162,8 @@ export type Action =
   | { t: 'removeHero'; heroId: string }
   | { t: 'assignHero'; heroId: string; owner: string }
   | { t: 'start' }
+  | { t: 'setAdventure'; adv: Adventure }
+  | { t: 'edit' }                                                   // host, lobby: open the scene editor on this adventure                            // host, lobby: play a custom / edited adventure
   | { t: 'beginScene' }
   // players (owner of the hero, or the Guide)
   | { t: 'walk'; heroId: string; to: P }                             // reducer paths around obstacles; soft rules, never blocked by range
@@ -177,11 +184,11 @@ export type Action =
   // Guide only
   | { t: 'guide'; op: GuideOp };
 export type GuideOp =
-  | { k: 'place'; what: 'hero' | 'foe' | 'token'; id: string; to: P; facing?: number }   // drag anything (teleport)
+  | { k: 'place'; what: 'hero' | 'foe' | 'token' | 'prop'; id: string; to: P; facing?: number }   // drag anything (teleport)
   | { k: 'walkFoe'; uid: string; to: P }                                                  // foe walks (pathing, animated)
   | { k: 'foeHearts'; uid: string; delta: number }
   | { k: 'ko'; uid: string }
-  | { k: 'remove'; what: 'foe' | 'token'; id: string }
+  | { k: 'remove'; what: 'foe' | 'token' | 'prop'; id: string }
   | { k: 'spawn'; foe: string; at: P }
   | { k: 'hearts'; heroId: string; delta: number }
   | { k: 'meter'; meter: 'sparks' | 'goal'; delta: number }
@@ -192,7 +199,13 @@ export type GuideOp =
   | { k: 'flipEvent' }
   | { k: 'say'; text: string; who?: string }
   | { k: 'camera'; at: P }
-  | { k: 'endScene'; result: 'won' | 'lost' };
+  | { k: 'endScene'; result: 'won' | 'lost' }
+  // layout (the host only): new pieces go into the scene's layout too, hidden unless hidden: false
+  | { k: 'add'; what: 'prop' | 'foe' | 'token'; at: P; model?: string; foe?: string; kind?: TokenKind; item?: string; label?: string; text?: string; rot?: number; hidden?: boolean }
+  | { k: 'edit'; what: 'prop' | 'foe' | 'token'; id: string; rot?: number; scale?: number; hidden?: boolean; label?: string; text?: string }
+  | { k: 'hideAll'; hidden: boolean }                                                     // show / hide every piece in the scene
+  | { k: 'scene'; op: 'goto' | 'add' | 'copy' | 'delete' | 'up' | 'down' | 'set'; index?: number;
+      patch?: { name?: string; intro?: string; w?: number; d?: number; ground?: AreaKind; advName?: string; advBlurb?: string } };
 export type Envelope = Action & { by: string; at: number };
 
 /** What a hold (ring menu) / tap can do on something, computed by rules for the UI. */

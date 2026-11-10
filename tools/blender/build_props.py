@@ -691,6 +691,248 @@ def roof_gap_edge():
     for x, y in edge[1:-1]:
         L = random.uniform(0.12, 0.24); cone(0.03, L, (x, y + 0.02, -0.14 - L / 2), "ice", 5).rotation_euler[0] = math.pi
 
+# ---------------------------------------------------------------- third batch: GM set dressing
+@prop
+def snowman():
+    """~1.3 m snowman: three faceted snowballs, top hat, scarf, carrot nose toward -Y, stick arms."""
+    for r, z in ((0.33, 0.3), (0.24, 0.76), (0.165, 1.06)):
+        o = ico(r, (0, 0, z), "snow", 1); o.scale = (1, 0.95, 0.92); jitter(o, r * 0.06)
+    cyl(0.17, 0.025, (0, 0, 1.2), "ink", 8); cyl(0.11, 0.15, (0, 0, 1.285), "ink", 8, r2=0.105)
+    cyl(0.112, 0.035, (0, 0, 1.23), "rose_dk", 8)
+    torus(0.15, 0.045, (0, 0, 0.94), "rose", maj=10, mn=4)
+    box((0.08, 0.035, 0.24), (0.07, -0.17, 0.83), "rose").rotation_euler[1] = -0.15
+    for z in (0.74, 0.81, 0.88): box((0.082, 0.04, 0.025), (0.072 - (z - 0.83) * 0.15, -0.19, z), "rose_dk").rotation_euler[1] = -0.15
+    cone(0.03, 0.15, (0, -0.22, 1.06), "cookie", 5).rotation_euler[0] = math.pi / 2
+    for x in (-0.06, 0.06): ico(0.022, (x, -0.145, 1.11), "coal", 0)
+    for k in range(4): ico(0.018, (-0.075 + k * 0.05, -0.14, 1.0 - 0.012 * (1 if k in (0, 3) else 0)), "coal", 0)
+    for z in (0.68, 0.8): ico(0.026, (0, -0.225, z), "coal", 0)
+    ico(0.03, (0, -0.315, 0.32), "coal", 0)
+    for s in (-1, 1):
+        cyl(0.016, 0.42, (s * 0.38, 0, 0.86), "wood_dk", 5, rot=(0, s * 1.05, 0))
+        cyl(0.011, 0.12, (s * 0.53, -0.01, 1.0), "wood_dk", 5, rot=(0, s * 0.35, 0))
+    o = ico(0.4, (0, 0, 0.02), "snow", 1); o.scale = (1.15, 1.05, 0.16); jitter(o, 0.02)
+    ground()
+
+@prop
+def wreath_stand():
+    """Wreath hung on a small post (~1.2 m), wreath facing -Y, cross feet on the ground."""
+    for a in (0, math.pi / 2): box((0.5, 0.08, 0.06), (0, 0, 0.03), "wood_dk").rotation_euler[2] = a
+    box((0.08, 0.08, 1.12), (0, 0.04, 0.6), "wood", bevel=0.01)
+    cone(0.075, 0.08, (0, 0.04, 1.2), "wood", 4).rotation_euler[2] = math.pi / 4
+    o = box((0.13, 0.13, 0.04), (0, 0.04, 1.17), "snow", bevel=0.01); jitter(o, 0.006)
+    box((0.03, 0.06, 0.03), (0, -0.01, 1.05), "ink")                                  # hook
+    torus(0.22, 0.07, (0, -0.06, 0.82), "sage", rot=(math.pi / 2, 0, 0), maj=10, mn=4)
+    torus(0.22, 0.04, (0, -0.1, 0.82), "sage_dk", rot=(math.pi / 2, 0.3, 0), maj=10, mn=4)
+    for s in (-1, 1):                                                                 # bow at the bottom
+        box((0.13, 0.04, 0.08), (s * 0.07, -0.15, 0.6), "rose_dk").rotation_euler[1] = s * 0.45
+        box((0.04, 0.03, 0.16), (s * 0.04, -0.15, 0.5), "rose_dk").rotation_euler[1] = s * 0.3
+    box((0.055, 0.05, 0.055), (0, -0.16, 0.6), "rose")
+    for k in range(7):
+        a = 2 * math.pi * k / 7 - 0.9
+        ico(0.03, (0.23 * math.cos(a), -0.14, 0.82 + 0.23 * math.sin(a)), "rose" if k % 2 else "gold", 0)
+    ground()
+
+@prop
+def gift_sack():
+    """Bulging sack of presents (~0.85 m), tied at the neck, a gift peeking beside it."""
+    o = ico(0.32, (0, 0, 0.3), "sage", 1); o.scale = (1.05, 0.95, 1.0); jitter(o, 0.035)
+    o = cyl(0.17, 0.16, (0, 0, 0.62), "sage", 7, r2=0.08); jitter(o, 0.01)
+    torus(0.085, 0.025, (0, 0, 0.66), "gold", maj=8, mn=4)
+    o = cyl(0.07, 0.14, (0, 0, 0.75), "sage_dk", 6, r2=0.13); jitter(o, 0.012)
+    for s in (-1, 1): box((0.03, 0.02, 0.16), (s * 0.05, -0.08, 0.6), "gold").rotation_euler[1] = s * 0.35
+    present_box("rose", "cream", 0.55, (0.3, -0.24, 0.0))
+    for o in present_box("lav", "cream", 0.42, (-0.32, -0.15, 0.0)): o.rotation_euler[2] = 0.5
+    ground()
+
+@prop
+def rocking_horse():
+    """Full-size wooden rocking horse (~0.9 m tall, ~1 m along Y), nose toward -Y."""
+    S = 2.1
+    def horse():
+        box((0.12, 0.3, 0.12), (0, 0, 0.22), "wood", bevel=0.01)
+        box((0.08, 0.08, 0.17), (0, -0.15, 0.32), "wood").rotation_euler[0] = -0.35
+        box((0.09, 0.15, 0.08), (0, -0.22, 0.4), "wood", bevel=0.01)
+        box((0.07, 0.04, 0.05), (0, -0.29, 0.385), "wood_dk")                                  # muzzle
+        for dx in (-0.025, 0.025): box((0.02, 0.025, 0.045), (dx, -0.17, 0.455), "wood_dk")    # ears
+        for dx in (-0.047, 0.047): box((0.006, 0.018, 0.018), (dx, -0.24, 0.415), "ink")       # eyes
+        box((0.025, 0.12, 0.08), (0, -0.11, 0.36), "rose_dk").rotation_euler[0] = -0.4         # mane
+        box((0.03, 0.03, 0.1), (0, 0.17, 0.25), "rose_dk").rotation_euler[0] = 0.6              # tail
+        box((0.13, 0.11, 0.025), (0, 0.0, 0.29), "rose", bevel=0.004)                           # saddle
+        box((0.135, 0.06, 0.012), (0, 0.0, 0.305), "gold")
+        box((0.16, 0.012, 0.012), (0, -0.2, 0.43), "gold")                                      # handle
+        for dx in (-0.045, 0.045):
+            for dy in (-0.11, 0.11): box((0.035, 0.035, 0.12), (dx, dy, 0.12), "wood_dk")
+            for c in arc(0.42, (0, 0.47), -0.42, 0.42, 7, (0.03, 0.07, 0.025), "rose"): c.location.x = dx
+        box((0.12, 0.025, 0.025), (0, 0.0, 0.055), "rose_dk")                                   # rocker stretcher
+    for o in new_objs(horse): o.location = o.location * S + Vector((0, 0.1, 0)); o.scale = o.scale * S
+    ground()
+
+@prop
+def toy_train():
+    """Big toy train ~1.2 m along X: engine (front +X) and one wagon of presents. Side faces -Y."""
+    def wheels(xs, r=0.07):
+        for x in xs:
+            for y in (-0.15, 0.15):
+                cyl(r, 0.03, (x, y, r), "ink", 8, rot=(math.pi / 2, 0, 0))
+                cyl(r * 0.45, 0.034, (x, y, r), "gold", 6, rot=(math.pi / 2, 0, 0))
+    ex = 0.28   # engine centre x
+    box((0.6, 0.28, 0.06), (ex, 0, 0.12), "ink")
+    wheels((ex - 0.18, ex, ex + 0.18))
+    cyl(0.11, 0.36, (ex + 0.1, 0, 0.26), "rose_dk", 8, rot=(0, math.pi / 2, 0))
+    for x in (ex - 0.05, ex + 0.12): cyl(0.116, 0.025, (x, 0, 0.26), "gold", 8, rot=(0, math.pi / 2, 0))
+    cyl(0.09, 0.02, (ex + 0.285, 0, 0.26), "ink", 8, rot=(0, math.pi / 2, 0))
+    ico(0.03, (ex + 0.3, 0, 0.29), "glow", 0)                                                   # headlamp
+    cyl(0.04, 0.14, (ex + 0.18, 0, 0.42), "ink", 6, r2=0.065)                                   # funnel
+    cyl(0.05, 0.05, (ex + 0.02, 0, 0.39), "gold", 6)                                            # steam dome
+    box((0.22, 0.28, 0.3), (ex - 0.19, 0, 0.3), "sage", bevel=0.01)                            # cab
+    for y in (-0.142, 0.142): box((0.12, 0.01, 0.1), (ex - 0.19, y, 0.37), "cream")
+    box((0.28, 0.34, 0.035), (ex - 0.19, 0, 0.47), "rose", bevel=0.005)                         # cab roof
+    slab([(ex + 0.3, 0.16), (ex + 0.3, 0.09), (ex + 0.4, 0.02)], -0.13, 0.13, "gold_dk", axis="y")   # cowcatcher
+    wx = -0.38  # wagon centre x
+    box((0.44, 0.28, 0.06), (wx, 0, 0.12), "ink")
+    wheels((wx - 0.13, wx + 0.13))
+    box((0.44, 0.28, 0.025), (wx, 0, 0.165), "wood_dk")
+    for y in (-0.13, 0.13): box((0.44, 0.025, 0.14), (wx, y, 0.24), "lav")
+    for x in (wx - 0.21, wx + 0.21): box((0.025, 0.28, 0.14), (x, 0, 0.24), "lav")
+    for y in (-0.145, 0.145): box((0.44, 0.012, 0.025), (wx, y, 0.3), "cream")
+    present_box("gold", "rose_dk", 0.38, (wx - 0.08, 0.0, 0.18))
+    for o in present_box("rose", "cream", 0.3, (wx + 0.1, 0.03, 0.18)): o.rotation_euler[2] = 0.4
+    box((0.12, 0.03, 0.03), (-0.09, 0, 0.12), "ink")                                            # coupling
+    ground()
+
+@prop
+def snow_drift():
+    """Low snow mound (~0.2 m), walk-over decor for any square."""
+    o = slab(ngon(10, 0.46, 0.12, 1.0, 0.8), 0.0, 0.05, "snow", name="drift"); jitter(o, 0.01)
+    for loc, sc in (((-0.05, 0.02, 0.05), (0.42, 0.3, 0.12)), ((0.18, -0.06, 0.08), (0.22, 0.18, 0.1)), ((-0.24, 0.08, 0.04), (0.18, 0.15, 0.07))):
+        o = ico(1, loc, "snow", 1); o.scale = sc; jitter(o, 0.08)
+    o = ico(1, (0.1, 0.1, 0.07), "white", 1); o.scale = (0.12, 0.1, 0.05)
+    ground()
+
+@prop
+def bench():
+    """Park bench, 1.4 m along X, seat 0.48 m, back toward +Y, iron side frames, snow on the seat."""
+    for x in (-0.6, 0.6):
+        box((0.05, 0.05, 0.47), (x, -0.17, 0.235), "ink"); box((0.05, 0.05, 0.92), (x, 0.18, 0.46), "ink").rotation_euler[0] = -0.12
+        box((0.05, 0.42, 0.05), (x, 0.0, 0.45), "ink"); box((0.05, 0.4, 0.04), (x, 0.0, 0.1), "ink")
+        box((0.05, 0.32, 0.04), (x, -0.06, 0.66), "ink"); box((0.05, 0.05, 0.2), (x, -0.2, 0.56), "ink")
+        for y in (-0.17, 0.15): box((0.1, 0.1, 0.02), (x, y, 0.01), "ink")
+    for i in range(4): box((1.4, 0.085, 0.035), (0, -0.18 + i * 0.1, 0.49), "wood", bevel=0.006)
+    for i, z in enumerate((0.64, 0.76, 0.88)): box((1.4, 0.03, 0.09), (0, 0.205 + i * 0.015, z), "wood", bevel=0.006).rotation_euler[0] = -0.12
+    o = slab(ngon(8, 0.2, 0.15, 1.6, 0.6), 0.505, 0.54, "snow"); o.location.x = -0.3; jitter(o, 0.006)
+    o = box((1.3, 0.05, 0.03), (0, 0.24, 0.935), "snow", bevel=0.01); jitter(o, 0.006)
+    ground()
+
+def arrow_board(L, h, t, m):
+    """Arrow-shaped board pointing +X, built around its own origin (rotate it about Z after)."""
+    pts = [(-L / 2, -h / 2), (L / 2 - 0.1, -h / 2), (L / 2, 0), (L / 2 - 0.1, h / 2), (-L / 2, h / 2), (-L / 2 + 0.05, 0)]
+    return slab(pts, -t / 2, t / 2, m, axis="y", name="board")
+
+@prop
+def signpost():
+    """Crossroads sign (~1.8 m): post with two arrow boards pointing different ways."""
+    o = ico(0.25, (0, 0, 0.02), "snow", 1); o.scale = (1.2, 1.0, 0.25); jitter(o, 0.02)
+    box((0.09, 0.09, 1.7), (0, 0, 0.85), "wood_dk", bevel=0.01)
+    cone(0.085, 0.1, (0, 0, 1.75), "wood_dk", 4).rotation_euler[2] = math.pi / 4
+    o = box((0.13, 0.13, 0.04), (0, 0, 1.72), "snow", bevel=0.01); jitter(o, 0.006)
+    for (z, rz, flip, col) in ((1.5, 0.25, 1, "rose"), (1.22, -0.35, -1, "sage")):
+        def build():
+            b = arrow_board(0.72, 0.18, 0.035, col); b.location.x = 0.3
+            for k, w in enumerate((0.36, 0.26)):
+                for y in (-0.022, 0.022): box((w, 0.01, 0.022), (0.24 - (0.36 - w) / 2, y, 0.03 - k * 0.055), "ink")
+            o = box((0.62, 0.05, 0.03), (0.28, 0.0, 0.1), "snow"); jitter(o, 0.004)
+        for o in new_objs(build):
+            p = o.location.copy(); p.x *= flip
+            o.location = Matrix.Rotation(rz, 3, "Z") @ p + Vector((0, 0, z))
+            o.rotation_euler[2] += rz + (math.pi if flip < 0 else 0)
+    ground()
+
+@prop
+def mailbox():
+    """Letters-to-the-North-Pole pillar box (~1.25 m): slot facing -Y, a letter going in, star on top."""
+    cyl(0.25, 0.08, (0, 0, 0.04), "lav_dk", 8)
+    cyl(0.2, 0.92, (0, 0, 0.54), "rose_dk", 8)
+    cyl(0.215, 0.04, (0, 0, 0.98), "gold", 8); cyl(0.205, 0.035, (0, 0, 0.14), "gold", 8)
+    cyl(0.22, 0.08, (0, 0, 1.04), "rose_dk", 8, r2=0.17)
+    o = cyl(0.17, 0.1, (0, 0, 1.13), "snow", 8, r2=0.06); jitter(o, 0.008)
+    box((0.22, 0.04, 0.035), (0, -0.19, 0.86), "ink")
+    box((0.26, 0.03, 0.025), (0, -0.2, 0.895), "rose")                                       # slot lip
+    o = box((0.16, 0.008, 0.11), (0, -0.215, 0.89), "cream"); o.rotation_euler[0] = 0.5     # letter
+    ico(0.016, (0, -0.25, 0.885), "rose", 0)
+    box((0.2, 0.03, 0.14), (0, -0.19, 0.62), "cream", bevel=0.01)                            # label plate
+    slab(star_pts(5, 0.04, 0.017), -0.205, -0.205 - 0.012, "gold", axis="y").location.z = 0.62
+    box((0.1, 0.03, 0.02), (0, -0.2, 0.33), "ink")                                           # door handle
+    slab(star_pts(5, 0.1, 0.045), -0.02, 0.02, "glow", axis="y").location.z = 1.3
+    cyl(0.015, 0.08, (0, 0, 1.2), "gold", 4)
+    ground()
+
+@prop
+def fireplace():
+    """Hearth 1.4 m wide (X), opening facing -Y, glowing embers and logs, stocking bar under the mantel."""
+    box((1.6, 0.72, 0.07), (0, -0.1, 0.035), "lav")                                          # hearth stone
+    for x in (-0.55, 0.55): box((0.3, 0.5, 0.83), (x, 0.0, 0.485), "rose_dk", bevel=0.01)
+    box((1.4, 0.5, 0.28), (0, 0.0, 1.04), "rose_dk", bevel=0.01)                              # lintel
+    box((0.82, 0.06, 0.84), (0, 0.22, 0.49), "coal")                                          # back wall
+    box((0.82, 0.46, 0.02), (0, 0.0, 0.08), "coal")
+    for z in (0.3, 0.6):
+        for x in (-0.55, 0.55): box((0.31, 0.012, 0.02), (x, -0.255, z), "lav_dk")
+    box((1.41, 0.012, 0.02), (0, -0.255, 1.0), "lav_dk")
+    box((1.62, 0.62, 0.07), (0, -0.04, 1.215), "wood", bevel=0.01)                            # mantel shelf
+    box((1.5, 0.04, 0.05), (0, -0.33, 1.16), "wood_dk")
+    # embers and logs
+    for k in range(7):
+        o = ico(0.05, (-0.26 + k * 0.085, 0.02 + 0.06 * ((k * 3) % 4 - 1.5) / 1.5, 0.11), "glow" if k % 2 else "gold", 0); jitter(o, 0.01)
+    for (x, rz) in ((-0.1, 0.3), (0.12, -0.25)):
+        cyl(0.055, 0.5, (x, 0.02, 0.16), "wood_dk", 6, rot=(0, math.pi / 2, rz))
+    cyl(0.05, 0.46, (0, 0.06, 0.25), "wood_dk", 6, rot=(0, math.pi / 2, 0.05))
+    for (x, h, r) in ((-0.1, 0.3, 0.07), (0.05, 0.38, 0.08), (0.17, 0.24, 0.06)):
+        o = cone(r, h, (x, 0.0, 0.2 + h / 2), "glow", 5); jitter(o, 0.008)
+        cone(r * 0.55, h * 0.6, (x, -0.02, 0.2 + h * 0.3), "gold", 5)
+    # stockings on hooks
+    cyl(0.012, 1.2, (0, -0.34, 1.13), "gold", 6, rot=(0, math.pi / 2, 0))
+    for x, c in ((-0.42, "rose"), (0.0, "sage"), (0.42, "lav")):
+        box((0.015, 0.03, 0.06), (x, -0.355, 1.12), "ink")
+        sock = [(-0.07, 1.08), (0.07, 1.08), (0.07, 0.8), (0.15, 0.74), (0.15, 0.68), (0.04, 0.66), (-0.07, 0.74)]
+        o = slab(sock, -0.35, -0.39, c, axis="y"); o.location.x = x
+        box((0.17, 0.05, 0.07), (x, -0.37, 1.07), "cream", bevel=0.008)
+    # candles on the mantel
+    for x in (-0.6, 0.6):
+        cyl(0.045, 0.02, (x, -0.05, 1.26), "gold", 6); cyl(0.03, 0.14, (x, -0.05, 1.34), "cream", 6)
+        cone(0.018, 0.05, (x, -0.05, 1.435), "glow", 4)
+    ground()
+
+@prop
+def log_pile():
+    """Stacked firewood (3-2-1 logs) with cut ends facing +-X, snow on top. ~0.9 m long, 0.5 m tall."""
+    r = 0.095; L = 0.9
+    for row, n in enumerate((3, 2, 1)):
+        for i in range(n):
+            y = (i - (n - 1) / 2) * 2 * r * 1.02; z = r + row * r * 1.72
+            o = cyl(r * random.uniform(0.92, 1.05), L * random.uniform(0.94, 1.0), (random.uniform(-0.03, 0.03), y, z), "wood_dk", 7, rot=(0, math.pi / 2, random.uniform(-0.04, 0.04)))
+            for s in (-1, 1): cyl(r * 0.8, 0.012, (o.location.x + s * o.dimensions.z / 2, y, z), "cookie", 7, rot=(0, math.pi / 2, 0))
+    for dx in (-0.3, 0.3):
+        for dy in (-0.33, 0.33): box((0.06, 0.06, 0.42), (dx, dy, 0.21), "wood")             # stakes
+    o = ico(1, (0, 0, r + 3.44 * r + 0.8 * r), "snow", 1); o.scale = (0.4, 0.09, 0.04); jitter(o, 0.05)
+    o = ico(1, (0.1, -0.1, r + 1.72 * r + 0.85 * r), "snow", 1); o.scale = (0.25, 0.07, 0.03)
+    ground()
+
+@prop
+def lantern():
+    """Small standing floor lantern (~0.55 m): ink frame, glowing glass, pyramid roof, ring handle."""
+    box((0.26, 0.26, 0.04), (0, 0, 0.02), "ink", bevel=0.005)
+    box((0.22, 0.22, 0.04), (0, 0, 0.06), "ink")
+    box((0.17, 0.17, 0.26), (0, 0, 0.21), "glow")
+    for x in (-0.095, 0.095):
+        for y in (-0.095, 0.095): box((0.025, 0.025, 0.28), (x, y, 0.21), "ink")
+    for y in (-0.096, 0.096): box((0.012, 0.012, 0.26), (0, y, 0.21), "ink")
+    for x in (-0.096, 0.096): box((0.012, 0.012, 0.26), (x, 0, 0.21), "ink")
+    box((0.24, 0.24, 0.035), (0, 0, 0.36), "ink")
+    cone(0.18, 0.12, (0, 0, 0.437), "ink", 4).rotation_euler[2] = math.pi / 4
+    o = cone(0.125, 0.1, (0, 0, 0.465), "snow", 4); o.rotation_euler[2] = math.pi / 4 + 0.05
+    cyl(0.02, 0.03, (0, 0, 0.5), "ink", 6)
+    torus(0.04, 0.009, (0, 0, 0.55), "ink", rot=(math.pi / 2, 0, 0), maj=8, mn=4)
+    ground()
+
 
 if __name__ == "__main__":
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []

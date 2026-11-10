@@ -428,6 +428,54 @@
     },
     "token:exit": {
       "url": "assets/props/sb_crumb_trail.glb"
+    },
+    "prop:snowman": {
+      "url": "assets/props/sb_snowman.glb",
+      "block": 0.35
+    },
+    "prop:wreath_stand": {
+      "url": "assets/props/sb_wreath_stand.glb",
+      "block": 0.3
+    },
+    "prop:gift_sack": {
+      "url": "assets/props/sb_gift_sack.glb",
+      "block": 0.45
+    },
+    "prop:rocking_horse": {
+      "url": "assets/props/sb_rocking_horse.glb",
+      "block": 0.45
+    },
+    "prop:toy_train": {
+      "url": "assets/props/sb_toy_train.glb",
+      "block": 0.55
+    },
+    "prop:snow_drift": {
+      "url": "assets/props/sb_snow_drift.glb",
+      "block": 0
+    },
+    "prop:bench": {
+      "url": "assets/props/sb_bench.glb",
+      "block": 0.55
+    },
+    "prop:signpost": {
+      "url": "assets/props/sb_signpost.glb",
+      "block": 0.2
+    },
+    "prop:mailbox": {
+      "url": "assets/props/sb_mailbox.glb",
+      "block": 0.26
+    },
+    "prop:fireplace": {
+      "url": "assets/props/sb_fireplace.glb",
+      "block": 0.7
+    },
+    "prop:log_pile": {
+      "url": "assets/props/sb_log_pile.glb",
+      "block": 0.45
+    },
+    "prop:lantern": {
+      "url": "assets/props/sb_lantern.glb",
+      "block": 0.18
     }
   },
   "roles": [

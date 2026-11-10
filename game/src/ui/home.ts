@@ -83,7 +83,8 @@ export function homeScreen(ctx: Ctx, opts: { joinCode?: string } = {}) {
         btn([icon('star'), h('span', null, h('b', null, 'Host a table'), h('small', null, 'Everyone plays on their own phone'))], run(() => ctx.hostOnline()), 'choice primary'),
         btn([icon('qr'), h('span', null, h('b', null, 'Join a table'), h('small', null, 'Type the code or scan the QR'))], () => { joinPanel.hidden = !joinPanel.hidden; if (!joinPanel.hidden) codeIn.focus(); sfx.tap(); }, 'choice'),
         joinPanel,
-        btn([icon('dice'), h('span', null, h('b', null, 'Play on this device'), h('small', null, 'You are the Guide — pass the phone around, no internet needed'))], run(() => ctx.playLocal()), 'choice')),
+        btn([icon('dice'), h('span', null, h('b', null, 'Play on this device'), h('small', null, 'You are the Guide — pass the phone around, no internet needed'))], run(() => ctx.playLocal()), 'choice'),
+        btn([icon('book'), h('span', null, h('b', null, 'My adventures'), h('small', null, 'Build and change scenes, share them with other families'))], () => { sfx.tap(); ctx.openAdventures(); }, 'choice')),
       h('p', { class: 'premise' }, pack.theme.premise, ' ', readAloud(() => pack.theme.premise)),
       loadRow, installBox));
 

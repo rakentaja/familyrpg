@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import type { Area, AreaKind, PackScene } from '../rules/types';
 import type { Assets } from './assets';
 import { addOutline, toonMaterial, toonMaterials } from './style';
+import { ghostOf } from './actors';
 
 const deg = (d: number | undefined) => ((d ?? 0) * Math.PI) / 180;
 
@@ -19,7 +20,7 @@ const FILL: Record<AreaKind | 'solid', string> = {
   roof: '#d8a7a7', wall: '#a49aaa', solid: '#d9e7ee',
 };
 
-export interface PropRef { index: number; obj: THREE.Object3D }
+export interface PropRef { index: number; obj: THREE.Object3D; uid: string; model: string; hidden: boolean }
 export interface Obstacle { x: number; z: number; r: number }
 
 export class Table {
@@ -70,19 +71,41 @@ export class Table {
       this.group.add(r);
     }
 
-    // props
+    this.syncProps(def, assets, false);
+    this.setGround(def, solid);
+  }
+
+  /** Add / move / remove props to match the layout (the Guide can change it live). Hidden props are only shown
+   *  (see-through) when `showHidden`. Pieces are matched by uid, so unchanged ones keep their objects. */
+  syncProps(def: PackScene, assets: Assets, showHidden: boolean, skip?: THREE.Object3D | null): void {
+    const old = new Map(this.props.map((p) => [p.uid, p]));
+    const next: PropRef[] = [];
+    this.obstacles.length = 0; this.hands.length = 0;
     def.props.forEach((pl, index) => {
-      const obj = assets.instance(pl.model);
-      if (!obj) return;
-      const holder = new THREE.Group();
-      holder.add(obj);
-      holder.position.set(pl.x, 0, pl.z);
-      holder.rotation.y = deg(pl.rot);
-      if (pl.scale) holder.scale.setScalar(pl.scale);
+      const uid = pl.uid ?? 'i' + index, hidden = !!pl.hidden;
+      let ref = old.get(uid);
+      if (ref && ref.model !== pl.model) { ref.obj.removeFromParent(); ref = undefined; }
+      if (hidden && !showHidden) { if (ref) ref.obj.removeFromParent(); return; }
+      if (!ref) {
+        const obj = assets.instance(pl.model);
+        if (!obj) return;
+        const holder = new THREE.Group();
+        holder.add(obj);
+        this.propGroup.add(holder);
+        ref = { index, obj: holder, uid, model: pl.model, hidden: false };
+      }
+      old.delete(uid);
+      const holder = ref.obj;
+      ref.index = index;
       holder.userData.propIndex = index;
-      obj.traverse((o) => { if (o.name === 'hand') this.hands.push(o); });
-      this.propGroup.add(holder);
-      this.props.push({ index, obj: holder });
+      holder.userData.propUid = uid;
+      if (holder !== skip) holder.position.set(pl.x, 0, pl.z);
+      holder.rotation.y = deg(pl.rot);
+      holder.scale.setScalar(pl.scale ?? 1);
+      if (ref.hidden !== hidden) { setGhost(holder, hidden); ref.hidden = hidden; }
+      holder.traverse((o) => { if (o.name === 'hand') this.hands.push(o); });
+      next.push(ref);
+      if (hidden) return;
       let r = pl.block;
       if (r === undefined) {
         holder.updateMatrixWorld(true);
@@ -91,13 +114,14 @@ export class Table {
       }
       if (r > 0.05) this.obstacles.push({ x: pl.x, z: pl.z, r });
     });
-
-    this.setGround(def, solid);
+    for (const r of old.values()) r.obj.removeFromParent();
+    this.props.length = 0; this.props.push(...next);
   }
+  propByIndex(i: number): THREE.Object3D | null { return this.props.find((p) => p.index === i)?.obj ?? null; }
 
   /** Repaint ground + water + walls (scene.solid changes swap crack/water to solid ice). */
   setGround(def: PackScene, solid: string[]): void {
-    const key = def.id + '|' + solid.join(',');
+    const key = def.id + '|' + solid.join(',') + '|' + def.ground + JSON.stringify(def.areas);
     if (key === this.groundKey) return;
     this.groundKey = key;
     for (const o of this.groundOwned) o.dispose();
@@ -146,6 +170,18 @@ export class Table {
     this.props.length = 0; this.obstacles.length = 0; this.hands.length = 0; this.groundKey = '';
   }
   dispose(): void { this.clear(); }
+}
+
+/** See-through look for hidden props (the Guide's view). */
+function setGhost(root: THREE.Object3D, on: boolean): void {
+  root.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh) return;
+    if (m.userData.sbOutline) { m.visible = !on; return; }
+    if (on) { m.userData.realMat = m.material; m.material = Array.isArray(m.material) ? m.material.map(ghostOf) : ghostOf(m.material); }
+    else if (m.userData.realMat) { m.material = m.userData.realMat; delete m.userData.realMat; }
+    m.castShadow = !on;
+  });
 }
 
 // ---------------------------------------------------------------- geometry

@@ -23,7 +23,7 @@ export const TTL: Record<Bubble['kind'] | 'intro', number> = { say: 5000, result
 const KEEP_FLAGS = ['star'];
 
 // ---------------------------------------------------------------- lookups
-export const adventure = (s: GameState, pack: Pack) => pack.adventures.find((a) => a.id === s.adventureId) ?? pack.adventures[0];
+export const adventure = (s: GameState, pack: Pack) => s.adv ?? pack.adventures.find((a) => a.id === s.adventureId) ?? pack.adventures[0];
 export const sceneDef = (s: GameState, pack: Pack): PackScene | undefined => sceneOf(s, pack);
 export const itemDef = (pack: Pack, id: string): PackItem | undefined => pack.items.find((i) => i.id === id);
 export const foeDef = (pack: Pack, id: string): PackFoe | undefined => pack.foes.find((f) => f.id === id);
@@ -33,7 +33,8 @@ export const foeByUid = (s: GameState, uid: string | undefined) => s.foes.find((
 export const tokenByUid = (s: GameState, uid: string | undefined) => s.tokens.find((t) => t.uid === uid);
 export const foeName = (pack: Pack, f: Foe) => foeDef(pack, f.foe)?.name ?? f.foe;
 export const itemName = (pack: Pack, id: string) => itemDef(pack, id)?.name ?? id;
-export const activeFoes = (s: GameState) => s.foes.filter((f) => !f.down);
+/** Foes in play: hidden ones (placed by the Guide, not revealed yet) are not there for the heroes. */
+export const activeFoes = (s: GameState) => s.foes.filter((f) => !f.down && !f.hidden);
 export const awakeHeroes = (s: GameState) => s.heroes.filter((h) => !h.tuckered);
 export const isBoss = (pack: Pack, f: Foe) => !!foeDef(pack, f.foe)?.boss;
 export const heroFlies = (pack: Pack, h: Hero) => !!roleDef(pack, h.roleId)?.flies;
@@ -411,7 +412,10 @@ export function setupScene(c: Ctx, index: number) {
     hero.status = {};
     if (hero.tuckered) { hero.tuckered = false; hero.hearts = 1; } else hero.hearts = Math.min(hero.maxHearts, hero.hearts + 1);
   });
-  for (const f of sc.foes) spawnFoe(c, f.foe, { x: f.x, z: f.z }, { uid: f.uid, carrying: f.carrying, facing: f.rot !== undefined ? (f.rot * Math.PI) / 180 : 0 });
+  for (const f of sc.foes) {
+    const foe = spawnFoe(c, f.foe, { x: f.x, z: f.z }, { uid: f.uid, carrying: f.carrying, facing: f.rot !== undefined ? (f.rot * Math.PI) / 180 : 0 });
+    if (foe && f.hidden) foe.hidden = true;
+  }
   s.phase = 'intro';
   fx(c, { k: 'scene', id: sc.id, text: sc.name });
   bubble(c, `${sc.name}. ${sc.intro}`, 'story', undefined, TTL.intro);
@@ -432,7 +436,7 @@ export function goalMet(c: Ctx): boolean {
     const awake = awakeHeroes(s);
     if (!awake.length || !awake.every((h) => exits.some((t) => dist(t.pos!, h.pos) <= reachOf(c.pack)))) return false;
   }
-  if (g.beatAll) { any = true; if (activeFoes(s).length) return false; }
+  if (g.beatAll) { any = true; if (s.foes.some((f) => !f.down)) return false; }
   if (g.challenge) { any = true; if (!s.scene.challenge || s.scene.challenge.success < s.scene.challenge.need) return false; }
   if (g.beatBoss) {
     any = true;
@@ -455,6 +459,7 @@ export function endScene(c: Ctx, result: 'won' | 'lost') {
   log(c, text, 'scene');
 }
 export function checkProgress(c: Ctx) {
+  if (c.s.mode === 'edit') return;
   if (c.s.phase === 'play' && goalMet(c)) endScene(c, 'won');
 }
 
@@ -501,7 +506,7 @@ export function nextScene(c: Ctx) {
 /** Midnight reached → the adventure ends (happily). */
 export function checkMidnight(c: Ctx) {
   const p = c.s.phase;
-  if (p === 'lobby' || p === 'ending') return;
+  if (p === 'lobby' || p === 'ending' || c.s.mode === 'edit') return;
   if (midnight(c.s, c.at) >= 12) {
     tell(c, `Bong… bong… it's ${c.pack.labels.clock}!`, 'event', undefined, 'event');
     finishAdventure(c);

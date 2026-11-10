@@ -78,7 +78,7 @@ export function propRadius(pack: Pack, pl: PackScene['props'][number]): number {
 }
 export function blockers(sc: PackScene, pack: Pack): Circle[] {
   const out: Circle[] = [];
-  for (const pl of sc.props) { const r = propRadius(pack, pl); if (r > 0) out.push({ x: pl.x, z: pl.z, r }); }
+  for (const pl of sc.props) { if (pl.hidden) continue; const r = propRadius(pack, pl); if (r > 0) out.push({ x: pl.x, z: pl.z, r }); }
   for (const m of Object.values(sc.meters ?? {})) if (m) out.push({ x: m.x, z: m.z, r: METER_BLOCK });
   return out;
 }
@@ -91,8 +91,15 @@ export interface Nav {
 }
 const navCache = new WeakMap<Pack, Map<string, Nav>>();
 export function sceneOf(s: GameState, pack: Pack): PackScene | undefined {
-  const adv = pack.adventures.find((a) => a.id === s.adventureId) ?? pack.adventures[0];
+  const adv = s.adv ?? pack.adventures.find((a) => a.id === s.adventureId) ?? pack.adventures[0];
   return adv?.scenes[s.scene.index];
+}
+/** Everything about a scene that changes where minis can walk. */
+export function layoutKey(sc: PackScene): string {
+  let k = `${sc.size.w}x${sc.size.d}:${sc.ground}`;
+  for (const a of sc.areas) k += `|${a.id}${a.kind}${a.shape}${a.x},${a.z},${a.w ?? ''},${a.d ?? ''},${a.r ?? ''},${a.rot ?? ''}`;
+  for (const p of sc.props) if (!p.hidden) k += `|${p.model}${p.x},${p.z},${p.scale ?? ''},${p.block ?? ''}`;
+  return k;
 }
 export function navFor(s: GameState, pack: Pack): Nav | undefined {
   const sc = sceneOf(s, pack);
@@ -100,11 +107,13 @@ export function navFor(s: GameState, pack: Pack): Nav | undefined {
   return buildNav(sc, pack, s.scene.solid ?? []);
 }
 export function buildNav(sc: PackScene, pack: Pack, solid: string[]): Nav {
-  const key = `${sc.id}|${[...solid].sort().join(',')}`;
+  // the layout can change (the Guide edits it live), so the key covers everything that blocks
+  const key = `${sc.id}|${[...solid].sort().join(',')}|${layoutKey(sc)}`;
   let m = navCache.get(pack);
   if (!m) { m = new Map(); navCache.set(pack, m); }
   const hit = m.get(key);
-  if (hit && hit.sc === sc) return hit;
+  if (hit) return hit;
+  if (m.size > 40) m.clear();
   const cols = Math.max(1, Math.round(sc.size.w / NAV)), rows = Math.max(1, Math.round(sc.size.d / NAV));
   const x0 = -sc.size.w / 2, z0 = -sc.size.d / 2;
   const walk = new Uint8Array(cols * rows), fly = new Uint8Array(cols * rows), slip = new Uint8Array(cols * rows);

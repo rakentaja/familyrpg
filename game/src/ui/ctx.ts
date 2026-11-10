@@ -18,4 +18,8 @@ export interface Ctx {
   playLocal(): Promise<void>;
   leave(): void;
   playAgain(): void;
+  /** My adventures (list, edit, share). */
+  openAdventures(importCode?: string): void;
+  /** Open the scene editor on an adventure (a local table, no players). */
+  editAdventure(adv: import('../rules/types').Adventure): void;
 }

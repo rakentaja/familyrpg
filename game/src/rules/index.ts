@@ -1,20 +1,22 @@
 // Hearthside rules (v2) — pure, deterministic helpers over (GameState, Pack). No DOM; randomness lives in state.seed;
 // time comes only from the action envelope (`at`).
 import type { RulesApi } from '../contracts';
-import type { GameState, P, Pack } from './types';
+import type { Adventure, GameState, P, Pack } from './types';
+import { withUids } from './layout';
 import { findPath, groundOf, navFor, sceneOf } from './geom';
 import { controlledIds, isGuide as isGuideP, midnight as midnightAt, heroById, heroFlies } from './core';
 import { reduce } from './reduce';
 import { buildAction, describe, options } from './options';
 import { rollStakes as stakes } from './rolls';
 
-export function createGame(pack: Pack, opts: { hostId: string; hostName: string; hostColor: string; at: number; seed?: number; adventureId?: string }): GameState {
-  const adv = pack.adventures.find((a) => a.id === opts.adventureId) ?? pack.adventures[0];
+export function createGame(pack: Pack, opts: { hostId: string; hostName: string; hostColor: string; at: number; seed?: number; adventureId?: string; adventure?: Adventure }): GameState {
+  const adv = opts.adventure ?? pack.adventures.find((a) => a.id === opts.adventureId) ?? pack.adventures[0];
   const seed = (opts.seed ?? Math.floor(Math.random() * 0xffffffff)) | 0;
   const minutes = adv?.minutes ?? 40;
   const at = Number.isFinite(opts.at) ? opts.at : 0;
   return {
     v: 0, seed, now: at, packId: pack.meta.id, adventureId: adv?.id ?? '',
+    ...(adv ? { adv: withUids(adv) } : {}),
     settings: { diceMode: 'target', kidMode: false, readAloud: false, minutes },
     phase: 'lobby',
     players: [{ id: opts.hostId, name: opts.hostName || 'Host', color: opts.hostColor || '#D8A7A7', host: true, guide: true }],

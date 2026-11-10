@@ -4,7 +4,7 @@ import type { RollStakes } from './rules/rolls';
 
 // ---------------------------------------------------------------- rules (src/rules/index.ts) — pure, no DOM
 export interface RulesApi {
-  createGame(pack: Pack, opts: { hostId: string; hostName: string; hostColor: string; at: number; seed?: number; adventureId?: string }): GameState;
+  createGame(pack: Pack, opts: { hostId: string; hostName: string; hostColor: string; at: number; seed?: number; adventureId?: string; adventure?: import('./rules/types').Adventure }): GameState;
   /** Apply one intent. Never throws; {ok:false,error} leaves state untouched. Validates WHO (owner / Guide / host), not WHEN. */
   reduce(state: GameState, env: Envelope, pack: Pack): { ok: boolean; error?: string; state: GameState };
   /** Path from a point to a point on the current scene's nav grid (around obstacles); last point may be the nearest reachable. */
@@ -49,6 +49,10 @@ export interface SceneView {
   focus(target: P | { heroId: string }): void;
   worldToScreen(p: P, y?: number): { x: number; y: number; visible: boolean };
   setInsets(top: number, bottom: number): void;
+  /** Armed dice centre in px above the canvas bottom; null = default. */
+  setDiceY(px: number | null): void;
+  /** Picture of a model for the library (data URL), or null. */
+  thumbnail(model: string): Promise<string | null>;
   setQuality(q: 'low' | 'high'): void;
   resize(): void; dispose(): void;
 }

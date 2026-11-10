@@ -39,7 +39,7 @@ export function traitName(pack: Pack, t: Trait) { return pack.labels.traits?.[t]
 export { TRAITS };
 
 export function adventure(pack: Pack, s: GameState) {
-  return pack.adventures.find((a) => a.id === s.adventureId) ?? pack.adventures[0];
+  return s.adv ?? pack.adventures.find((a) => a.id === s.adventureId) ?? pack.adventures[0];
 }
 export function sceneDef(pack: Pack, s: GameState) {
   const adv = adventure(pack, s);

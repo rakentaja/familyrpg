@@ -2,7 +2,7 @@
 import type { Action, Effect, GameState, Hero, Hit, Option, Pack, PackItem, TargetKind, TargetRef, Trait } from './types';
 import { TRAITS } from './types';
 import { dist, groundOf, sceneOf } from './geom';
-import {
+import { isHost,
   bossPhaseFor, controlledIds, foeByUid, foeDef, heroById, isGuide, itemDef, itemName, midnight, roleDef,
   tokenByUid, tokenName, nOf,
 } from './core';
@@ -67,7 +67,7 @@ export function options(state: GameState, me: string, heroId: string | null, hit
       const f = foeByUid(s, hit.id);
       const d = f ? foeDef(pack, f.foe) : undefined;
       if (!f || !d || !awake || !playing) break;
-      if (f.down) break;
+      if (f.down || f.hidden) break;
       primary({ id: 'attack', label: `Attack (${L.traits.brave})`, icon: 'attack', hint: `${nOf(f.hearts, L.hearts)} left.`, action: { t: 'readyRoll', heroId: h!.id, trait: 'brave', purpose: { kind: 'attack', foeUid: f.uid } } });
       h!.pocket.forEach((id, i) => { const it = itemDef(pack, id); if (it && accepts(it.target, 'foe')) add(itemOption(h!, i, it, { foeUid: f.uid })); });
       const role = roleDef(pack, h!.roleId);
@@ -139,6 +139,12 @@ export function options(state: GameState, me: string, heroId: string | null, hit
         const f = foeByUid(s, hit.id);
         const d = f ? foeDef(pack, f.foe) : undefined;
         if (!f || !d) break;
+        if (!f.down && isHost(s, me)) {
+          const o: Option = f.hidden
+            ? { id: 'g:show', label: 'Show', icon: 'eye', hint: 'Everyone sees it now', guideOnly: true, action: { t: 'guide', op: { k: 'edit', what: 'foe', id: f.uid, hidden: false } } }
+            : { id: 'g:hide', label: 'Hide', icon: 'hide', hint: 'Only you see it', guideOnly: true, action: { t: 'guide', op: { k: 'edit', what: 'foe', id: f.uid, hidden: true } } };
+          if (f.hidden && !h) primary(o); else add(o);
+        }
         if (!f.down) {
           G({ id: 'g:hit', label: `${L.hearts} −1`, icon: 'minus', action: { t: 'guide', op: { k: 'foeHearts', uid: f.uid, delta: -1 } } });
           G({ id: 'g:heal', label: `${L.hearts} +1`, icon: 'plus', action: { t: 'guide', op: { k: 'foeHearts', uid: f.uid, delta: 1 } } });
@@ -171,6 +177,9 @@ export function options(state: GameState, me: string, heroId: string | null, hit
       case 'prop': {
         const pl = sc?.props[hit.index];
         const hidden = pl?.search ? tokenByUid(s, pl.search) : undefined;
+        if (pl?.uid && isHost(s, me)) G(pl.hidden
+          ? { id: 'g:show', label: 'Show', icon: 'eye', action: { t: 'guide', op: { k: 'edit', what: 'prop', id: pl.uid, hidden: false } } }
+          : { id: 'g:hide', label: 'Hide', icon: 'hide', action: { t: 'guide', op: { k: 'edit', what: 'prop', id: pl.uid, hidden: true } } });
         if (hidden?.hidden) G({ id: 'g:reveal', label: 'Reveal', icon: 'reveal', hint: tokenName(pack, hidden), action: { t: 'guide', op: { k: 'reveal', tokenUid: hidden.uid } } });
         break;
       }

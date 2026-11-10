@@ -364,7 +364,7 @@ export function rollStakes(state: GameState, pack: Pack, now = state.now): RollS
   if (!hero) return null;
   const R = pack.ranges?.reach ?? 1.5;
   const safe = s.heroes.some((g) => (g.status.guardUntil ?? 0) > now && !g.tuckered && Math.hypot(g.pos.x - hero.pos.x, g.pos.z - hero.pos.z) <= R);
-  const sc = pack.adventures.find((a) => a.id === s.adventureId)?.scenes[s.scene.index];
+  const sc = (s.adv ?? pack.adventures.find((a) => a.id === s.adventureId))?.scenes[s.scene.index];
   const ouch = safe ? 'nobody gets hurt (on guard)' : `${hero.name} loses ${nOf(1, L.hearts)}`;
   const miss = (text: string, hurts: boolean) => {
     const bits = [text, hurts ? ouch : null, `+${nOf(1, L.sparks)}`];

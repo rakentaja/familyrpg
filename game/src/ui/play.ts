@@ -12,6 +12,8 @@ import { hero, sceneDef, thingName, traitName, TRAITS, TRAIT_HELP, safe, twoTap,
 import { sfx, buzz, toast, prefs, setMuted, speakQueued, stopSpeaking } from './feedback';
 import { momentView } from './moments';
 import { endingScreen } from './ending';
+import { buildTools } from './build';
+import { saveAdventure } from './adventures';
 
 type DragKind = 'hero' | 'foe' | 'token';
 interface DragMsg { kind: DragKind; id: string; at: P; end?: boolean }
@@ -57,12 +59,34 @@ export function playScreen(ctx: Ctx) {
   const heroChip = h('div', { class: 'hero-chip', hidden: true });
   el.append(strip, netPill, pickPill, heroChip, noteBox, rollBox, overlay);
 
-  // keep the scene's camera clear of the strip
-  const ro = new ResizeObserver(() => {
-    const r = strip.getBoundingClientRect();
-    safe(() => scene.setInsets(Math.round(r.bottom + 4), 0), undefined);
-  });
+  // keep the scene's camera clear of the strip (or the editor bar) and the build drawer
+  const fitCamera = () => {
+    const tops = [strip, build.bar].filter((x) => !x.hidden).map((x) => x.getBoundingClientRect().bottom);
+    const bottom = build.drawer.hidden ? 0 : Math.max(0, innerHeight - build.drawer.getBoundingClientRect().top);
+    el.style.setProperty('--drawer-h', bottom + 'px');
+    safe(() => scene.setInsets(Math.round(Math.max(0, ...tops) + 4), Math.round(bottom)), undefined);
+    placeDice();
+  };
+  const ro = new ResizeObserver(fitCamera);
   ro.observe(strip);
+
+  // the armed dice sit in the clear band under the roll card, so the card never covers them or eats the flick
+  const placeDice = () => {
+    const card = rollBox.querySelector('.roll-card.ready');
+    const cv = el.getBoundingClientRect();
+    if (!card || !cv.height) { safe(() => scene.setDiceY(null), undefined); return; }
+    const band = cv.bottom - card.getBoundingClientRect().bottom;   // px between the card and the screen bottom
+    safe(() => scene.setDiceY(Math.max(60, band * 0.52)), undefined);
+  };
+  const build = buildTools({
+    ctx, host: el, me, state: () => s,
+    closeOthers: () => { closeRing(); closeInspect(); closeSheet(); closeMenus(); leavePick(); select(null); },
+    leave: () => ctx.openAdventures(),
+    onLayoutChange: () => fitCamera(),
+  });
+  const dro = new ResizeObserver(placeDice);
+  dro.observe(rollBox); dro.observe(el);
+  new MutationObserver(placeDice).observe(rollBox, { childList: true });
 
   // ---------------------------------------------------------------- helpers
   const dispatch = (a: Parameters<typeof store.dispatch>[0]) => store.dispatch(a);
@@ -251,6 +275,7 @@ export function playScreen(ctx: Ctx) {
   function onTap(hit: Hit) {
     if (closeRing()) return;
     closeMenus();
+    if (build.tap(hit)) return;
     const id = hitThingId(hit);
     if (id) lastThing = id;
     if (pick) {
@@ -284,6 +309,8 @@ export function playScreen(ctx: Ctx) {
 
   function canDrag(hit: Hit): boolean {
     if (s.phase !== 'play' && s.phase !== 'intro') return false;
+    const b = build.canDrag(hit);
+    if (b !== null) return b;
     if (guide()) return hit.kind === 'hero' || hit.kind === 'foe' || hit.kind === 'token';
     return s.phase === 'play' && hit.kind === 'hero' && mine().includes(hit.id);
   }
@@ -299,6 +326,7 @@ export function playScreen(ctx: Ctx) {
     dragLatest = null;
   };
   function onDrag(hit: Hit, at: P, phase: 'start' | 'move' | 'end') {
+    if (hit.kind === 'prop') { closeRing(); closeInspect(); if (phase === 'end') build.dragEnd(hit, at); return; }
     if (hit.kind !== 'hero' && hit.kind !== 'foe' && hit.kind !== 'token') return;
     const msg: DragMsg = { kind: hit.kind, id: hit.id, at: { x: +at.x.toFixed(2), z: +at.z.toFixed(2) } };
     closeRing(); closeInspect();
@@ -482,7 +510,7 @@ export function playScreen(ctx: Ctx) {
       h('span', { class: 'sm' }, icon('twinkle'), h('b', null, String(s.meters.sparks))));
     meterBtn.setAttribute('aria-label', `${pack.labels.goal} ${gifts}, ${pack.labels.clock} in ${Math.ceil(mi.leftMs / 60000)} minutes, ${pack.labels.sparks} ${s.meters.sparks}`);
     menuBtn.classList.toggle('guide', guide());
-    strip.hidden = s.phase === 'tableMoment' || s.phase === 'ending';
+    strip.hidden = s.phase === 'tableMoment' || s.phase === 'ending' || s.mode === 'edit';
   }
 
   function paintNet(status = net.status) {
@@ -519,7 +547,7 @@ export function playScreen(ctx: Ctx) {
       return;
     }
     if (!menuOpen) return;
-    const k = `menu:${guide()}:${sayOpen}:${settingsOpen}:${helpOpen}:${JSON.stringify(s.settings)}:${s.clock.runningSince === null}:${prefs.muted}:${s.phase}`;
+    const k = `menu:${guide()}:${sayOpen}:${settingsOpen}:${helpOpen}:${JSON.stringify(s.settings)}:${s.clock.runningSince === null}:${prefs.muted}:${s.phase}:${build.on}`;
     if (!force && k === dropKey) return;
     dropKey = k;
     const g = guide();
@@ -537,6 +565,12 @@ export function playScreen(ctx: Ctx) {
         item('gear', 'Settings', () => { settingsOpen = !settingsOpen; sayOpen = false; paintDrop(true); }, settingsOpen ? 'on' : ''),
         item('flag', 'Scene won', () => { closeMenus(); dispatch({ t: 'guide', op: { k: 'endScene', result: 'won' } }); }, 'good'),
         item('flag', 'Scene lost', () => { closeMenus(); dispatch({ t: 'guide', op: { k: 'endScene', result: 'lost' } }); }, 'bad')));
+      if (store.isHost() || s.players.find((p) => p.id === me)?.host) parts.push(h('div', { class: 'menu-grid' },
+        item('build', build.on ? 'Stop building' : 'Build the scene', () => { closeMenus(); build.toggle(); }, build.on ? 'on' : ''),
+        item('book', 'Save to my adventures', () => {
+          closeMenus();
+          if (s.adv && saveAdventure(s.adv)) toast(`Saved “${s.adv.name}” on this device`, 'good'); else toast('Could not save', 'error');
+        })));
       if (sayOpen) parts.push(sayForm());
       if (settingsOpen) parts.push(settingsForm());
       parts.push(h('hr'));
@@ -839,6 +873,7 @@ export function playScreen(ctx: Ctx) {
       paintNotes();
       paintOverlay(prev);
     }
+    build.update(s);
     paintStrip();
     paintRoll();
     paintHeroChip();
@@ -855,7 +890,7 @@ export function playScreen(ctx: Ctx) {
     update,
     callbacks: { onTap, onHold, canDrag, onDrag, onDiceThrown },
     destroy() {
-      offEph(); offStatus(); ro.disconnect();
+      offEph(); offStatus(); ro.disconnect(); dro.disconnect(); build.destroy();
       removeEventListener('online', onLineChange); removeEventListener('offline', onLineChange);
       clearTimeout(previewTimer); clearTimeout(dragTimer);
       closeInspect(); closeRing(); closeSheet(); sayEl?.remove();

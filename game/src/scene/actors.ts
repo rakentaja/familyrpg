@@ -38,7 +38,7 @@ function baseMat(color: string): THREE.Material {
 }
 // ghost versions of toon materials (hidden tokens on the Guide's screen, remote drag previews)
 const ghostMats = new Map<THREE.Material, THREE.Material>();
-function ghostOf(src: THREE.Material): THREE.Material {
+export function ghostOf(src: THREE.Material): THREE.Material {
   let m = ghostMats.get(src);
   if (!m) {
     const s = src as THREE.MeshToonMaterial;

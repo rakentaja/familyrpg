@@ -111,6 +111,7 @@ class Scene3D implements SceneView {
   private pressActor: Actor | null = null;
   private holdTimer = 0; private ringTimer = 0;
   private dragActor: Actor | null = null; private dragHit: Hit | null = null; private dragAt: P = { x: 0, z: 0 };
+  private dragProp: THREE.Object3D | null = null;   // the Guide moving a prop
   private pinch = { span: 1, angle: 0, mx: 0, my: 0 };
   private lastTap = { t: 0, x: 0, y: 0, ground: false };
   private hover: { x: number; y: number } | null = null;
@@ -200,7 +201,7 @@ class Scene3D implements SceneView {
     if (state.fx && events.length) this.lastFxSeq = state.fx.seq;
 
     const def = this.sceneDef(state);
-    const key = `${state.adventureId}|${state.scene.index}|${state.scene.id}`;
+    const key = `${state.adventureId}|${state.scene.index}|${state.scene.id}|${def?.size.w}x${def?.size.d}`;
     const fresh = key !== this.sceneKey || !this.def;
     if (fresh && def) {
       this.buildScene(def, state); this.sceneKey = key;
@@ -209,9 +210,11 @@ class Scene3D implements SceneView {
       this.rig.setHomeFocus(hs.length ? c : null); this.rig.reset(true);
     }
     if (!this.def) return;
+    if (def) this.def = def;
     this.table.setGround(this.def, state.scene.solid ?? []);
     const first = !this.state;
     this.state = state;
+    this.syncProps(fresh);
 
     const paths = new Map<string, { path: P[]; slide: boolean }>();
     const places = new Set<string>();
@@ -241,7 +244,7 @@ class Scene3D implements SceneView {
   setLocal(v: LocalView): void {
     const prev = this.local;
     this.local = { ...v };
-    if (prev.isGuide !== v.isGuide && this.state) this.syncTokens(this.state, new Set(), false);
+    if (prev.isGuide !== v.isGuide && this.state) { this.syncTokens(this.state, new Set(), false); this.syncFoes(this.state, new Map(), new Set(), false); this.syncProps(); }
     // remote drag preview
     const pk: Key | null = v.preview ? (v.preview.kind === 'hero' ? 'h:' : v.preview.kind === 'foe' ? 'f:' : 't:') + v.preview.id : null;
     if (this.previewKey && this.previewKey !== pk) {
@@ -289,6 +292,60 @@ class Scene3D implements SceneView {
     if (this.dice) this.dice.armY = -1 + Math.min(0.8, 0.4 + (2 * bottom) / Math.max(1, this.rect.height));
     this.dirty = true;
   }
+  /** Put the armed dice's centre this many px above the canvas bottom (null = default from insets). */
+  setDiceY(px: number | null): void {
+    if (!this.dice) return;
+    const H = Math.max(1, this.rect.height);
+    if (px == null) this.dice.armY = -0.6;
+    else this.dice.armY = Math.max(-0.9, Math.min(0.5, -1 + (2 * px) / H));
+    this.dirty = true;
+  }
+  /** A small picture of a model for the Guide's library (rendered once, cached as a data URL). */
+  private thumbs = new Map<string, Promise<string | null>>();
+  private thumbQueue: Promise<unknown> = Promise.resolve();
+  private thumbRT: THREE.WebGLRenderTarget | null = null;
+  thumbnail(model: string): Promise<string | null> {
+    let p = this.thumbs.get(model);
+    if (p) return p;
+    p = this.thumbQueue.then(() => new Promise<string | null>((res) => setTimeout(() => {
+      try { res(this.renderThumb(model)); } catch (err) { console.warn('[scene] thumb', model, err); res(null); }
+    }, 0)));
+    this.thumbQueue = p;
+    this.thumbs.set(model, p);
+    return p;
+  }
+  private renderThumb(model: string): string | null {
+    if (!this.loaded || this.disposed) return null;
+    const obj = this.assets.instance(model);
+    if (!obj) return null;
+    const S = 160;
+    const sc = new THREE.Scene();
+    sc.add(new THREE.HemisphereLight(0xf4efe6, 0xb4abc6, 1.3));
+    const sun = new THREE.DirectionalLight(0xfff4e6, 2.2); sun.position.set(-2, 4, 3); sc.add(sun);
+    sc.add(obj);
+    obj.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(obj);
+    const c = box.getCenter(new THREE.Vector3()), r = Math.max(0.2, box.getSize(new THREE.Vector3()).length() / 2);
+    const cam = new THREE.PerspectiveCamera(30, 1, 0.01, 100);
+    const dist = r / Math.sin(THREE.MathUtils.degToRad(15)) * 1.02;
+    cam.position.copy(c).add(new THREE.Vector3(0.55, 0.62, 1).normalize().multiplyScalar(dist));
+    cam.lookAt(c);
+    if (!this.thumbRT) { this.thumbRT = new THREE.WebGLRenderTarget(S, S, { samples: 4 }); this.thumbRT.texture.colorSpace = THREE.SRGBColorSpace; }
+    const r0 = this.renderer.getRenderTarget(), cc = this.renderer.getClearColor(new THREE.Color()), ca = this.renderer.getClearAlpha();
+    this.renderer.setRenderTarget(this.thumbRT);
+    this.renderer.setClearColor(0x000000, 0); this.renderer.clear();
+    this.renderer.render(sc, cam);
+    const px = new Uint8Array(S * S * 4);
+    this.renderer.readRenderTargetPixels(this.thumbRT, 0, 0, S, S, px);
+    this.renderer.setRenderTarget(r0); this.renderer.setClearColor(cc, ca);
+    const cv = document.createElement('canvas'); cv.width = cv.height = S;
+    const ctx = cv.getContext('2d')!; const img = ctx.createImageData(S, S);
+    for (let y = 0; y < S; y++) img.data.set(px.subarray((S - 1 - y) * S * 4, (S - y) * S * 4), y * S * 4);
+    ctx.putImageData(img, 0, 0);
+    this.dirty = true;
+    return cv.toDataURL('image/png');
+  }
+
   setQuality(q: 'low' | 'high'): void {
     this.quality = q;
     const shadows = q === 'high';
@@ -337,7 +394,7 @@ class Scene3D implements SceneView {
   // ================================================================ scene
   private sceneDef(state: GameState): PackScene | undefined {
     const p = this.pack!;
-    const adv = p.adventures.find((a) => a.id === state.adventureId) ?? p.adventures[0];
+    const adv = state.adv ?? p.adventures.find((a) => a.id === state.adventureId) ?? p.adventures[0];
     const byIndex = adv?.scenes[state.scene.index];
     if (byIndex && (!state.scene.id || byIndex.id === state.scene.id)) return byIndex;
     return adv?.scenes.find((s) => s.id === state.scene.id) ?? byIndex;
@@ -355,9 +412,29 @@ class Scene3D implements SceneView {
     this.endDrag(false);
   }
 
+  /** Props follow the layout (the Guide edits it live); hidden ones only show, see-through, to the Guide. */
+  private propsKey = '';
+  private syncProps(force = false): void {
+    const def = this.def; if (!def) return;
+    const key = JSON.stringify(def.props) + this.local.isGuide;
+    if (!force && key === this.propsKey) return;
+    this.propsKey = key;
+    this.table.syncProps(def, this.assets, this.local.isGuide, this.dragProp);
+    this.updateObstacles();
+    this.dirty = true;
+  }
+  private updateObstacles(): void {
+    const def = this.def; if (!def || !this.dice) return;
+    let obstacles: { x: number; z: number; r: number }[];
+    try { obstacles = blockers(def, this.pack!); } catch { obstacles = [...this.table.obstacles]; }
+    for (const g of [this.meters.clock, this.meters.presents, this.meters.jar]) if (g && !obstacles.some((o) => Math.hypot(o.x - g.position.x, o.z - g.position.z) < 0.2)) obstacles.push({ x: g.position.x, z: g.position.z, r: 0.35 });
+    this.dice.setTable({ w: this.table.w, d: this.table.d }, obstacles);
+  }
+
   private buildScene(def: PackScene, state: GameState): void {
     this.clearScene();
     this.def = def;
+    this.propsKey = '';
     this.table.build(def, this.assets, state.scene.solid ?? []);
     const w = this.table.w, d = this.table.d;
     const m = def.meters ?? {};
@@ -372,10 +449,7 @@ class Scene3D implements SceneView {
     Object.assign(this.sun.shadow.camera, { left: -r, right: r, top: r, bottom: -r, near: 0.5, far: r * 8 });
     this.sun.shadow.camera.updateProjectionMatrix();
     this.rig.setTable(w, d);
-    let obstacles: { x: number; z: number; r: number }[];
-    try { obstacles = blockers(def, this.pack!); } catch { obstacles = this.table.obstacles; }
-    for (const g of [this.meters.clock, this.meters.presents, this.meters.jar]) if (!obstacles.some((o) => Math.hypot(o.x - g.position.x, o.z - g.position.z) < 0.2)) obstacles.push({ x: g.position.x, z: g.position.z, r: 0.35 });
-    this.dice?.setTable({ w, d }, obstacles);
+    this.updateObstacles();
   }
 
   // ================================================================ minis
@@ -386,7 +460,10 @@ class Scene3D implements SceneView {
     if (k === this.previewKey && pv) { a.setGhost(true); a.lift = 0.12; a.place(_v.set(pv.at.x, 0, pv.at.z)); }
   }
   private keyOf(a: Actor): Key { return (a.kind === 'hero' ? 'h:' : a.kind === 'foe' ? 'f:' : 't:') + a.id; }
-  private isHiddenToken(k: Key): boolean { return k.startsWith('t:') && !!this.state?.tokens.find((t) => 't:' + t.uid === k)?.hidden; }
+  private isHiddenToken(k: Key): boolean {
+    if (k.startsWith('f:')) return !!this.state?.foes.find((f) => 'f:' + f.uid === k)?.hidden;
+    return k.startsWith('t:') && !!this.state?.tokens.find((t) => 't:' + t.uid === k)?.hidden;
+  }
 
   /** Position of a piece in the current state. */
   private statePos(k: Key): { pos: P | null; facing?: number } | null {
@@ -466,6 +543,7 @@ class Scene3D implements SceneView {
       const k = 'f:' + foe.uid;
       let a = this.actors.get(k);
       if (!a && foe.down) return;
+      if (foe.hidden && !this.local.isGuide) return;   // not revealed yet: players don't see it
       seen.add(k);
       const def = this.pack!.foes.find((f) => f.id === foe.foe);
       if (!a) {
@@ -479,6 +557,9 @@ class Scene3D implements SceneView {
         if (!fresh) this.puff(a, PALETTE.lavender, 12);
         this.add(a);
       } else if (!a.down) this.moveTo(a, k, foe.pos, foe.facing, paths, places, false);
+      const ghost = !!foe.hidden || k === this.previewKey;
+      if (a.ghost && !ghost && !fresh) this.puff(a, PALETTE.lavender, 12);
+      a.setGhost(ghost);
       this.setFrozen(a, !!foe.frozenUntil && foe.frozenUntil > now && !foe.down);
       if (foe.down && !a.down) a.knockOut((x) => this.puff(x, PALETTE.lavender, 16));
     });
@@ -496,6 +577,7 @@ class Scene3D implements SceneView {
         return { key: as.pick(item?.model, t.item && 'prop:' + t.item, 'token:item', 'prop:twinkle_token'), fallback: () => gem(PALETTE.gold, 0.22), motion: 'spin' };
       }
       case 'exit': return { key: as.pick('token:exit'), fallback: () => marker(PALETTE.sage), motion: 'hover' };
+      case 'start': return { fallback: () => marker(PALETTE.sage, String(t.uid.replace(/\D/g, '') || '★')), motion: 'none' };
       case 'npc': return { key: as.pick('token:npc', 'char:npc'), fallback: () => marker(PALETTE.lavender, '!'), motion: 'hover' };
       default: return { key: as.pick('token:' + t.kind), fallback: () => marker(PALETTE.rose, '?'), motion: 'hover' };
     }
@@ -541,7 +623,7 @@ class Scene3D implements SceneView {
       this.overlay.chip(k, { kind: 'hero', filled: Math.max(0, h.hearts), max: Math.max(1, h.maxHearts), tuckered: h.tuckered, selected: this.local.selectedHeroId === h.id });
     }
     for (const f of s.foes) {
-      if (f.down) continue;
+      if (f.down || (f.hidden && !this.local.isGuide)) continue;
       const k = 'f:' + f.uid; want.add(k);
       this.overlay.chip(k, { kind: 'foe', filled: Math.max(0, f.hearts), max: Math.max(1, f.maxHearts) });
     }
@@ -964,6 +1046,17 @@ class Scene3D implements SceneView {
         const h = this.pressHit;
         let canDrag = false;
         if (this.pressActor && h && (h.kind === 'hero' || h.kind === 'foe' || h.kind === 'token')) { try { canDrag = this.cb.canDrag(h); } catch { canDrag = false; } }
+        if (!this.pressActor && h?.kind === 'prop') {
+          let ok = false; try { ok = this.cb.canDrag(h); } catch { ok = false; }
+          const obj = ok ? this.table.propByIndex(h.index) : null;
+          if (obj) {
+            this.gesture = 'drag'; this.dragProp = obj; this.dragHit = h; this.dragAt = { ...h.at };
+            obj.position.y = 0.15;
+            try { this.cb.onDrag(h, this.dragAt, 'start'); } catch (err) { console.error('[scene] onDrag', err); }
+            this.dragMove(p);
+            break;
+          }
+        }
         if (canDrag && h && this.pressActor) {
           this.gesture = 'drag'; this.dragActor = this.pressActor; this.dragHit = h;
           this.dragActor.lift = 0.18;
@@ -995,6 +1088,15 @@ class Scene3D implements SceneView {
   }
 
   private dragMove(p: Ptr): void {
+    if (this.dragProp && this.dragHit) {
+      const g = this.groundAt(p.x, p.y - (p.mouse ? 0 : 26));
+      if (!g) return;
+      const q = { x: Math.round(g.x * 4) / 4, z: Math.round(g.z * 4) / 4 };   // props sit on a quarter-metre grid
+      this.dragAt = q;
+      this.dragProp.position.set(q.x, 0.15, q.z);
+      try { this.cb.onDrag(this.dragHit, q, 'move'); } catch (err) { console.error('[scene] onDrag', err); }
+      return;
+    }
     const a = this.dragActor, h = this.dragHit;
     if (!a || !h) return;
     // offset the piece a little above the finger so it isn't hidden under it (touch)
@@ -1009,6 +1111,15 @@ class Scene3D implements SceneView {
   }
 
   private endDrag(notify: boolean): void {
+    if (this.dragProp) {
+      const o = this.dragProp, h = this.dragHit;
+      this.dragProp = null; this.dragHit = null;
+      o.position.y = 0;
+      if (notify && h) { try { this.cb.onDrag(h, this.dragAt, 'end'); } catch (err) { console.error('[scene] onDrag', err); } }
+      // if the move is refused (or cancelled) the prop goes back to where the layout has it
+      setTimeout(() => { if (!this.dragProp) { this.propsKey = ''; this.syncProps(); } }, notify ? 1500 : 0);
+      return;
+    }
     const a = this.dragActor, h = this.dragHit;
     this.dragActor = null; this.dragHit = null;
     if (!a || !h) return;
