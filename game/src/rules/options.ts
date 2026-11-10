@@ -139,17 +139,9 @@ export function options(state: GameState, me: string, heroId: string | null, hit
         const f = foeByUid(s, hit.id);
         const d = f ? foeDef(pack, f.foe) : undefined;
         if (!f || !d) break;
+        // Show / Hide, Turn and Hearts live on the Edit card; the ring keeps the quick things
         if (!f.down) {
-          const o: Option = f.hidden
-            ? { id: 'g:show', label: 'Show', icon: 'eye', hint: 'Everyone sees it now', guideOnly: true, action: { t: 'guide', op: { k: 'edit', what: 'foe', id: f.uid, hidden: false } } }
-            : { id: 'g:hide', label: 'Hide', icon: 'hide', hint: 'Only you see it', guideOnly: true, action: { t: 'guide', op: { k: 'edit', what: 'foe', id: f.uid, hidden: true } } };
-          if (f.hidden && !h) primary(o); else add(o);
-          G({ id: 'g:turn', label: 'Turn', icon: 'rotr', action: { t: 'guide', op: { k: 'edit', what: 'foe', id: f.uid, rot: Math.round((f.facing * 180) / Math.PI) + 45 } } });
-          G({ id: 'g:build', label: 'Edit', icon: 'edit', hint: 'Move, turn, hide or remove it' });
-        }
-        if (!f.down) {
-          G({ id: 'g:hit', label: `${L.hearts} −1`, icon: 'minus', action: { t: 'guide', op: { k: 'foeHearts', uid: f.uid, delta: -1 } } });
-          G({ id: 'g:heal', label: `${L.hearts} +1`, icon: 'plus', action: { t: 'guide', op: { k: 'foeHearts', uid: f.uid, delta: 1 } } });
+          G({ id: 'g:build', label: 'Edit', icon: 'edit', hint: `${L.hearts}, show / hide, turn, size, height` });
           G({ id: 'g:ko', label: 'Knock out', icon: 'ko', action: { t: 'guide', op: { k: 'ko', uid: f.uid } } });
         }
         G({ id: 'g:hint', label: 'Hint', icon: 'inspect', hint: foeHint(pack, f.foe, f) });
@@ -162,6 +154,7 @@ export function options(state: GameState, me: string, heroId: string | null, hit
         if (!t) break;
         G({ id: 'g:hearts+', label: `${L.hearts} +1`, icon: 'plus', action: { t: 'guide', op: { k: 'hearts', heroId: t.id, delta: 1 } } });
         G({ id: 'g:hearts-', label: `${L.hearts} −1`, icon: 'minus', action: { t: 'guide', op: { k: 'hearts', heroId: t.id, delta: -1 } } });
+        if (!t.tuckered) G({ id: 'g:ko', label: 'Knock out', icon: 'ko', action: { t: 'guide', op: { k: 'ko', uid: t.id } } });
         G({ id: 'g:say', label: 'Say…', icon: 'say', hint: 'Type a line', action: { t: 'guide', op: { k: 'say', text: '', who: t.id } } });
         break;
       }

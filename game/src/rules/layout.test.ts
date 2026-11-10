@@ -67,7 +67,10 @@ group('layout in a live game', () => {
     // the hero can't attack it, the Guide can show it
     const h = s.heroes[0]!;
     expect(options(s, 'kid', h.id, { kind: 'foe', id: f.uid, at: f.pos }, PK).some((o) => o.id === 'attack')).toBe(false);
-    expect(options(s, 'mum', null, { kind: 'foe', id: f.uid, at: f.pos }, PK).find((o) => o.primary)?.id).toBe('g:show');
+    const ring = options(s, 'mum', null, { kind: 'foe', id: f.uid, at: f.pos }, PK).map((o) => o.id);
+    expect(ring).toContain('g:build');                       // show / hide, turn and hearts are on the Edit card
+    expect(ring).not.toContain('g:show');
+    expect(ring).not.toContain('g:hit');
     s = must(s, G({ k: 'edit', what: 'foe', id: f.uid, hidden: false }));
     expect(activeFoes(s).some((x) => x.uid === f.uid)).toBe(true);
     s = must(s, G({ k: 'remove', what: 'foe', id: f.uid }));
@@ -99,6 +102,21 @@ group('layout in a live game', () => {
     s = must(s, G({ k: 'edit', what: 'foe', id: f.uid, scale: 2, y: 1, rot: 45 }));
     expect(s.foes[0]).toMatchObject({ scale: 2, y: 1 });
     expect(sceneOf(s, PK)!.foes.find((x) => x.uid === f.uid)).toMatchObject({ scale: 2, y: 1 });
+  });
+
+  test('the Guide can knock out anybody: heroes too', () => {
+    let s = createGame(PK, { hostId: 'mum', hostName: 'Mum', hostColor: '#D8A7A7', at: T0, seed: 3 });
+    s = must(s, { t: 'join', name: 'Kid', color: '#A9BFA0' }, 'kid');
+    s = must(s, { t: 'addHero', roleId: 'toy-soldier', name: 'Tin', traits: { brave: 3, clever: 2, kind: 1 } }, 'kid');
+    s = must(s, { t: 'addHero', roleId: 'carol-singer', name: 'Joy', traits: { brave: 1, clever: 2, kind: 3 } }, 'kid');
+    s = must(must(s, { t: 'start' }), { t: 'beginScene' });
+    const h = s.heroes[0]!;
+    expect(options(s, 'mum', null, { kind: 'hero', id: h.id, at: h.pos }, PK).some((o) => o.id === 'g:ko')).toBe(true);
+    s = must(s, G({ k: 'ko', uid: h.id }));
+    expect(s.heroes[0]).toMatchObject({ tuckered: true, hearts: 0 });
+    expect(options(s, 'mum', null, { kind: 'hero', id: h.id, at: h.pos }, PK).some((o) => o.id === 'g:ko')).toBe(false);
+    expect(nope(s, G({ k: 'ko', uid: h.id }))).toMatch(/already/);
+    expect(nope(s, G({ k: 'ko', uid: h.id }), 'kid')).toMatch(/Guide/);
   });
 
   test('only the host or the Guide changes the layout', () => {

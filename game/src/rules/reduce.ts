@@ -474,6 +474,9 @@ function guideOp(c: Ctx, op: GuideOp) {
       return;
     }
     case 'ko': {
+      // anybody: a hero is knocked out until a friend wakes them
+      const hero = heroById(s, op.uid);
+      if (hero) { if (hero.tuckered) fail(`${hero.name} is already ${L.tuckered}.`); tuck(c, hero); return; }
       const f = foeByUid(s, op.uid);
       if (!f || f.down) fail('No such foe.');
       knockOutFoe(c, f!);

@@ -753,7 +753,7 @@ group('options()', () => {
     const s = atScene(0);
     const f = options(s, 'mum', null, { kind: 'foe', id: 'ws-rat1', at: foe(s, 'ws-rat1').pos }, PK);
     const gid = f.filter((o) => o.guideOnly).map((o) => o.id);
-    expect(gid).toEqual(['g:hide', 'g:turn', 'g:build', 'g:hit', 'g:heal', 'g:ko', 'g:hint', 'g:say', 'g:remove', 'g:camera']);
+    expect(gid).toEqual(['g:build', 'g:ko', 'g:hint', 'g:say', 'g:remove', 'g:camera']);
     expect(f.find((o) => o.id === 'g:hint')!.hint).toBe(PK.foes.find((x) => x.id === 'wind-up-rat')!.hint);
     const hid = options(s, 'mum', null, { kind: 'token', id: 'ws-pile-present', at: { x: 2.6, z: 2.85 } }, PK);
     expect(prim(hid)[0]).toMatchObject({ id: 'g:reveal', guideOnly: true, action: { t: 'guide', op: { k: 'reveal', tokenUid: 'ws-pile-present' } } });

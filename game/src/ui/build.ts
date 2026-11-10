@@ -109,7 +109,7 @@ export function buildTools(d: BuildDeps) {
   }
 
   // ---------------------------------------------------------------- the tapped piece
-  function pieceOf(p: Piece | null): { name: string; hidden: boolean; rot?: number; scale?: number; y?: number; text?: string; label?: string; kind?: TokenKind } | null {
+  function pieceOf(p: Piece | null): { name: string; hidden: boolean; hearts?: number; maxHearts?: number; rot?: number; scale?: number; y?: number; text?: string; label?: string; kind?: TokenKind } | null {
     if (!p) return null;
     const s = d.state(), sc = sceneDef(pack, s);
     if (p.what === 'prop') {
@@ -118,7 +118,7 @@ export function buildTools(d: BuildDeps) {
     }
     if (p.what === 'foe') {
       const f = s.foes.find((x) => x.uid === p.id);
-      return f && !f.down ? { name: thingName(pack, s, f.uid), hidden: !!f.hidden, rot: Math.round((f.facing * 180) / Math.PI), scale: f.scale ?? 1, y: f.y ?? 0 } : null;
+      return f && !f.down ? { name: thingName(pack, s, f.uid), hidden: !!f.hidden, rot: Math.round((f.facing * 180) / Math.PI), scale: f.scale ?? 1, y: f.y ?? 0, hearts: f.hearts, maxHearts: f.maxHearts } : null;
     }
     const t = s.tokens.find((x) => x.uid === p.id);
     return t && t.pos ? { name: t.kind === 'start' ? (t.label ?? 'Hero start') : thingName(pack, s, t.uid), hidden: !!t.hidden, rot: t.rot ?? 0, scale: t.scale ?? 1, y: t.y ?? 0, text: t.text ?? '', label: t.label ?? '', kind: t.kind } : null;
@@ -137,6 +137,14 @@ export function buildTools(d: BuildDeps) {
     const start = x.kind === 'start';
     const textual = (p.what === 'prop' || (p.what === 'token' && !start));
     const dials: HTMLElement[] = [];
+    if (p.what === 'foe' && x.maxHearts) {
+      const L = pack.labels, max = x.maxHearts, now = x.hearts ?? max;
+      dials.push(dial({
+        label: L.hearts, ic: 'heart', value: now, min: 0, max, step: 1, perPx: 0.05,
+        fmt: (v) => v <= 0 ? L.down : `${v} / ${max}`,
+        preview: () => {}, commit: (v) => dispatch({ k: 'foeHearts', uid: p.id, delta: v - now }),
+      }));
+    }
     if (!start) {
       const what = p.what;
       dials.push(dial({
