@@ -105,6 +105,16 @@ function clause(d: Delexed, labels: string[], a: number, b: number, lastAdded: b
       else if (v && l.endsWith('up') && v > 1) mods.scale = `x${fmt(v)}`;
       else if (v && l.endsWith('down') && v > 1) mods.scale = `x${fmt(1 / v)}`;
       else mods.scale = l.endsWith('up') ? 'up' : 'down';
+    } else if (l === 'MOD-scale_set') {
+      const n = numFor(r);
+      const nt = n ? text(d, n).toLowerCase() : '';
+      let v = n ? readNumber(words(d, n)) : null;
+      if (v && /%|percent|per cent/.test(nt)) v = v / 100;
+      if (v) mods.scale = v === 1 ? 'reset' : `=${fmt(clamp(Math.round(v * 100) / 100, 0.25, 4))}`;
+    } else if (l === 'MOD-turn_set') {
+      const n = numFor(r);
+      const v = n ? readNumber(words(d, n)) : null;
+      if (v !== null && v !== undefined) mods.rot = ((Math.round(v) % 360) + 360) % 360;
     } else if (l === 'MOD-scale_x2') mods.scale = 'x2';
     else if (l === 'MOD-scale_half') mods.scale = 'x0.5';
     else if (l === 'MOD-scale_reset') mods.scale = 'reset';

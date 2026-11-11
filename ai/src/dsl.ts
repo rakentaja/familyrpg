@@ -26,12 +26,14 @@ export const REGIONS: Region[] = ['center', 'spread', 'side', 'corner', ...SIDES
 export type Ref = Noun | 'selected' | 'last';
 export type Place = { rel: Rel; target: Ref } | { region: Region };
 
-/** scale: up | down | reset | xN | +N% | -N%  ·  y: up | down | max | floor | N (metres)  ·  turn: degrees, + = clockwise */
+/** scale: up | down | reset | xN | +N% | -N% (relative) | =N (exact size)  ·  y: up | down | max | floor | N (metres)
+ *  turn: degrees to add, + = clockwise  ·  rot: exact facing in degrees (0–359) */
 export interface Mods {
   cluster?: boolean;
   hidden?: boolean;            // true = hidden, false = shown
   scale?: string;
   turn?: number;
+  rot?: number;
   face?: Ref | 'center';
   y?: string;
 }
@@ -65,6 +67,7 @@ function mods(m: Mods): string[] {
   if (m.hidden === false) o.push('shown');
   if (m.scale) o.push(`scale:${m.scale}`);
   if (m.turn) o.push(`turn:${m.turn}`);
+  if (m.rot !== undefined) o.push(`rot:${m.rot}`);
   if (m.face) o.push(`face:${ref(m.face)}`);
   if (m.y) o.push(`y:${m.y}`);
   return o;
@@ -115,7 +118,7 @@ function parsePlace(t: string | undefined): Place | null {
   const rel = t.slice(0, i) as Rel, target = parseRef(t.slice(i + 1));
   return RELS.includes(rel) && target ? { rel, target } : null;
 }
-const SCALE_RE = /^(up|down|reset|x\d+(\.\d+)?|[+-]\d+%)$/;
+const SCALE_RE = /^(up|down|reset|x\d+(\.\d+)?|[+-]\d+%|=\d+(\.\d+)?)$/;
 const Y_RE = /^(up|down|max|floor|\d+(\.\d+)?)$/;
 function parseMods(ts: string[]): Mods {
   const m: Mods = {};
@@ -125,6 +128,7 @@ function parseMods(ts: string[]): Mods {
     else if (t === 'shown') m.hidden = false;
     else if (t.startsWith('scale:') && SCALE_RE.test(t.slice(6))) m.scale = t.slice(6);
     else if (t.startsWith('turn:') && /^-?\d+$/.test(t.slice(5))) m.turn = +t.slice(5);
+    else if (t.startsWith('rot:') && /^\d+$/.test(t.slice(4)) && +t.slice(4) < 360) m.rot = +t.slice(4);
     else if (t.startsWith('face:')) { const r = t.slice(5) === 'center' ? 'center' : parseRef(t.slice(5)); if (!r) throw new DslError(`bad face ${t}`); m.face = r; }
     else if (t.startsWith('y:') && Y_RE.test(t.slice(2))) m.y = t.slice(2);
     else throw new DslError(`bad modifier ${t}`);

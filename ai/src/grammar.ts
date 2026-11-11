@@ -13,7 +13,7 @@ export function dslRegex(lex: Lexicon, maxLines = 8): string {
   const ref = `(?:${thing}|selected|last)`;
   const region = alt(['center', 'spread', 'side', 'corner', ...SIDES.map((s) => `side:${s}`), ...CORNERS.map((c) => `corner:${c}`)]);
   const place = `(?:${region}|${alt([...RELS])}:${ref})`;
-  const mod = `(?:cluster|hidden|shown|scale:(?:up|down|reset|x\\d(?:\\.\\d{1,2})?|[+-]\\d{1,3}%)|turn:-?\\d{1,3}|face:(?:${ref}|center)|y:(?:up|down|max|floor|\\d(?:\\.\\d)?))`;
+  const mod = `(?:cluster|hidden|shown|scale:(?:up|down|reset|x\\d(?:\\.\\d{1,2})?|[+-]\\d{1,3}%|=\\d(?:\\.\\d{1,2})?)|turn:-?\\d{1,3}|rot:\\d{1,3}|face:(?:${ref}|center)|y:(?:up|down|max|floor|\\d(?:\\.\\d)?))`;
   const mods = `(?: ${mod}){0,4}`;
   const sel = `(?:selected|last|all(?: ${thing})?|${thing})`;
   const count = `(?:[2-9]|1[0-2]) `;

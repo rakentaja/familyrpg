@@ -22,6 +22,8 @@ export const LABELS = [
   'SIZE', 'NAME',
   'NAV-next', 'NAV-prev', 'NAV-first', 'NAV-last',
   'PARAM-dense', 'PARAM-sparse',
+  // added 2026-11-11: exact size ("resize to 1") and exact turn ("rotate to 90 degrees")
+  'MOD-scale_set', 'MOD-turn_set',
 ] as const;
 export type Label = typeof LABELS[number];
 export const LABEL_SET = new Set<string>(LABELS);

@@ -172,11 +172,25 @@ export class Realiser {
     const make = S(g.pick(P.edit), 'ACT-edit');
     let segs: Seg[] = [];
     if (kind === 'scale') {
-      const s = g.weighted<string>([['up', 30], ['down', 22], ['x2', 10], ['half', 6], ['reset', 6], ['pct', 14], ['times', 8], ['pctdown', 4]]);
+      const s = g.weighted<string>([['up', 30], ['down', 22], ['x2', 10], ['half', 6], ['reset', 6], ['pct', 14], ['times', 8], ['pctdown', 4], ['set', 22]]);
       if (s === 'up') { mods.scale = 'up'; segs = g.chance(0.6) ? [make, ...ss, S(g.pick(P.scale_up), 'MOD-scale_up')] : [S(g.pick(P.scale_up_verb), 'MOD-scale_up'), ...ss]; }
       else if (s === 'down') { mods.scale = 'down'; segs = g.chance(0.6) ? [make, ...ss, S(g.pick(P.scale_down), 'MOD-scale_down')] : [S(g.pick(P.scale_down_verb), 'MOD-scale_down'), ...ss]; }
       else if (s === 'x2') { mods.scale = 'x2'; segs = [make, ...ss, S(g.pick(P.scale_x2), 'MOD-scale_x2')]; }
       else if (s === 'half') { mods.scale = 'x0.5'; segs = [make, ...ss, S(g.pick(P.scale_half), 'MOD-scale_half')]; }
+      else if (s === 'set') {
+        // exact size: "resize the benches to 1.5", "set the size of the tree to 2", "make the crate size 0.5"
+        const v = g.pick([0.5, 0.5, 0.75, 1.5, 1.5, 2, 2, 2.5, 3, 4, 0.25]);
+        mods.scale = `=${v}`;
+        const pctForm = g.chance(0.15);
+        const num = S(pctForm ? g.pick([`${Math.round(v * 100)}%`, `${Math.round(v * 100)} percent`]) : g.pick(v === 2 ? ['2', 'two', '2.0'] : v === 3 ? ['3', 'three'] : v === 4 ? ['4', 'four'] : v === 0.5 ? ['0.5', '.5'.replace('.5', '0.5')] : [String(v)]), 'NUM');
+        const t = g.next();
+        if (t < 0.3) segs = [S(g.pick(['resize', 'scale', 'size', 'rescale']), 'MOD-scale_set'), ...ss, S(g.pick(['to', 'to size', 'to a size of', 'to scale']), 'MOD-scale_set'), num];
+        else if (t < 0.55) segs = [S(g.pick(['set the size of', 'change the size of', 'set the scale of', 'change the scale of']), 'MOD-scale_set'), ...ss, S('to', 'MOD-scale_set'), num];
+        else if (t < 0.75) segs = [S(g.pick(['set', 'make', 'change']), 'MOD-scale_set'), ...ss, S(g.pick(['size', 'size to', 'scale to', 'to size', 'scale']), 'MOD-scale_set'), num];
+        else if (t < 0.9) segs = [S(g.pick(['make', 'set']), 'MOD-scale_set'), ...ss, S(g.pick(['exactly', '']), 'O'), num, S(g.pick(['times normal size', 'times the normal size', 'times its normal size', 'size']), 'MOD-scale_set')].filter((x) => x.text);
+        else segs = [...ss, S(g.pick(['size', 'scale', 'size to', 'scale to']), 'MOD-scale_set'), num];
+        if (pctForm && segs[segs.length - 1] === num) segs.push(S(g.pick(['', 'of normal', 'of normal size'])));
+      }
       else if (s === 'reset') { mods.scale = 'reset'; segs = [make, ...ss, S(g.pick(['', 'back to', 'to'])), S(g.pick(P.scale_reset), 'MOD-scale_reset')]; }
       else if (s === 'pct' || s === 'pctdown') {
         const n = g.pick([10, 20, 25, 30, 50, 75, 100]);
@@ -191,10 +205,21 @@ export class Realiser {
         segs = [make, ...ss, S(g.pick(P.times(n)), 'NUM'), S(g.pick(['bigger', 'larger', 'as big']), 'MOD-scale_up')];
       }
     } else if (kind === 'turn') {
-      const t = g.weighted<string>([['right', 30], ['left', 20], ['around', 30], ['deg', 20]]);
+      const t = g.weighted<string>([['right', 30], ['left', 20], ['around', 30], ['deg', 20], ['set', 22]]);
       if (t === 'right') { mods.turn = 90; segs = g.chance(0.5) ? [S(g.pick(P.turn_right), 'MOD-turn_right'), ...ss] : [S(g.pick(['turn', 'rotate', 'spin']), 'MOD-turn_right'), ...ss, S(g.pick(['right', 'to the right', 'clockwise', 'to the right a bit']), 'MOD-turn_right')]; }
       else if (t === 'left') { mods.turn = -90; segs = g.chance(0.5) ? [S(g.pick(P.turn_left), 'MOD-turn_left'), ...ss] : [S(g.pick(['turn', 'rotate', 'spin']), 'MOD-turn_left'), ...ss, S(g.pick(['left', 'to the left', 'anticlockwise', 'to the left a bit']), 'MOD-turn_left')]; }
       else if (t === 'around') { mods.turn = 180; segs = g.chance(0.5) ? [S(g.pick(P.turn_around), 'MOD-turn_around'), ...ss] : [S(g.pick(['turn', 'spin', 'flip']), 'MOD-turn_around'), ...ss, S(g.pick(P.turn_around_after), 'MOD-turn_around')]; }
+      else if (t === 'set') {
+        // exact facing: "rotate the bench to 90 degrees", "set the rotation of the tree to 180"
+        const n = g.pick([0, 45, 90, 90, 135, 180, 180, 225, 270, 270, 315, 30, 60]);
+        mods.rot = n;
+        const num = S(g.pick(n === 0 ? ['0 degrees', '0', 'zero degrees', '0°'] : [`${n} degrees`, `${n}°`, String(n), `${n} deg`]), 'NUM');
+        const r = g.next();
+        if (r < 0.4) segs = [S(g.pick(['rotate', 'turn', 'spin', 'angle']), 'MOD-turn_set'), ...ss, S(g.pick(['to', 'so it is at', 'until it is at', 'to an angle of']), 'MOD-turn_set'), num];
+        else if (r < 0.7) segs = [S(g.pick(['set the rotation of', 'set the angle of', 'change the rotation of', 'set the direction of']), 'MOD-turn_set'), ...ss, S('to', 'MOD-turn_set'), num];
+        else if (r < 0.9) segs = [S(g.pick(['set', 'make', 'change']), 'MOD-turn_set'), ...ss, S(g.pick(['rotation to', 'angle to', 'rotation', 'facing']), 'MOD-turn_set'), num];
+        else segs = [...ss, S(g.pick(['rotation', 'angle', 'rotated to', 'turned to']), 'MOD-turn_set'), num];
+      }
       else {
         const n = g.pick([15, 30, 45, 60, 90, 120, 135]);
         const left = g.chance(0.3);

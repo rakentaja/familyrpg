@@ -40,6 +40,9 @@ group('GM helper solver', () => {
     expect(sm.rot).toBe(90);
     run(t.world, 'edit prop:snowman scale:up', 3);
     expect(pieces(t.s).filter((p) => p.model === 'prop:snowman').pop()!.scale).toBe(2.5);
+    run(t.world, 'edit all prop:snowman scale:=1.5 rot:270', 3);
+    const sm2 = pieces(t.s).filter((p) => p.model === 'prop:snowman').pop()!;
+    expect([sm2.scale, sm2.rot]).toEqual([1.5, 270]);
   });
   test('relations use the target, missing targets give a note', () => {
     const t = table();

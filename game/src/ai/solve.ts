@@ -205,13 +205,14 @@ export function run(w: World, program: Cmd[] | string, seed = Date.now()): Outco
   function looks(p: Live, m: Mods, onTop?: Live): Omit<Extract<GuideOp, { k: 'edit' }>, 'k' | 'what' | 'id'> {
     const e: { rot?: number; scale?: number; y?: number; hidden?: boolean } = {};
     if (m.turn !== undefined) e.rot = norm360(p.rot + m.turn);
+    if (m.rot !== undefined) e.rot = norm360(m.rot);
     if (m.face !== undefined) {
       const t = m.face === 'center' ? { at: { x: 0, z: 0 } } : resolveRef(m.face);
       if (t) e.rot = norm360(deg(Math.atan2(t.at.x - p.at.x, t.at.z - p.at.z)));
     }
     if (m.scale) {
       const s = m.scale, k = p.scale;
-      const v = s === 'up' ? k * 1.25 : s === 'down' ? k * 0.8 : s === 'reset' ? 1 : s.startsWith('x') ? k * parseFloat(s.slice(1))
+      const v = s === 'up' ? k * 1.25 : s === 'down' ? k * 0.8 : s === 'reset' ? 1 : s.startsWith('=') ? parseFloat(s.slice(1)) : s.startsWith('x') ? k * parseFloat(s.slice(1))
         : s.endsWith('%') ? k * (1 + parseFloat(s) / 100) : k;
       e.scale = r2(clamp(v, 0.25, 4));
     }
@@ -340,8 +341,9 @@ export function describe(pack: Pack, c: Cmd): string {
   const mods = (m: Mods) => {
     const out: string[] = [];
     if (m.cluster) out.push('in a group');
-    if (m.scale) out.push(m.scale === 'up' ? 'bigger' : m.scale === 'down' ? 'smaller' : m.scale === 'reset' ? 'normal size' : `size ${m.scale}`);
+    if (m.scale) out.push(m.scale === 'up' ? 'bigger' : m.scale === 'down' ? 'smaller' : m.scale === 'reset' ? 'normal size' : m.scale.startsWith('=') ? `size ${m.scale.slice(1)}` : m.scale.startsWith('x') ? `${m.scale.slice(1)} × as big` : `${m.scale} size`);
     if (m.turn) out.push(m.turn === 180 ? 'turned around' : `turned ${Math.abs(m.turn)}° ${m.turn > 0 ? 'right' : 'left'}`);
+    if (m.rot !== undefined) out.push(`turned to ${m.rot}°`);
     if (m.face) out.push(`facing ${ref(m.face)}`);
     if (m.y) out.push(m.y === 'floor' ? 'on the floor' : m.y === 'max' ? 'up high' : m.y === 'up' ? 'higher' : m.y === 'down' ? 'lower' : `${m.y} m up`);
     if (m.hidden === true) out.push('hidden'); else if (m.hidden === false) out.push('visible');
