@@ -10,7 +10,10 @@ import { join } from 'node:path';
 import { LABELS } from '../src/labels';
 import { ALL_PLACEHOLDERS } from '../src/lexicon';
 import { FALLBACK_PROMPT } from '../src/fallback';
-import { args, hash, OUT, readJsonl, writeJson, writeJsonl } from './common';
+import { args, hash, load, OUT, readJsonl, writeJson, writeJsonl } from './common';
+import { assemble } from '../src/assemble';
+import { printProgram } from '../src/dsl';
+import { delex } from '../src/lexicon';
 
 const a = args({ dev: '0.05', 'real-weight': '3', 'max-template': '0' });
 const D = join(OUT, 'data');
@@ -18,13 +21,22 @@ const synth = readJsonl(join(D, 'synth.jsonl'));
 const para = readJsonl(join(D, 'para.jsonl'));
 const real = readJsonl(join(D, 'real.jsonl'));
 
+// every row must still round-trip through the current assembler (rewrites made under older rules may not)
+const { lex } = load();
+let stale = 0;
+const fresh = (r: any) => {
+  const d = delex(r.text, lex);
+  const ok = d.words.length === r.labels.length && printProgram(assemble(d, r.labels)) === r.dsl;
+  if (!ok) stale++;
+  return ok;
+};
 const seen = new Set<string>();
 const rows: any[] = [];
 const cap = +a['max-template'] || Infinity;
 let nTemplate = 0;
 for (const r of [...real, ...para, ...synth]) {
   const k = r.text.toLowerCase().replace(/\s+/g, ' ').trim();
-  if (seen.has(k)) continue;
+  if (seen.has(k) || !fresh(r)) continue;
   if (r.source !== 'real' && r.source !== 'paraphrase' && ++nTemplate > cap) continue;
   seen.add(k);
   rows.push(r);
@@ -51,5 +63,5 @@ for (const r of train) for (const l of r.labels) labelCounts[l] = (labelCounts[l
 const missing = LABELS.filter((l) => !labelCounts[l]);
 const stats = { train: train.length, dev: dev.length, trainBySource: by(train), devBySource: by(dev), labelCounts, missingLabels: missing };
 writeJson(join(D, 'stats.json'), stats);
-console.log(`train ${train.length}  dev ${dev.length}`, by(train));
+console.log(`train ${train.length}  dev ${dev.length}  (dropped ${stale} that no longer round-trip)`, by(train));
 if (missing.length) console.log('labels never seen in training:', missing.join(', '));

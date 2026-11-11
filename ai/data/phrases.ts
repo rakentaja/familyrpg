@@ -20,13 +20,18 @@ export const P = {
   goto: ['go to', 'goto', 'switch to', 'open', 'take me to', 'jump to', 'show me', 'back to', 'let\'s go to', 'move on to'],
   recipe: ['make', 'build', 'set up', 'create', 'give me', 'generate', 'lay out', 'do', 'make me', 'whip up', 'quickly make', 'i want'],
 
-  sep: [',', 'and', 'then', 'and then', ', then', 'also', '.', 'plus', 'after that', ', and', 'and also', ';', '. then', 'oh and'],
+  sep: [',', 'and', 'then', 'and then', ', then', 'also', '.', 'plus', 'after that', ', and', 'and also', ';', '. then', 'oh and', 'next', ', next', 'and next', 'and now', ', now', 'and after that', 'after that,', 'then also', 'and also then', 'as well', 'and lastly', 'finally'],
+  // the pieces an earlier clause made or changed ("…and make them bigger")
+  itLast: ['it', 'it', 'it', 'that', 'that one', 'this one', 'the new one', 'that new one', 'him', 'her'],
+  // "another one": the same thing again
+  again: ['another one', 'another', 'one more', 'a second one', 'another of those', 'one more of those', 'the same again', 'a matching one'],
+  themLast: ['them', 'them', 'those', 'these', 'the new ones', 'those new ones', 'all of them', 'both of them'],
   wrapBefore: ['can you', 'please', 'could you', 'ok', 'okay', 'now', 'hey', 'right,', 'so', 'alright', 'quick,', 'um', 'i\'d like to', 'go ahead and', 'let\'s'],
   wrapAfter: ['please', 'thanks', 'for me', 'thank you', 'now', 'ok', 'cheers', 'pls'],
 
   selAll: ['all the', 'all of the', 'every', 'all', 'each'],
   everything: ['everything', 'all of it', 'the whole lot', 'all the pieces', 'every piece', 'all pieces', 'everything on the board'],
-  it: ['it', 'this', 'that', 'that one', 'this one', 'the selected one', 'the one i picked', 'the selected thing', 'this thing'],
+  it: ['it', 'it', 'him', 'her', 'this', 'that', 'that one', 'this one', 'the selected one', 'the one i picked', 'the selected thing', 'this thing'],
   them: ['them', 'these', 'those'],
   the: ['the', 'the', 'the', 'that', 'this', 'my', 'our'],
   a: ['a', 'a', 'a', 'one', 'another', 'a single', 'some kind of'],
@@ -96,8 +101,8 @@ export const P = {
   called: ['called', 'named', 'titled', 'with the name'],
 
   nav: {
-    next: ['the next scene', 'next scene', 'the next one', 'next'],
-    prev: ['the previous scene', 'previous scene', 'the one before', 'back one scene', 'the scene before'],
+    next: ['the next scene', 'next scene', 'the next one', 'next', 'forward a scene', 'on to the next scene', 'ahead one scene'],
+    prev: ['the previous scene', 'previous scene', 'the one before', 'back one scene', 'the scene before', 'back a scene', 'a scene back', 'back one', 'back'],
     first: ['the first scene', 'first scene', 'the start', 'the beginning', 'scene one'],
     last: ['the last scene', 'the final scene', 'last scene', 'the end'],
   } as Record<string, string[]>,

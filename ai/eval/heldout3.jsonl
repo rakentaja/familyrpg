@@ -1,0 +1,98 @@
+{"text": "add a tree and a rock", "dsl": "add prop:pine_tree\nadd prop:rock"}
+{"text": "add a tree and move the rock to the corner", "dsl": "add prop:pine_tree\nmove prop:rock corner"}
+{"text": "put a bench and a lamp post on the left", "dsl": "add prop:bench side:w\nadd prop:lamp_post side:w"}
+{"text": "put a bench on the left and move the lamp post to the right", "dsl": "add prop:bench side:w\nmove prop:lamp_post side:e"}
+{"text": "add two coal imps and a snow golem near the cave", "dsl": "add 2 foe:coal-imp near:prop:cave_entrance\nadd foe:snow-golem near:prop:cave_entrance"}
+{"text": "add two coal imps and hide the snow golem", "dsl": "add 2 foe:coal-imp\nhide foe:snow-golem"}
+{"text": "remove the sled and add a sleigh in the middle", "dsl": "remove prop:sled\nadd prop:sleigh center"}
+{"text": "make the snowman bigger and turn the bench around", "dsl": "edit prop:snowman scale:up\nedit prop:bench turn:180"}
+{"text": "hide the grumplings and show the wisp", "dsl": "hide all foe:grumpling\nshow foe:blizzard-wisp"}
+{"text": "move the sleigh to the back and add some presents in front of it", "dsl": "move prop:sleigh side:n\nadd 3 token:goal front_of:last"}
+{"text": "add a cocoa stand and a bench by the tree", "dsl": "add prop:cocoa_stand near:prop:pine_tree\nadd prop:bench near:prop:pine_tree"}
+{"text": "add a cocoa stand by the tree and put the bench next to the mailbox", "dsl": "add prop:cocoa_stand near:prop:pine_tree\nmove prop:bench near:prop:mailbox"}
+{"text": "go to the frozen lake and add three wisps", "dsl": "goto scene:frozen-lake\nadd 3 foe:blizzard-wisp"}
+{"text": "delete the crates and the rocks", "dsl": "remove all prop:crate\nremove all prop:rock"}
+{"text": "delete the crates and add rocks", "dsl": "remove all prop:crate\nadd 3 prop:rock"}
+{"text": "make the fence smaller and move the signpost to the front", "dsl": "edit prop:fence scale:down\nmove prop:signpost side:s"}
+{"text": "add a rat behind the toy pile and a rat behind the train", "dsl": "add foe:wind-up-rat behind:prop:toy_pile\nadd foe:wind-up-rat behind:prop:toy_train"}
+{"text": "put a gift sack on the sleigh and a cookie on the bench", "dsl": "add prop:gift_sack on:prop:sleigh\nadd item:cookie on:prop:bench"}
+{"text": "rotate the sleigh 45 degrees and lift the lantern", "dsl": "edit prop:sleigh turn:45\nedit prop:lantern y:up"}
+{"text": "add a hidden imp by the fireplace and a villager by the door", "dsl": "add foe:coal-imp near:prop:fireplace hidden\nadd token:npc near:prop:workshop_door"}
+{"text": "put the snowman in the middle and the mailbox in the corner", "dsl": "move prop:snowman center\nmove prop:mailbox corner"}
+{"text": "put a snowman in the middle and a mailbox in the corner", "dsl": "add prop:snowman center\nadd prop:mailbox corner"}
+{"text": "show the troll and hide the imps", "dsl": "show foe:grumbleweed\nhide all foe:coal-imp"}
+{"text": "add a fire at the back and a rocking horse on the right", "dsl": "add prop:fireplace side:n\nadd prop:rocking_horse side:e"}
+{"text": "new snowy scene and add a sleigh", "dsl": "scene add ground:snow\nadd prop:sleigh"}
+{"text": "make all the lamps bigger and the benches smaller", "dsl": "edit all prop:lamp_post scale:up\nedit all prop:bench scale:down"}
+{"text": "add a snowman in the middle. put two benches at the front", "dsl": "add prop:snowman center\nadd 2 prop:bench side:s"}
+{"text": "remove the rocks, add some bushes", "dsl": "remove all prop:rock\nadd 3 prop:gumdrop_bush"}
+{"text": "hide the golem make the imps bigger", "dsl": "hide foe:snow-golem\nedit all foe:coal-imp scale:up"}
+{"text": "put a crate in the top left corner put a bench in the bottom right corner", "dsl": "add prop:crate corner:nw\nadd prop:bench corner:se"}
+{"text": "move the sleigh to the middle. turn the reindeer to the left", "dsl": "move prop:sleigh center\nedit hero:reindeer-flyer turn:-90"}
+{"text": "next scene, hide everything", "dsl": "goto next\nhide all"}
+{"text": "go back a scene. show all the presents", "dsl": "goto prev\nshow all token:goal"}
+{"text": "four lamp posts around the christmas tree, a cocoa stand on the right", "dsl": "add 4 prop:lamp_post around:prop:great_tree\nadd prop:cocoa_stand side:e"}
+{"text": "okay add three grumplings by the gate okay now remove the fence", "dsl": "add 3 foe:grumpling near:prop:workshop_door\nremove prop:fence"}
+{"text": "make the house bigger, the sleigh smaller", "dsl": "edit prop:gingerbread_house scale:up\nedit prop:sleigh scale:down"}
+{"text": "spin the bench around rotate the signpost 90 degrees", "dsl": "edit prop:bench turn:180\nedit prop:signpost turn:90"}
+{"text": "put the gingerbread scout by the house. put the toy soldier by the door", "dsl": "move hero:gingerbread-scout near:prop:gingerbread_house\nmove hero:toy-soldier near:prop:workshop_door"}
+{"text": "duplicate the scene. go to scene 3", "dsl": "scene copy\ngoto 3"}
+{"text": "delete the crate in the corner, add a present on the workbench", "dsl": "remove prop:crate corner\nadd token:goal on:prop:workbench"}
+{"text": "a fence along the bottom two signposts on the left", "dsl": "add prop:fence side:s\nadd 2 prop:signpost side:w"}
+{"text": "lift the bell 1 metre. lower the lantern", "dsl": "edit prop:jingle_bell y:1\nedit prop:lantern y:down"}
+{"text": "take away the snowmen, scatter some snowballs around", "dsl": "remove all prop:snowman\nadd 3 prop:snowball spread"}
+{"text": "add a sleigh in the middle, also put a gift sack next to the cocoa stand", "dsl": "add prop:sleigh center\nadd prop:gift_sack near:prop:cocoa_stand"}
+{"text": "hide the imps. after that move the golem to the back", "dsl": "hide all foe:coal-imp\nmove foe:snow-golem side:n"}
+{"text": "make a workshop and then add two rats by the toy train", "dsl": "recipe recipe:workshop\nadd 2 foe:wind-up-rat near:prop:toy_train"}
+{"text": "remove the fence plus the signpost", "dsl": "remove prop:fence\nremove prop:signpost"}
+{"text": "put a lamp post on the left plus a bench on the right", "dsl": "add prop:lamp_post side:w\nadd prop:bench side:e"}
+{"text": "make the trees smaller, next move the sleigh to the front", "dsl": "edit all prop:pine_tree scale:down\nmove prop:sleigh side:s"}
+{"text": "go to the ice cave and then show the troll", "dsl": "goto scene:ice-cave\nshow foe:grumbleweed"}
+{"text": "add three presents in the corner, also hide the grumpling", "dsl": "add 3 token:goal corner\nhide foe:grumpling"}
+{"text": "turn the snowman around and also make the bench bigger", "dsl": "edit prop:snowman turn:180\nedit prop:bench scale:up"}
+{"text": "start a new scene called Snowy Hill and then add a sled at the top", "dsl": "scene add \"Snowy Hill\"\nadd prop:sled side:n"}
+{"text": "add a clue on the bench. next, a villager next to the mailbox", "dsl": "add token:clue on:prop:bench\nadd token:npc near:prop:mailbox"}
+{"text": "show everything and after that go to the next scene", "dsl": "show all\ngoto next"}
+{"text": "move the crates to the right side, plus add a log pile by the fireplace", "dsl": "move all prop:crate side:e\nadd prop:log_pile near:prop:fireplace"}
+{"text": "put two snowmen at the front, also a fence at the back", "dsl": "add 2 prop:snowman side:s\nadd prop:fence side:n"}
+{"text": "delete the cocoa mug and then add a hot chocolate on the table", "dsl": "remove prop:cocoa_mug\nadd item:hot-cocoa on:prop:workbench"}
+{"text": "make an ice cave, also put a hidden golem near the cave entrance", "dsl": "recipe recipe:ice_cave\nadd foe:snow-golem near:prop:cave_entrance hidden"}
+{"text": "add a snowman and make it bigger", "dsl": "add prop:snowman\nedit last scale:up"}
+{"text": "put three grumplings by the door and hide them", "dsl": "add 3 foe:grumpling near:prop:workshop_door\nhide last"}
+{"text": "add a crate in the corner and put another one next to it", "dsl": "add prop:crate corner\nadd prop:crate near:last"}
+{"text": "add two lamp posts on the right, make them smaller", "dsl": "add 2 prop:lamp_post side:e\nedit last scale:down"}
+{"text": "put a sleigh in the middle. turn it to face the door", "dsl": "add prop:sleigh center\nedit last face:prop:workshop_door"}
+{"text": "add a rock and put a coal imp behind it", "dsl": "add prop:rock\nadd foe:coal-imp behind:last"}
+{"text": "move the bench to the front and turn it around", "dsl": "move prop:bench side:s\nedit last turn:180"}
+{"text": "add a snow golem at the back and make the new one face the middle", "dsl": "add foe:snow-golem side:n\nedit last face:center"}
+{"text": "put some presents near the tree and hide those", "dsl": "add 3 token:goal near:prop:pine_tree\nhide last"}
+{"text": "add a wisp next to the snowman, make that one twice as big", "dsl": "add foe:blizzard-wisp near:prop:snowman\nedit last scale:x2"}
+{"text": "add a mailbox and hide it", "dsl": "add prop:mailbox\nhide last"}
+{"text": "make the house smaller and put a sign in front of it", "dsl": "edit prop:gingerbread_house scale:down\nadd prop:signpost front_of:last"}
+{"text": "add a cave entrance on the right and put two icicles near it", "dsl": "add prop:cave_entrance side:e\nadd 2 prop:icicles near:last"}
+{"text": "rotate it 90 degrees and make it smaller", "dsl": "edit selected turn:90\nedit last scale:down"}
+{"text": "add the troll at the back and make him face the door", "dsl": "add foe:grumbleweed side:n\nedit last face:prop:workshop_door"}
+{"text": "put two coal imps behind the crates and turn them to face the middle", "dsl": "add 2 foe:coal-imp behind:prop:crate\nedit last face:center"}
+{"text": "show the golem and move it to the middle", "dsl": "show foe:snow-golem\nmove last center"}
+{"text": "new icy scene, a pond in the middle, two wisps near it and a bench at the front", "dsl": "scene add ground:ice\nadd prop:water_hole center\nadd 2 foe:blizzard-wisp near:last\nadd prop:bench side:s"}
+{"text": "remove the rocks, make the trees bigger and move the sleigh to the corner", "dsl": "remove all prop:rock\nedit all prop:pine_tree scale:up\nmove prop:sleigh corner"}
+{"text": "go to the next scene, show everything, then hide the troll", "dsl": "goto next\nshow all\nhide foe:grumbleweed"}
+{"text": "add a workbench in the middle, put a toy pile on the left and three crates in the bottom right corner", "dsl": "add prop:workbench center\nadd prop:toy_pile side:w\nadd 3 prop:crate corner:se"}
+{"text": "hide the imps and the rats and show the golem", "dsl": "hide all foe:coal-imp\nhide all foe:wind-up-rat\nshow foe:snow-golem"}
+{"text": "make a village square then add two grumplings by the cocoa stand and hide them", "dsl": "recipe recipe:village_square\nadd 2 foe:grumpling near:prop:cocoa_stand\nhide last"}
+{"text": "turn the bench around. lift the lantern. make the snowman smaller. remove the sled", "dsl": "edit prop:bench turn:180\nedit prop:lantern y:up\nedit prop:snowman scale:down\nremove prop:sled"}
+{"text": "add a fence at the front, a signpost on the left and a mailbox on the right", "dsl": "add prop:fence side:s\nadd prop:signpost side:w\nadd prop:mailbox side:e"}
+{"text": "put a sleigh in the middle and a gift sack on it, then move the reindeer next to the sleigh", "dsl": "add prop:sleigh center\nadd prop:gift_sack on:last\nmove hero:reindeer-flyer near:prop:sleigh"}
+{"text": "duplicate the scene, make the floor snowy and add five presents in a pile in the corner", "dsl": "scene copy\nscene set ground:snow\nadd 5 token:goal corner cluster"}
+{"text": "put a crate in the corner and make the trees bigger", "dsl": "add prop:crate corner\nedit all prop:pine_tree scale:up"}
+{"text": "add a hidden grumpling behind the house and move the snowman to the left", "dsl": "add foe:grumpling behind:prop:gingerbread_house hidden\nmove prop:snowman side:w"}
+{"text": "make the sleigh twice as big and add a bench", "dsl": "edit prop:sleigh scale:x2\nadd prop:bench"}
+{"text": "turn the signpost to the left and put a lamp post next to the bench", "dsl": "edit prop:signpost turn:-90\nadd prop:lamp_post near:prop:bench"}
+{"text": "add two rats in the top right corner and remove the toy train", "dsl": "add 2 foe:wind-up-rat corner:ne\nremove prop:toy_train"}
+{"text": "hide the coal imps and add a snow golem in the middle", "dsl": "hide all foe:coal-imp\nadd foe:snow-golem center"}
+{"text": "add three trees at the back and make the rocks smaller", "dsl": "add 3 prop:pine_tree side:n\nedit all prop:rock scale:down"}
+{"text": "move the bench to the front and add a lantern", "dsl": "move prop:bench side:s\nadd prop:lantern"}
+{"text": "make the golem face the door and add a coal imp by the fireplace", "dsl": "edit foe:snow-golem face:prop:workshop_door\nadd foe:coal-imp near:prop:fireplace"}
+{"text": "put a snowman facing the middle and a rock on the right", "dsl": "add prop:snowman face:center\nadd prop:rock side:e"}
+{"text": "lift the bell up and put a present on the shelves", "dsl": "edit prop:jingle_bell y:up\nadd token:goal on:prop:shelves"}
+{"text": "add a hidden wisp in the corner and show the grumplings", "dsl": "add foe:blizzard-wisp corner hidden\nshow all foe:grumpling"}

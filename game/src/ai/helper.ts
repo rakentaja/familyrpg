@@ -7,7 +7,7 @@ import { taggerFrom } from '../../../ai/src/tagger';
 import aiPack from '../../../ai/packs/sleighbound.ai.json';
 import type { GameState, Pack } from '../rules/types';
 
-export const MODEL = 'gm-tagger-20261111b';        // folder under dist/ai/ — a new name for every new model
+export const MODEL = 'gm-tagger-20261111c';        // folder under dist/ai/ — a new name for every new model
 export const MODEL_MB = 14;
 // 2.17.2 first: its ONNX Runtime (1.14) works on iPhones; newer runtimes hit "RangeError: Out of memory" in
 // iOS Safari's WebAssembly. 3.7.6 is the backup.

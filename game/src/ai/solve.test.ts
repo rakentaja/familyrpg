@@ -4,7 +4,8 @@ import { join } from 'path';
 import type { Action, Envelope, GameState, GuideOp, Pack } from '../rules/types';
 import { createGame, reduce } from '../rules/index';
 import { ai } from './helper';
-import { describe, pieces, run, type Piece } from './solve';
+import { parseProgram } from '../../../ai/src/dsl';
+import { check, describe, pieces, run, type Issue, type Piece } from './solve';
 
 const PK = JSON.parse(readFileSync(join(import.meta.dir, '../../packs/sleighbound.json'), 'utf8')) as Pack;
 const T0 = 1_700_000_000_000;
@@ -83,5 +84,91 @@ group('GM helper solver', () => {
     expect(describe(PK, { v: 'add', count: 2, noun: { type: 'foe', id: 'coal-imp' }, place: { rel: 'behind', target: { type: 'prop', id: 'crate' } }, mods: { hidden: true } }))
       .toBe('Add 2 coal imps behind the crate, hidden');
     expect(describe(PK, { v: 'add', count: 3, noun: { type: 'prop', id: 'snowman' }, mods: {} })).toBe('Add 3 snowmen');
+  });
+});
+
+group('GM helper dry run (check)', () => {
+  const msgs = (is: Issue[]) => is.map((i) => i.msg).join(' | ');
+  const blocked = (is: Issue[]) => is.some((i) => i.block);
+  const chk = (t: ReturnType<typeof table>, dsl: string, skip?: number[]) => check(t.world, parseProgram(dsl), { seed: 1, ...(skip ? { skip: new Set(skip) } : {}) });
+
+  test('changes nothing on the table', () => {
+    const t = table();
+    const before = t.s;
+    const out = chk(t, 'add 3 prop:bench center\nremove all prop:crate\nscene add "X"');
+    expect(t.s).toBe(before);
+    expect(out.every((l) => !l.length)).toBe(true);
+  });
+  test('a selection that is not in the scene blocks the line', () => {
+    const t = table();
+    expect(pieces(t.s).some((p) => p.model === 'prop:bench')).toBe(false);
+    const [a, b] = chk(t, 'edit prop:bench scale:up\nremove prop:crate corner:ne');
+    expect(msgs(a!)).toBe('There is no bench in this scene.');
+    expect(blocked(a!)).toBe(true);
+    if (b!.length) expect(msgs(b!)).toBe('There is no crate there.');
+  });
+  test('pieces added earlier in the plan count; missing relation / face targets only warn', () => {
+    const t = table();
+    const ok = chk(t, 'add prop:bench center\nadd foe:wind-up-rat behind:last\nadd foe:coal-imp behind:prop:bench\nedit prop:bench scale:up');
+    expect(ok.every((l) => !l.length)).toBe(true);
+    const [rel, face] = chk(t, 'add foe:coal-imp near:prop:chimney\nedit prop:crate face:prop:mailbox scale:up');
+    expect(msgs(rel!)).toBe('There is no chimney in this scene. | It goes in the middle instead.');
+    expect(blocked(rel!)).toBe(false);
+    expect(msgs(face!)).toBe('There is no mailbox in this scene.');
+    expect(blocked(face!)).toBe(false);
+    const [faceOnly] = chk(t, 'edit prop:crate face:prop:mailbox');
+    expect(blocked(faceOnly!)).toBe(true);
+  });
+  test('"it" and "selected" need something to point at', () => {
+    const t = table();
+    const [it] = chk(t, 'edit last scale:up');
+    expect(msgs(it!)).toBe('Nothing earlier to call “it”, and no piece is selected.');
+    expect(blocked(it!)).toBe(true);
+    const [sel] = chk(t, 'edit selected scale:up');
+    expect(msgs(sel!)).toBe('No piece is selected. Tap one first.');
+    expect(blocked(sel!)).toBe(true);
+    const crate = pieces(t.s).find((p) => p.model === 'prop:crate')!;
+    t.select({ what: crate.what, id: crate.id });
+    expect(chk(t, 'edit last scale:up\nedit selected turn:90').every((l) => !l.length)).toBe(true);
+    t.select({ what: 'prop', id: 'gone' });
+    expect(msgs(chk(t, 'edit selected scale:up')[0]!)).toBe('The piece you picked is not in this scene.');
+  });
+  test('lines that undo or fight each other', () => {
+    const t = table();
+    const [, rm] = chk(t, 'add prop:bench center\nremove last');
+    expect(msgs(rm!)).toBe('Line 1 adds this, and this line removes it again.');
+    expect(blocked(rm!)).toBe(false);
+    const [, it] = chk(t, 'remove prop:sleigh\nedit last scale:up');
+    expect(msgs(it!)).toBe('Line 1 removes it.');
+    expect(blocked(it!)).toBe(true);
+    const [, noun] = chk(t, 'remove prop:sleigh\nmove prop:sleigh center');
+    expect(msgs(noun!)).toBe('Line 1 removes the sleigh.');
+    const [, hid] = chk(t, 'hide prop:sleigh\nedit last scale:up');
+    expect(msgs(hid!)).toBe('Line 1 hides this piece.');
+    expect(chk(t, 'hide prop:sleigh\nshow last')[1]).toEqual([]);
+    const [, , mv] = chk(t, 'move prop:sleigh center\nedit last scale:up\nmove last corner:ne');
+    expect(msgs(mv!)).toBe('Line 1 already moves this piece.');
+  });
+  test('scenes: goto a missing scene, delete the only scene, scene work outside the editor', () => {
+    const t = table();
+    const n = t.s.adv!.scenes.length;
+    expect(msgs(chk(t, `goto ${n + 1}`)[0]!)).toBe(`There is no scene ${n + 1}. This adventure has ${n} scenes.`);
+    expect(msgs(chk(t, 'goto scene:nowhere')[0]!)).toBe('There is no scene with that name.');
+    for (let i = 1; i < n; i++) run(t.world, 'scene delete', 1);
+    expect(t.s.adv!.scenes.length).toBe(1);
+    const [del] = chk(t, 'scene delete');
+    expect(msgs(del!)).toBe('An adventure needs at least one scene.');
+    expect(blocked(del!)).toBe(true);
+    const g = table(false);
+    expect(msgs(chk(g, 'scene add "X"')[0]!)).toBe('Scenes are changed in the scene editor.');
+  });
+  test('skipped lines are left out, and later lines see that', () => {
+    const t = table();
+    const out = chk(t, 'add prop:bench center\nedit prop:bench scale:up', [0]);
+    expect(out[0]).toEqual([]);
+    expect(msgs(out[1]!)).toBe('There is no bench in this scene.');
+    // the real run with the same skip set does the same
+    const r = run(t.world, parseProgram('add prop:bench center\nedit prop:bench scale:up'), 1, { skip: new Set([0]) });
+    expect([r.done, r.notes.join(' ')]).toEqual([0, 'There is no bench in this scene.']);
   });
 });

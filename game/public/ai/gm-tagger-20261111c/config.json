@@ -80,7 +80,8 @@
     "67": "PARAM-dense",
     "68": "PARAM-sparse",
     "69": "MOD-scale_set",
-    "70": "MOD-turn_set"
+    "70": "MOD-turn_set",
+    "71": "SEL-again"
   },
   "initializer_range": 0.02,
   "intermediate_size": 1024,
@@ -150,6 +151,7 @@
     "REL-near": 21,
     "REL-on": 27,
     "REL-right_of": 25,
+    "SEL-again": 71,
     "SEL-all": 17,
     "SEL-it": 18,
     "SEP": 1,

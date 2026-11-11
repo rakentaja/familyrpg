@@ -24,6 +24,8 @@ export const LABELS = [
   'PARAM-dense', 'PARAM-sparse',
   // added 2026-11-11: exact size ("resize to 1") and exact turn ("rotate to 90 degrees")
   'MOD-scale_set', 'MOD-turn_set',
+  // added 2026-11-11: "another one" / "one more" = the same thing an earlier clause added
+  'SEL-again',
 ] as const;
 export type Label = typeof LABELS[number];
 export const LABEL_SET = new Set<string>(LABELS);

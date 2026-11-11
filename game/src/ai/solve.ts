@@ -4,7 +4,8 @@
 import type { Cmd, Mods, Noun, Place, Ref, Region, Sel } from '../../../ai/src/dsl';
 import { parseProgram } from '../../../ai/src/dsl';
 import type { AiPack } from '../../../ai/src/lexicon';
-import type { GameState, GuideOp, P, Pack, PackScene } from '../rules/types';
+import { reduce } from '../rules/reduce';
+import type { Envelope, GameState, GuideOp, P, Pack, PackScene } from '../rules/types';
 
 export type Piece = { what: 'prop' | 'foe' | 'token'; id: string };
 interface Live extends Piece { at: P; rot: number; scale: number; y: number; hidden: boolean; model?: string; foe?: string; kind?: string; item?: string }
@@ -19,6 +20,18 @@ export interface World {
 }
 
 export interface Outcome { done: number; notes: string[]; touched: Piece[] }
+
+/** A problem with one line of a plan. block = the line would do nothing. */
+export interface Issue { msg: string; block: boolean }
+
+/** What the runner reports while it works (used by check). */
+interface Trace {
+  line(i: number): void;                                   // a top-level line starts
+  say(msg: string): void;                                  // every note, also repeats
+  touch(c: Cmd, ps: Piece[]): void;                        // the pieces a top-level line acted on
+  end(i: number, did: boolean): void;                      // the line is over; did = it changed the table
+}
+export interface RunOpts { skip?: ReadonlySet<number>; trace?: Trace }
 
 const M = 0.7;          // keep this far from the scene edge (m)
 const GAP = 0.9;        // spacing between pieces placed together
@@ -154,26 +167,42 @@ class Spots {
 }
 
 // ---------------------------------------------------------------- the runner
-export function run(w: World, program: Cmd[] | string, seed = Date.now()): Outcome {
+export function run(w: World, program: Cmd[] | string, seed = Date.now(), opts: RunOpts = {}): Outcome {
   const cmds = typeof program === 'string' ? parseProgram(program) : program;
+  const tr = opts.trace;
   let x = seed >>> 0 || 1;
   const rnd = () => { x ^= x << 13; x >>>= 0; x ^= x >> 17; x ^= x << 5; x >>>= 0; return x / 4294967296; };
   const notes: string[] = [];
   let last: Piece[] = [];
+  let lastGone = -1;                                  // the line that removed what "it" meant
+  const gone = new Map<string, number>();            // noun → the line that removed it
   const touched: Piece[] = [];
-  let done = 0;
-  const say = (m: string) => { if (!notes.includes(m)) notes.push(m); };
+  let done = 0, ln = 0, depth = 0;            // ln = the top-level line being run
+  const say = (m: string) => { tr?.say(m); if (!notes.includes(m)) notes.push(m); };
   const sc = () => scene(w.state());
   const live = () => pieces(w.state());
   const find = (p: Piece) => live().find((q) => q.what === p.what && q.id === p.id);
   const editing = () => w.state().mode === 'edit';
   const tryOp = (op: GuideOp): boolean => { const before = w.state(); w.dispatch(op); return w.state() !== before; };
+  const nkey = (n: Noun) => `${n.type}:${n.id}`;
+  const setLast = (ps: Piece[]) => { last = ps; lastGone = -1; };
+  const touch = (c: Cmd, ps: Piece[]) => { if (!depth) tr?.touch(c, ps); };
 
   function resolveRef(r: Ref): Live | null {
-    if (r === 'selected') { const s = w.selected(); const p = s && find(s); if (!p) say('Tap a piece first, then ask again.'); return p ?? null; }
-    if (r === 'last') { const p = last.length ? find(last[last.length - 1]!) : null; if (!p) say('I lost track of which piece you meant.'); return p ?? null; }
+    if (r === 'selected') {
+      const s = w.selected(); const p = s && find(s);
+      if (!p) say(s ? 'The piece you picked is not in this scene.' : 'No piece is selected. Tap one first.');
+      return p ?? null;
+    }
+    if (r === 'last') {
+      if (last.length) { const p = find(last[last.length - 1]!); if (!p) say('That piece is no longer on the table.'); return p ?? null; }
+      if (lastGone >= 0) { say(`Line ${lastGone + 1} removes it.`); return null; }
+      const s = w.selected(); const p = s && find(s);           // nothing earlier in the plan: "it" is the picked piece
+      if (!p) say('Nothing earlier to call “it”, and no piece is selected.');
+      return p ?? null;
+    }
     const all = live().filter((p) => matches(w, p, r));
-    if (!all.length) { say(`There is no ${nounName(w.pack, r)} here.`); return null; }
+    if (!all.length) { say(gone.has(nkey(r)) ? `Line ${gone.get(nkey(r))! + 1} removes the ${nounName(w.pack, r)}.` : `There is no ${nounName(w.pack, r)} in this scene.`); return null; }
     const s = w.selected();
     return all.find((p) => s && p.what === s.what && p.id === s.id) ?? all[all.length - 1]!;
   }
@@ -183,7 +212,11 @@ export function run(w: World, program: Cmd[] | string, seed = Date.now()): Outco
     let all = live().filter((p) => matches(w, p, sel.noun));
     const s = sc();
     if (sel.where && 'region' in sel.where && s) { const reg = sel.where.region; all = all.filter((p) => inRegion(s, p.at, reg)); }
-    if (!all.length) { say(`There is no ${nounName(w.pack, sel.noun)}${sel.where ? ' there' : ''}.`); return []; }
+    if (!all.length) {
+      const nm = nounName(w.pack, sel.noun), g = gone.get(nkey(sel.noun));
+      say(g !== undefined && !sel.where ? `Line ${g + 1} removes the ${nm}.` : `There is no ${nm} ${sel.where ? 'there' : 'in this scene'}.`);
+      return [];
+    }
     if (sel.all) return all;
     const cur = w.selected();
     return [all.find((p) => cur && p.what === cur.what && p.id === cur.id) ?? all[all.length - 1]!];
@@ -194,7 +227,7 @@ export function run(w: World, program: Cmd[] | string, seed = Date.now()): Outco
     const t = resolveRef(place.target);
     if (!t) {
       if (place.target === 'selected' || place.target === 'last') return null;
-      say('I put it in the middle instead.');                         // the target isn't on the table: still place the piece
+      say('It goes in the middle instead.');                          // the target isn't on the table: still place the piece
       return { at: spots.region('center', n, cluster), exact: false };
     }
     spots.taken = spots.taken.filter((q) => q !== t.at);
@@ -224,15 +257,16 @@ export function run(w: World, program: Cmd[] | string, seed = Date.now()): Outco
   function addOp(n: Noun, at: P, hidden: boolean, rot?: number): GuideOp | null {
     const base = { k: 'add' as const, at, hidden, ...(rot ? { rot } : {}) };
     switch (n.type) {
-      case 'prop': return w.pack.models[`prop:${n.id}`] ? { ...base, what: 'prop', model: `prop:${n.id}` } : null;
+      case 'prop': if (w.pack.models[`prop:${n.id}`]) return { ...base, what: 'prop', model: `prop:${n.id}` }; break;
       case 'foe': return { ...base, what: 'foe', foe: n.id };
       case 'item': return { ...base, what: 'token', kind: 'item', item: n.id };
-      case 'hero': { const r = w.pack.roles.find((x) => x.id === n.id); return r ? { ...base, what: 'token', kind: 'npc', model: r.model, label: r.name } : null; }
+      case 'hero': { const r = w.pack.roles.find((x) => x.id === n.id); if (r) return { ...base, what: 'token', kind: 'npc', model: r.model, label: r.name }; break; }
       case 'token':
         if (n.id === 'start') { if (!editing()) { say('Hero start spots are set in the editor.'); return null; } return { ...base, what: 'token', kind: 'start', hidden: false }; }
         return { ...base, what: 'token', kind: n.id as 'goal' };
-      default: return null;
     }
+    say(`There is no ${nounName(w.pack, n)} to add.`);
+    return null;
   }
 
   function add(c: Extract<Cmd, { v: 'add' }>, scale = 1) {
@@ -254,7 +288,7 @@ export function run(w: World, program: Cmd[] | string, seed = Date.now()): Outco
       const { hidden: _h, ...e } = looks(fresh, { ...c.mods, hidden: undefined }, pts.on);
       if (Object.keys(e).length) tryOp({ k: 'edit', what: fresh.what, id: fresh.id, ...e });
     }
-    if (made.length) { done++; last = made; touched.push(...made); }
+    if (made.length) { done++; setLast(made); touched.push(...made); touch(c, made); }
   }
 
   function exec(c: Cmd, scale = 1) {
@@ -262,31 +296,38 @@ export function run(w: World, program: Cmd[] | string, seed = Date.now()): Outco
       case 'add': add(c, scale); return;
       case 'edit': {
         const ps = resolveSel(c.sel); if (!ps.length) return;
-        for (const p of ps) { const e = looks(p, c.mods); if (Object.keys(e).length) tryOp({ k: 'edit', what: p.what, id: p.id, ...e }); }
-        done++; last = ps; touched.push(...ps); return;
+        touch(c, ps);
+        let changed = false;
+        for (const p of ps) { const e = looks(p, c.mods); if (Object.keys(e).length && tryOp({ k: 'edit', what: p.what, id: p.id, ...e })) changed = true; }
+        if (!changed) return;
+        done++; setLast(ps); touched.push(...ps); return;
       }
       case 'move': {
         const ps = resolveSel(c.sel), s = sc(); if (!ps.length || !s) return;
         const spots = new Spots(s, live().filter((q) => !ps.some((p) => p.id === q.id && p.what === q.what)), rnd);
         const pts = points(c.place, ps.length, !!c.mods.cluster, spots); if (!pts) return;
+        touch(c, ps);
         ps.forEach((p, i) => {
           const to = spots.claim(pts.at[i]!, pts.exact);
           tryOp({ k: 'place', what: p.what, id: p.id, to });
           if (pts.on) tryOp({ k: 'edit', what: p.what, id: p.id, ...looks(p, {}, pts.on) });
         });
-        done++; last = ps; touched.push(...ps); return;
+        done++; setLast(ps); touched.push(...ps); return;
       }
       case 'remove': {
         const ps = resolveSel(c.sel); if (!ps.length) return;
+        touch(c, ps);
         for (const p of ps) tryOp({ k: 'remove', what: p.what, id: p.id });
-        done++; last = []; return;
+        if (c.sel.kind === 'noun') gone.set(nkey(c.sel.noun), ln);
+        done++; last = []; lastGone = ln; return;
       }
       case 'hide': case 'show': {
         const hidden = c.v === 'hide';
         if (c.sel.kind === 'all') { tryOp({ k: 'hideAll', hidden }); done++; return; }
         const ps = resolveSel(c.sel); if (!ps.length) return;
+        touch(c, ps);
         for (const p of ps) tryOp({ k: 'edit', what: p.what, id: p.id, hidden });
-        done++; last = ps; touched.push(...ps); return;
+        done++; setLast(ps); touched.push(...ps); return;
       }
       case 'scene': {
         if (!editing()) { say('Scenes are changed in the scene editor.'); return; }
@@ -299,7 +340,7 @@ export function run(w: World, program: Cmd[] | string, seed = Date.now()): Outco
         if (c.size === 'up' || c.size === 'down') { const k = c.size === 'up' ? 2 : -2; patch.w = cur.size.w + k; patch.d = cur.size.d + k; }
         else if (c.size) { const [a, b] = c.size.split('x').map(Number); patch.w = a; patch.d = b; }
         if (Object.keys(patch).length) tryOp({ k: 'scene', op: 'set', patch });
-        done++; last = []; return;
+        done++; setLast([]); return;
       }
       case 'goto': {
         const s = w.state(), n = s.adv?.scenes.length ?? 1, i = s.scene.index;
@@ -308,9 +349,9 @@ export function run(w: World, program: Cmd[] | string, seed = Date.now()): Outco
         if (c.to === 'next') j = i + 1; else if (c.to === 'prev') j = i - 1; else if (c.to === 'first') j = 0; else if (c.to === 'last') j = n - 1;
         else if (typeof c.to === 'number') j = c.to - 1;
         else { const id = c.to.id; j = s.adv?.scenes.findIndex((x) => x.id === id) ?? -1; if (j < 0) { say('There is no scene with that name.'); return; } }
-        if (j < 0 || j >= n) { say(`There are ${n} scenes.`); return; }
-        if (j !== i) tryOp({ k: 'scene', op: 'goto', index: j });
-        done++; last = []; return;
+        if (j < 0 || j >= n) { say(n === 1 ? 'This adventure has only one scene.' : `There is no scene ${j + 1}. This adventure has ${n} scenes.`); return; }
+        if (j !== i && !tryOp({ k: 'scene', op: 'goto', index: j })) return;
+        done++; setLast([]); return;
       }
       case 'recipe': {
         const r = w.ai.recipes[c.recipe.id];
@@ -319,16 +360,68 @@ export function run(w: World, program: Cmd[] | string, seed = Date.now()): Outco
         let body = parseProgram(r.body.join('\n'));
         if (!editing()) body = body.filter((b) => b.v !== 'scene');      // in a game: build it into this scene
         const was = done;
-        for (const b of body) exec(b, b.v === 'add' && b.noun.type !== 'token' ? k : 1);
-        done = was + 1; last = []; return;
+        depth++;
+        try { for (const b of body) exec(b, b.v === 'add' && b.noun.type !== 'token' ? k : 1); } finally { depth--; }
+        done = was + 1; setLast([]); return;
       }
     }
   }
 
-  for (const c of cmds) {
+  cmds.forEach((c, i) => {
+    if (opts.skip?.has(i)) return;
+    ln = i; tr?.line(i);
+    const was = done;
     try { exec(c); } catch (e) { say(String((e as Error)?.message ?? e)); }
-  }
+    tr?.end(i, done > was);
+  });
   return { done, notes, touched };
+}
+
+// ---------------------------------------------------------------- dry run
+/** What would go wrong with each line, without touching the table: the plan runs on a private copy of the state
+ *  through the real rules, so the check and the real run cannot disagree. Pass the seed and skip set the real run
+ *  will use. Line numbers in the messages are 1-based positions in cmds. */
+export function check(w: World, cmds: Cmd[], opts: { seed?: number; skip?: ReadonlySet<number> } = {}): Issue[][] {
+  let s = w.state();
+  const by = s.players.find((p) => p.host)?.id ?? '';
+  const out: Issue[][] = cmds.map(() => []);
+  let cur = -1;
+  const note = (msg: string, block = false) => { const l = out[cur]; if (l && !l.some((x) => x.msg === msg)) l.push({ msg, block }); };
+  const sim: World = {
+    pack: w.pack, ai: w.ai, selected: () => w.selected(), placeHidden: w.placeHidden, state: () => s,
+    dispatch(op) {
+      const r = reduce(s, { t: 'guide', op, by, at: s.now } as Envelope, w.pack);
+      if (r.ok) s = r.state; else note(r.error ?? 'The table would not allow that.');
+    },
+  };
+  // pieces earlier lines made / moved / hid, to spot lines that undo or fight each other
+  const hist = new Map<string, { made?: number; moved?: number; hidden?: number }>();
+  const trace: Trace = {
+    line(i) { cur = i; },
+    say(m) { note(m); },
+    touch(c, ps) {
+      for (const p of ps) {
+        const k = `${p.what}:${p.id}`, h = hist.get(k) ?? {};
+        const unhide = c.v === 'show' || (c.v === 'edit' && c.mods.hidden === false);
+        if (c.v === 'remove' && h.made !== undefined) note(`Line ${h.made + 1} adds this, and this line removes it again.`);
+        if ((c.v === 'edit' || c.v === 'move') && !unhide && h.hidden !== undefined) note(`Line ${h.hidden + 1} hides this piece.`);
+        if (c.v === 'move' && h.moved !== undefined) note(`Line ${h.moved + 1} already moves this piece.`);
+        if (c.v === 'add') h.made = cur;
+        if (c.v === 'move') h.moved = cur;
+        if (c.v === 'hide' || (c.v === 'edit' && c.mods.hidden === true)) h.hidden = cur;
+        if (unhide) delete h.hidden;
+        hist.set(k, h);
+      }
+    },
+    end(i, did) {
+      if (did) return;
+      const l = out[i]!;
+      if (!l.length) l.push({ msg: 'This would not change anything.', block: true });
+      for (const x of l) x.block = true;
+    },
+  };
+  run(sim, cmds, opts.seed, { skip: opts.skip, trace });
+  return out;
 }
 
 // ---------------------------------------------------------------- plain-English preview

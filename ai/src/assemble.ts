@@ -42,10 +42,20 @@ function sizeOf(d: Delexed, r: Run): string | undefined {
 
 const fmt = (n: number) => String(Math.round(n * 100) / 100);
 
-/** One clause → commands. `lastAdded` = an earlier clause added or changed pieces ("it" means those). */
-function clause(d: Delexed, labels: string[], a: number, b: number, lastAdded: boolean): Cmd[] {
+const DEFINITE = new Set(['the', 'those', 'these', 'that', 'this', 'all', 'every', 'each', 'both', 'my']);
+
+/** What earlier clauses leave for the next one. */
+interface Ctx {
+  lastAdded: boolean;        // an earlier clause added or changed pieces ("it" means those)
+  prevVerb?: string;         // the previous clause's action, for gapped clauses ("hide the imps and the rats")
+  againNoun?: Noun;          // the last thing added, for "another one"
+}
+
+/** One clause → commands and the action it used. */
+function clauseCmds(d: Delexed, labels: string[], a: number, b: number, ctx: Ctx): { cmds: Cmd[]; verb?: string } {
+  const lastAdded = ctx.lastAdded;
   const rs = runs(labels, a, b);
-  if (!rs.length) return [];
+  if (!rs.length) return { cmds: [] };
   const itRef: Ref = lastAdded ? 'last' : 'selected';
   const ent = (r: Run): Noun | null => d.ents[r.from]?.noun ?? null;
   const act = rs.find((r) => r.label.startsWith('ACT-'))?.label.slice(4);
@@ -58,8 +68,14 @@ function clause(d: Delexed, labels: string[], a: number, b: number, lastAdded: b
     else if (r.label === 'SUBJ' && d.ents[r.from]) {
       subjects.push({ noun: d.ents[r.from]!.noun, plural: d.ents[r.from]!.plural, count: pendingCount });
       pendingCount = null;
+    } else if (r.label === 'SEL-again' && ctx.againNoun) {
+      subjects.push({ noun: ctx.againNoun, plural: false, count: pendingCount });
+      pendingCount = null;
     }
   }
+  // "the X" (not "a X"): the thing is already on the table, so a verbless clause can borrow the previous verb
+  const firstSubj = rs.find((r) => r.label === 'SUBJ');
+  const definite = !!firstSubj && (rs.some((r) => r.label === 'SEL-all') || DEFINITE.has((d.surface[firstSubj.from - 1] ?? '').toLowerCase()));
   const selAll = rs.some((r) => r.label === 'SEL-all');
   // "it" right after a relation or "facing" is a target, not the thing being changed
   const asTarget = new Set<Run>();
@@ -87,9 +103,16 @@ function clause(d: Delexed, labels: string[], a: number, b: number, lastAdded: b
   // modifiers; NUM attaches to the nearest scale/turn/lift word
   const mods: Mods = {};
   const nums = rs.filter((r) => r.label === 'NUM');
+  // a number only goes with a word of its kind: "90 degrees" never sizes, "2 metres" or "50%" never turns
+  const DEG = /deg|°/i;
   const numFor = (r: Run) => {
     let best: Run | null = null, bd = Infinity;
-    for (const n of nums) { const dd = Math.min(Math.abs(n.from - r.to), Math.abs(r.from - n.to)); if (dd < bd) { bd = dd; best = n; } }
+    const turn = r.label.startsWith('MOD-turn'), lift = r.label.startsWith('MOD-lift');
+    for (const n of nums) {
+      const t = text(d, n);
+      if (!turn && DEG.test(t)) continue;
+      if ((turn || lift) && /%|percent|per cent/i.test(t)) continue;
+      if (turn && /metre|meter|\bm\b/i.test(t)) continue; const dd = Math.min(Math.abs(n.from - r.to), Math.abs(r.from - n.to)); if (dd < bd) { bd = dd; best = n; } }
     return best;
   };
   for (const r of rs) {
@@ -162,10 +185,24 @@ function clause(d: Delexed, labels: string[], a: number, b: number, lastAdded: b
   if (!v) {
     if (recipes.length) v = 'recipe';
     else if (nav || subjects.some((s) => s.noun.type === 'scene')) v = 'goto';   // "next scene please
+    else if (things.length && definite && carries(ctx.prevVerb) && !things.some((s) => s.count !== null)) {
+      return { cmds: build(ctx.prevVerb!), verb: ctx.prevVerb };   // "…and the benches smaller", "…and the mailbox in the corner"
+    }
     else if (things.length && (things.some((s) => s.count !== null) || place || !hasMods)) v = 'add';
     else if (hasMods) v = 'edit';
-    else return [];
+    else return { cmds: [] };
   }
+  return { cmds: build(v), verb: v };
+
+  /** a gapped clause keeps the previous verb only when it fits what this clause has */
+  function carries(pv?: string): boolean {
+    if (pv === 'edit') return hasMods && !place;
+    if (pv === 'move') return !!place;
+    if (pv === 'remove' || pv === 'hide' || pv === 'show') return !hasMods && !place;
+    return false;
+  }
+
+  function build(v: string): Cmd[] {
   switch (v) {
     case 'add': return adds();
     case 'recipe': {
@@ -198,21 +235,55 @@ function clause(d: Delexed, labels: string[], a: number, b: number, lastAdded: b
     }
   }
   return [];
+  }
 }
 
 /** "it" in a later clause means the piece(s) an earlier clause added or changed (DSL `last`). */
 export const touchesPieces = (c: Cmd) => c.v === 'add' || c.v === 'recipe' || c.v === 'move' || c.v === 'edit' || c.v === 'hide' || c.v === 'show';
 
-/** All labelled words of one request → commands, split into clauses at SEP. */
-export function assemble(d: Delexed, labels: string[]): Cmd[] {
-  const out: Cmd[] = [];
-  let start = 0;
+const OBJ = /^(SUBJ|TGT|FACE|SEL-|REG-|REL-|COUNT|NAME|GROUND-|SIZE|NAV-)/;
+const PLACE = /^(REG-|REL-)/;
+
+/** Clause spans [from, to) of one request. A clause ends at a SEP word, and also (so a missed "and" or a voice
+ *  transcript without punctuation still splits):
+ *  - just before an action word, when the clause already has an action and something it acts on — a different
+ *    action ("…in the corner move the bench"), or the same one again after a thing ("put a crate … put a bench");
+ *  - just before a new count or thing, when the clause already has a thing and then a place
+ *    ("a fence along the bottom two signposts on the left"). */
+export function clauseSpans(labels: string[]): [number, number][] {
+  const out: [number, number][] = [];
+  let start = 0, act = '', obj = false, subj = false, placed = false;
+  const cut = (i: number, skip: boolean) => { out.push([start, i]); start = skip ? i + 1 : i; act = ''; obj = subj = placed = false; };
   for (let i = 0; i <= labels.length; i++) {
-    if (i === labels.length || labels[i] === 'SEP') {
-      const cs = clause(d, labels, start, i, out.some(touchesPieces));
-      out.push(...cs);
-      start = i + 1;
+    const l = labels[i];
+    if (i === labels.length || l === 'SEP') { cut(i, true); continue; }
+    const runStart = labels[i - 1] !== l || l === 'SUBJ';
+    if (l.startsWith('ACT-') && runStart) {
+      if (act && obj && (act !== l || subj)) cut(i, false);    // same verb with no thing yet ("new snowy room") stays one clause
+      act = l;
+      continue;
     }
+    if ((l === 'SUBJ' || l === 'COUNT') && runStart && subj && placed && labels[i - 1] !== 'COUNT') cut(i, false);
+    if (act && OBJ.test(l)) obj = true;
+    if (l === 'SUBJ' || l === 'SEL-again') subj = true;
+    else if (subj && PLACE.test(l)) placed = true;
   }
   return out;
 }
+
+/** All labelled words of one request → commands, plus the clause index of each command. */
+export function assembleClauses(d: Delexed, labels: string[]): { cmds: Cmd[]; clause: number[]; spans: [number, number][] } {
+  const cmds: Cmd[] = [], clause: number[] = [];
+  const spans = clauseSpans(labels);
+  let prevVerb: string | undefined;
+  spans.forEach(([a, b], k) => {
+    const againNoun = [...cmds].reverse().find((c) => c.v === 'add')?.noun as Noun | undefined;
+    const r = clauseCmds(d, labels, a, b, { lastAdded: cmds.some(touchesPieces), prevVerb, againNoun });
+    if (r.verb) prevVerb = r.verb;
+    cmds.push(...r.cmds);
+    for (const _ of r.cmds) clause.push(k);
+  });
+  return { cmds, clause, spans };
+}
+
+export function assemble(d: Delexed, labels: string[]): Cmd[] { return assembleClauses(d, labels).cmds; }

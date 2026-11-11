@@ -13,11 +13,12 @@ import { canon, printProgram } from '../src/dsl';
 import { delex } from '../src/lexicon';
 import { parseRequest, type Tagger } from '../src/index';
 
-const a = args({ model: 'gm-tagger', dtype: 'q8', device: 'cpu', set: 'heldout,dev', limit: '3000', oracle: '', fallback: '', pack: 'sleighbound', threshold: '0.6' });
+const a = args({ model: 'gm-tagger', dtype: 'q8', device: 'cpu', set: 'heldout,dev', limit: '3000', oracle: '', fallback: '', pack: 'sleighbound', threshold: '0.6', mode: 'whole' });
 const { lex } = load(a.pack);
 const sets: Record<string, { text: string; dsl: string; labels?: string[] }[]> = {
   heldout: readJsonl(join(AI, 'eval/heldout.jsonl')),
   heldout2: readJsonl(join(AI, 'eval/heldout2.jsonl')),   // 100 more, drafted by Opus (not seen by the rewrite agents); replace with real GM requests over time
+  heldout3: readJsonl(join(AI, 'eval/heldout3.jsonl')),   // multi-instruction requests (2–4 per request)
   dev: readJsonl(join(OUT, 'data/tagger/dev.jsonl')).slice(0, +a.limit),
 };
 
@@ -37,6 +38,7 @@ for (const s of a.set.split(',')) {
   const rows = sets[s] ?? [];
   if (!rows.length) { console.log(`${s}: no rows`); continue; }
   let ok = 0, lowConf = 0, lowConfWrong = 0;
+  const byN: Record<string, [number, number]> = {};   // commands in the answer → [right, total]
   const times: number[] = [];
   const fails: string[] = [];
   for (const r of rows) {
@@ -50,12 +52,14 @@ for (const s of a.set.split(',')) {
     } else if (fallback) {
       got = printProgram((await fallback(r.text)).cmds);
     } else {
-      const p = await parseRequest(r.text, lex, tagger!);
+      const p = await parseRequest(r.text, lex, tagger!, a.mode as 'clause');
       got = printProgram(p.cmds); conf = p.minConf; labels = p.labels;
       if (conf < +a.threshold) { lowConf++; if (got !== want) lowConfWrong++; }
     }
     times.push(performance.now() - t0);
-    if (got === want) ok++;
+    const k = String(Math.min(3, want.split('\n').length)) + (want.split('\n').length >= 3 ? '+' : '');
+    byN[k] ??= [0, 0]; byN[k][1]++;
+    if (got === want) { ok++; byN[k][0]++; }
     else {
       const d = delex(r.text, lex);
       fails.push(`${r.text}\n  want: ${want.replace(/\n/g, ' | ')}\n  got:  ${got.replace(/\n/g, ' | ') || '(nothing)'}${labels.length ? `\n  tags: ${d.words.map((w, i) => `${w}/${labels[i]}`).join(' ')}` : ''}${conf < 1 ? `\n  min confidence ${conf.toFixed(2)}` : ''}\n`);
@@ -65,5 +69,6 @@ for (const s of a.set.split(',')) {
   const n = times.length;
   console.log(`${s}: ${ok}/${n} exact match (${((100 * ok) / n).toFixed(1)}%)  median ${times[n >> 1].toFixed(1)} ms  p95 ${times[Math.floor(n * 0.95)].toFixed(1)} ms` +
     (tagger ? `  · below confidence ${a.threshold}: ${lowConf} (${lowConfWrong} of them wrong) → these would ask the GM to confirm` : ''));
-  writeFileSync(join(OUT, 'eval', `${name}-${s}-failures.txt`), fails.join('\n'));
+  console.log('   by commands per request: ' + Object.keys(byN).sort().map((k) => `${k}: ${byN[k][0]}/${byN[k][1]} (${((100 * byN[k][0]) / byN[k][1]).toFixed(0)}%)`).join('  '));
+  writeFileSync(join(OUT, 'eval', `${name}${a.mode === 'whole' ? '-whole' : ''}-${s}-failures.txt`), fails.join('\n'));
 }

@@ -489,7 +489,16 @@ body[data-screen=play] .toasts{bottom:calc(var(--sab) + 42dvh)}
 .ask-in{flex:1;min-width:0;font:inherit;font-size:16px;padding:8px 10px;border:2px solid var(--ink);border-radius:12px;background:var(--paper)}
 .ask-note{margin:0;font-size:.86em;color:var(--mute)}
 .ask-err{margin:0;font-size:.86em;color:var(--roseInk,#9a3b3b)}
-.ask-plan{margin:0;padding-left:20px;font-size:.92em;display:flex;flex-direction:column;gap:2px}
+.ask-plan{margin:0;padding:0;list-style:none;font-size:.92em;display:flex;flex-direction:column;gap:2px;max-height:40vh;overflow-y:auto;overscroll-behavior:contain}
+.ask-planbox{display:flex;flex-direction:column;gap:6px}
+.ask-line label{display:flex;align-items:center;gap:8px;min-height:40px;padding:2px;cursor:pointer}
+.ask-line input{flex:0 0 auto;width:22px;height:22px;margin:0;accent-color:var(--lavInk)}
+.ask-num{flex:0 0 auto;color:var(--mute);min-width:1.2em}
+.ask-what{flex:1;min-width:0}
+.ask-line.off .ask-what{color:var(--mute);text-decoration:line-through}
+.ask-unsure{flex:0 0 auto;font-size:.78em;padding:1px 6px;border:1.5px dashed var(--ink);border-radius:8px;color:var(--mute);white-space:nowrap}
+.ask-issue{margin:0 0 4px 30px;font-size:.84em;color:var(--mute)}
+.ask-issue.block{color:var(--roseInk,#9a3b3b)}
 .ask-bar{height:10px;border:2px solid var(--ink);border-radius:8px;overflow:hidden;background:var(--paper)}
 .ask-fill{display:block;height:100%;width:0;background:var(--lav);transition:width .2s}
 .lib-strip{display:flex;gap:8px;overflow-x:auto;overscroll-behavior-x:contain;padding:4px calc(var(--sar) + 2px) 4px calc(var(--sal) + 2px);scroll-snap-type:x proximity;scrollbar-width:thin}

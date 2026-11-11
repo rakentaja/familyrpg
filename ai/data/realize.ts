@@ -149,8 +149,25 @@ export class Realiser {
   }
 
   /** "the crate" / "all the trees" / "it" / "everything" */
+  /** set by request(): the next clause must refer back to what the previous one made ('it' or 'them') */
+  backRef: '' | 'it' | 'them' = '';
+  forceV?: 'remove' | 'hide' | 'show';
+
+  /** "add another one (next to it)": the same thing an earlier clause added */
+  again(prev: Noun, itRef: Ref): [Cmd[], Seg[]] {
+    const g = this.g;
+    const [place, ps] = g.chance(0.7) ? this.place(itRef, prev) : [undefined, []];
+    const lead = g.chance(0.75) ? [S(g.pick(P.add), 'ACT-add')] : [];
+    return [[{ v: 'add', count: 1, noun: prev, ...(place ? { place } : {}), mods: {} }], [...lead, S(g.pick(P.again), 'SEL-again'), ...ps]];
+  }
+
   private sel(itRef: Ref, allowEverything = true): [Sel, Seg[]] {
     const g = this.g;
+    if (this.backRef && itRef === 'last') {
+      const w = this.backRef === 'them' ? g.pick(P.themLast) : g.pick(P.itLast);
+      this.backRef = '';
+      return [{ kind: 'last' }, [S(w, 'SEL-it')]];
+    }
     const r = g.next();
     if (r < 0.15) return [{ kind: itRef === 'last' ? 'last' : 'selected' }, [S(g.pick(r < 0.12 ? P.it : P.them), 'SEL-it')]];
     if (allowEverything && r < 0.2) return [{ kind: 'all' }, [S(g.pick(P.everything), 'SEL-all')]];
@@ -255,7 +272,8 @@ export class Realiser {
 
   removeHideShow(itRef: Ref): [Cmd[], Seg[]] {
     const g = this.g;
-    const v = g.weighted<'remove' | 'hide' | 'show'>([['remove', 50], ['hide', 25], ['show', 25]]);
+    const v = this.forceV ?? g.weighted<'remove' | 'hide' | 'show'>([['remove', 50], ['hide', 25], ['show', 25]]);
+    this.forceV = undefined;
     const [sel, ss] = this.sel(itRef, v !== 'remove');
     let ws: Seg[] = [];
     if (v === 'remove' && sel.kind === 'noun' && !sel.all && g.chance(0.3)) {
@@ -352,16 +370,40 @@ export class Realiser {
   /** A whole request: 1–4 clauses joined by separators, sometimes wrapped in politeness. */
   request(): { cmds: Cmd[]; segs: Seg[] } {
     const g = this.g;
-    const n = g.weighted<number>([[1, 55], [2, 30], [3, 12], [4, 3]]);
+    const n = g.weighted<number>([[1, 45], [2, 33], [3, 16], [4, 6]]);
     const cmds: Cmd[] = [];
     const segs: Seg[] = [];
+    let prevAct = '';
     for (let i = 0; i < n; i++) {
       const itRef: Ref = cmds.some(touchesPieces) ? 'last' : 'selected';
-      const kind = g.weighted<string>([['add', 33], ['multi', 5], ['edit', 20], ['move', 9], ['rhs', 12], ['scene', 8], ['goto', 5], ['recipe', 8]]);
-      const [cs, ss] = kind === 'add' ? this.add(itRef) : kind === 'multi' ? this.multiAdd(itRef) : kind === 'edit' ? this.edit(itRef)
+      const prev = cmds[cmds.length - 1];
+      const pv = prev?.v;
+      const prevAdd = [...cmds].reverse().find((c) => c.v === 'add') as Extract<Cmd, { v: 'add' }> | undefined;
+      // after a clause that made or changed pieces, often refer straight back to them ("…and make them bigger")
+      const back = i > 0 && !!prev && touchesPieces(prev) && g.chance(0.35);
+      if (back) this.backRef = prev.v === 'add' && prev.count > 1 ? 'them' : g.chance(0.2) ? 'them' : 'it';
+      // gapping: the same verb again, said once ("hide the imps and the rats", "make the lamps bigger and the benches smaller")
+      const gap = i > 0 && !back && (pv === 'edit' || pv === 'move' || pv === 'remove' || pv === 'hide' || pv === 'show') && g.chance(0.3);
+      if (gap && (pv === 'remove' || pv === 'hide' || pv === 'show')) this.forceV = pv;
+      const kind = back ? g.weighted<string>([['edit', 60], ['move', 20], ['rhs', 20]])
+        : gap ? (pv === 'edit' ? 'edit' : pv === 'move' ? 'move' : 'rhs')
+        : prevAdd && g.chance(0.08) ? 'again'
+        : g.weighted<string>([['add', 33], ['multi', 5], ['edit', 20], ['move', 9], ['rhs', 12], ['scene', 8], ['goto', 5], ['recipe', 8]]);
+      let [cs, ss] = kind === 'add' ? this.add(itRef) : kind === 'multi' ? this.multiAdd(itRef) : kind === 'edit' ? this.edit(itRef)
         : kind === 'move' ? this.move(itRef) : kind === 'rhs' ? this.removeHideShow(itRef) : kind === 'scene' ? this.scene()
-        : kind === 'goto' ? this.goto() : this.recipe();
-      if (i > 0) segs.push(S(g.pick(P.sep), 'SEP'));
+        : kind === 'goto' ? this.goto() : kind === 'again' ? this.again(prevAdd!.noun, itRef) : this.recipe();
+      this.backRef = ''; this.forceV = undefined;
+      if (gap) {
+        const k = ss.findIndex((x) => x.text.trim());
+        if (k >= 0 && ss[k].label === `ACT-${cs[0]?.v}`) ss = ss.slice(k + 1);   // drop the repeated verb; the round-trip check keeps only rows that still mean the same
+      }
+      if (i > 0) {
+        // a different verb straight after the last clause may come with no joining word at all (voice, "…corner move the bench")
+        const first = ss.find((x) => x.text.trim());
+        const bare = !gap && first?.label.startsWith('ACT-') && first.label !== prevAct && g.chance(0.15);
+        if (!bare) segs.push(S(g.chance(0.35) ? 'and' : g.chance(0.2) ? ',' : g.pick(P.sep), 'SEP'));
+      }
+      prevAct = ss.find((x) => x.label.startsWith('ACT-'))?.label ?? prevAct;
       cmds.push(...cs);
       segs.push(...ss);
     }
