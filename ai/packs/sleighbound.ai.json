@@ -1,0 +1,604 @@
+{
+  "pack": "sleighbound",
+  "_doc": "Theme words for the GM parser. Names from the pack manifest are added automatically (prop ids with spaces, foe/item/role names). List extra ways people say each thing here. 'a|b' = singular|plural when the plural is irregular. A phrase may only point at one thing; explicit entries here win over automatic names.",
+  "exclude": [
+    "prop:dice",
+    "prop:freeze_overlay",
+    "prop:twinkle_token",
+    "prop:cracked_ice_2",
+    "prop:tile_ice",
+    "prop:tile_snow",
+    "prop:present"
+  ],
+  "noAutoName": [
+    "prop:present_gold",
+    "prop:present_rose",
+    "prop:present_sage",
+    "prop:present_ice",
+    "prop:present_lavender",
+    "prop:present_cream",
+    "prop:cracked_ice_1",
+    "prop:roof_gap_edge",
+    "prop:boss_ice_wall",
+    "prop:candy_cane_hook",
+    "prop:midnight_clock",
+    "prop:island",
+    "prop:shelves"
+  ],
+  "synonyms": {
+    "prop:crate": [
+      "box|boxes",
+      "wooden box|wooden boxes",
+      "crate"
+    ],
+    "prop:pine_tree": [
+      "tree",
+      "fir tree",
+      "fir",
+      "pine",
+      "evergreen"
+    ],
+    "prop:great_tree": [
+      "christmas tree",
+      "xmas tree",
+      "big christmas tree",
+      "giant tree"
+    ],
+    "prop:candy_cane_tree": [
+      "candy tree",
+      "candy cane tree"
+    ],
+    "prop:candy_cane_hook": [
+      "candy cane",
+      "big candy cane",
+      "candy cane hook"
+    ],
+    "prop:gingerbread_house": [
+      "cottage",
+      "cabin",
+      "little house",
+      "house",
+      "gingerbread cottage"
+    ],
+    "prop:workshop_door": [
+      "door",
+      "big door",
+      "workshop door",
+      "gate"
+    ],
+    "prop:shelves": [
+      "shelf|shelves",
+      "shelving",
+      "bookcase"
+    ],
+    "prop:fireplace": [
+      "hearth",
+      "fire place",
+      "fire"
+    ],
+    "prop:log_pile": [
+      "logs|logs",
+      "pile of logs",
+      "firewood",
+      "wood pile",
+      "woodpile"
+    ],
+    "prop:lamp_post": [
+      "lamp",
+      "street lamp",
+      "streetlight",
+      "street light",
+      "lamppost"
+    ],
+    "prop:lantern": [
+      "lantern"
+    ],
+    "prop:snow_drift": [
+      "snowdrift",
+      "snow pile",
+      "pile of snow",
+      "drift",
+      "snow bank",
+      "snowbank"
+    ],
+    "prop:rock": [
+      "stone",
+      "boulder"
+    ],
+    "prop:fence": [
+      "fence",
+      "railing"
+    ],
+    "prop:bench": [
+      "seat",
+      "park bench"
+    ],
+    "prop:signpost": [
+      "sign",
+      "sign post",
+      "road sign"
+    ],
+    "prop:mailbox": [
+      "postbox",
+      "post box",
+      "letterbox",
+      "mail box"
+    ],
+    "prop:sleigh": [
+      "sleigh",
+      "santa's sleigh",
+      "slay"
+    ],
+    "prop:sled": [
+      "sledge",
+      "toboggan"
+    ],
+    "prop:snowman": [
+      "snow man|snow men",
+      "snowman|snowmen"
+    ],
+    "prop:toy_pile": [
+      "toys|toys",
+      "pile of toys",
+      "toy heap"
+    ],
+    "prop:toy_train": [
+      "train",
+      "train set"
+    ],
+    "prop:rocking_horse": [
+      "rocking horse",
+      "toy horse",
+      "hobby horse"
+    ],
+    "prop:workbench": [
+      "work bench",
+      "table",
+      "work table",
+      "workshop table"
+    ],
+    "prop:gift_sack": [
+      "sack",
+      "bag",
+      "santa's sack",
+      "present sack",
+      "gift bag"
+    ],
+    "prop:wreath_stand": [
+      "wreath"
+    ],
+    "prop:cocoa_stand": [
+      "cocoa stall",
+      "hot chocolate stand",
+      "cocoa cart"
+    ],
+    "prop:cocoa_mug": [
+      "mug",
+      "cup",
+      "cocoa mug"
+    ],
+    "prop:chimney": [
+      "chimney"
+    ],
+    "prop:roof_segment": [
+      "roof",
+      "roof piece",
+      "rooftop"
+    ],
+    "prop:roof_gap_edge": [
+      "roof edge",
+      "roof gap"
+    ],
+    "prop:icicles": [
+      "icicle|icicles"
+    ],
+    "prop:water_hole": [
+      "hole in the ice",
+      "ice hole",
+      "water hole",
+      "pond"
+    ],
+    "prop:cracked_ice_1": [
+      "cracked ice",
+      "crack",
+      "thin ice"
+    ],
+    "prop:cave_entrance": [
+      "cave",
+      "cave mouth",
+      "cave entrance",
+      "tunnel"
+    ],
+    "prop:cave_wall": [
+      "cave wall",
+      "rock wall"
+    ],
+    "prop:boss_ice_wall": [
+      "ice wall",
+      "wall of ice",
+      "boss wall"
+    ],
+    "prop:gumdrop_bush": [
+      "bush",
+      "shrub",
+      "gumdrop bush",
+      "hedge"
+    ],
+    "prop:crumb_trail": [
+      "crumbs|crumbs",
+      "trail of crumbs",
+      "crumb trail"
+    ],
+    "prop:sticky_path": [
+      "sticky path",
+      "toffee path",
+      "syrup"
+    ],
+    "prop:jingle_bell": [
+      "bell",
+      "big bell"
+    ],
+    "prop:coal_lump": [
+      "coal",
+      "lump of coal",
+      "coal lump"
+    ],
+    "prop:star": [
+      "star",
+      "tree star",
+      "golden star"
+    ],
+    "prop:midnight_clock": [
+      "clock",
+      "big clock",
+      "midnight clock"
+    ],
+    "prop:island": [
+      "island",
+      "ice island",
+      "floe",
+      "ice floe",
+      "iceberg"
+    ],
+    "prop:present_gold": [
+      "gold present",
+      "golden present",
+      "yellow present"
+    ],
+    "prop:present_rose": [
+      "pink present",
+      "rose present",
+      "red present"
+    ],
+    "prop:present_sage": [
+      "green present",
+      "sage present"
+    ],
+    "prop:present_ice": [
+      "blue present",
+      "ice present"
+    ],
+    "prop:present_lavender": [
+      "purple present",
+      "lavender present"
+    ],
+    "prop:present_cream": [
+      "white present",
+      "cream present"
+    ],
+    "prop:snowball": [
+      "snowball",
+      "snow ball",
+      "pile of snowballs"
+    ],
+    "foe:grumpling": [
+      "grumpy",
+      "grump",
+      "grumplin",
+      "goblin"
+    ],
+    "foe:coal-imp": [
+      "imp",
+      "coal imp",
+      "cole imp",
+      "fire imp"
+    ],
+    "foe:wind-up-rat": [
+      "rat",
+      "wind up rat",
+      "windup rat",
+      "clockwork rat",
+      "mouse|mice"
+    ],
+    "foe:blizzard-wisp": [
+      "wisp",
+      "blizzard wisp",
+      "ghost",
+      "snow ghost",
+      "spirit"
+    ],
+    "foe:snow-golem": [
+      "golem",
+      "snow golem",
+      "snow monster"
+    ],
+    "foe:grumbleweed": [
+      "troll",
+      "winter troll",
+      "boss",
+      "grumble weed"
+    ],
+    "hero:reindeer-flyer": [
+      "reindeer|reindeer",
+      "flying reindeer"
+    ],
+    "hero:snow-sprite": [
+      "sprite",
+      "snow fairy",
+      "fairy"
+    ],
+    "hero:gingerbread-scout": [
+      "gingerbread man|gingerbread men",
+      "gingerbread scout",
+      "cookie scout"
+    ],
+    "hero:toy-soldier": [
+      "soldier",
+      "toy soldier",
+      "nutcracker"
+    ],
+    "hero:carol-singer": [
+      "singer",
+      "caroler",
+      "caroller"
+    ],
+    "hero:polar-bear-baker": [
+      "polar bear",
+      "bear",
+      "baker"
+    ],
+    "hero:star-keeper": [
+      "star keeper",
+      "keeper"
+    ],
+    "item:hot-cocoa": [
+      "hot chocolate",
+      "cocoa"
+    ],
+    "item:cookie": [
+      "cookie",
+      "biscuit"
+    ],
+    "item:snowball": [
+      "snowball item",
+      "snowball pickup"
+    ],
+    "item:candy-cane-hook": [
+      "candy cane hook",
+      "hook"
+    ],
+    "item:jingle-bell": [
+      "jingle bell"
+    ],
+    "item:mystery-present": [
+      "mystery present",
+      "mystery box",
+      "mystery gift"
+    ],
+    "item:sled": [
+      "sled item",
+      "sled pickup"
+    ],
+    "item:lantern": [
+      "lantern item",
+      "lantern pickup"
+    ],
+    "item:harness-bell": [
+      "harness bell"
+    ],
+    "item:snowflake-charm": [
+      "snowflake",
+      "charm",
+      "snowflake charm"
+    ],
+    "item:gumdrop": [
+      "gumdrop",
+      "sweet",
+      "candy"
+    ],
+    "item:drum": [
+      "drum"
+    ],
+    "item:songbook": [
+      "song book",
+      "book"
+    ],
+    "item:rolling-pin": [
+      "rolling pin"
+    ],
+    "token:goal": [
+      "present",
+      "gift",
+      "parcel",
+      "package"
+    ],
+    "token:star": [
+      "star token",
+      "twinkle",
+      "sparkle"
+    ],
+    "token:clue": [
+      "clue",
+      "hint",
+      "footprints|footprints",
+      "tracks|tracks"
+    ],
+    "token:npc": [
+      "villager",
+      "helper",
+      "friend"
+    ],
+    "token:exit": [
+      "exit",
+      "way out"
+    ],
+    "token:start": [
+      "start spot",
+      "starting point",
+      "hero start",
+      "spawn"
+    ]
+  },
+  "tokens": [
+    "goal",
+    "star",
+    "clue",
+    "npc",
+    "exit",
+    "start"
+  ],
+  "recipes": {
+    "cabin": {
+      "names": [
+        "cabin interior",
+        "cosy cabin",
+        "cozy cabin",
+        "log cabin"
+      ],
+      "body": [
+        "scene add \"Cosy Cabin\" 8x8 ground:floor",
+        "add prop:fireplace side:n",
+        "add prop:rocking_horse near:prop:fireplace",
+        "add 2 prop:shelves side:w",
+        "add 3 prop:crate cluster corner:se",
+        "add prop:log_pile near:prop:fireplace"
+      ]
+    },
+    "workshop": {
+      "names": [
+        "workshop",
+        "toy workshop",
+        "toy factory"
+      ],
+      "body": [
+        "scene add \"Toy Workshop\" 10x10 ground:floor",
+        "add prop:workshop_door side:n",
+        "add 3 prop:workbench center",
+        "add 3 prop:shelves side:w",
+        "add 2 prop:toy_pile spread",
+        "add prop:toy_train side:e"
+      ]
+    },
+    "forest_path": {
+      "names": [
+        "forest path",
+        "forest",
+        "woods",
+        "snowy forest",
+        "forest trail"
+      ],
+      "body": [
+        "scene add \"Forest Path\" 10x14 ground:snow",
+        "add 4 prop:pine_tree side:w",
+        "add 4 prop:pine_tree side:e",
+        "add 2 prop:snow_drift spread",
+        "add prop:signpost center"
+      ]
+    },
+    "frozen_pond": {
+      "names": [
+        "frozen pond",
+        "ice lake",
+        "skating pond"
+      ],
+      "body": [
+        "scene add \"Frozen Pond\" 12x12 ground:ice",
+        "add prop:water_hole center",
+        "add 2 prop:cracked_ice_1 spread",
+        "add 3 prop:pine_tree side:n",
+        "add prop:bench side:s"
+      ]
+    },
+    "ice_cave": {
+      "names": [
+        "ice cave",
+        "troll cave",
+        "frozen cave"
+      ],
+      "body": [
+        "scene add \"Ice Cave\" 10x12 ground:ice",
+        "add prop:cave_entrance side:s",
+        "add 3 prop:cave_wall side:w",
+        "add 3 prop:cave_wall side:e",
+        "add 2 prop:icicles spread",
+        "add 2 prop:rock spread"
+      ]
+    },
+    "rooftops": {
+      "names": [
+        "rooftops",
+        "roofs",
+        "rooftop run"
+      ],
+      "body": [
+        "scene add \"Rooftops\" 9x12 ground:roof",
+        "add 2 prop:chimney spread",
+        "add prop:roof_gap_edge center",
+        "add 2 prop:snow_drift spread"
+      ]
+    },
+    "village_square": {
+      "names": [
+        "village square",
+        "village",
+        "town square",
+        "market"
+      ],
+      "body": [
+        "scene add \"Village Square\" 12x12 ground:snow",
+        "add prop:great_tree center",
+        "add 4 prop:lamp_post around:prop:great_tree",
+        "add prop:cocoa_stand side:e",
+        "add 2 prop:bench side:s",
+        "add prop:mailbox side:w"
+      ]
+    },
+    "boss_arena": {
+      "names": [
+        "boss arena",
+        "boss fight",
+        "troll fight",
+        "final fight",
+        "showdown"
+      ],
+      "body": [
+        "scene add \"Troll's Lair\" 12x12 ground:ice",
+        "add prop:boss_ice_wall side:n",
+        "add 4 prop:rock spread",
+        "add 2 prop:icicles side:e",
+        "add foe:grumbleweed side:n"
+      ]
+    }
+  },
+  "sceneNames": [
+    "Workshop Chaos",
+    "Frozen Lake",
+    "Rooftop Run",
+    "The Ice Cave",
+    "Candy Lane",
+    "Reindeer Stables",
+    "Snowy Hill",
+    "Gingerbread Village",
+    "Troll Bridge",
+    "Mail Room",
+    "Cocoa Corner",
+    "Star Tower",
+    "Sleigh Garage",
+    "Whispering Woods",
+    "North Gate",
+    "Bakery",
+    "Lantern Street",
+    "Icicle Hall",
+    "Present Vault"
+  ]
+}

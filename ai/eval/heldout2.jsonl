@@ -1,0 +1,100 @@
+{"text": "stick a snowman in the middle", "dsl": "add prop:snowman center"}
+{"text": "I want three grumplings near the sleigh", "dsl": "add 3 foe:grumpling near:prop:sleigh"}
+{"text": "can you add a fence along the bottom", "dsl": "add prop:fence side:s"}
+{"text": "put a blizzard wisp behind the rock, hidden", "dsl": "add foe:blizzard-wisp behind:prop:rock hidden"}
+{"text": "add a couple of logs by the fireplace", "dsl": "add 2 prop:log_pile near:prop:fireplace"}
+{"text": "a mailbox in the bottom right corner", "dsl": "add prop:mailbox corner:se"}
+{"text": "place 4 candy cane trees around the gingerbread house", "dsl": "add 4 prop:candy_cane_tree around:prop:gingerbread_house"}
+{"text": "we need a signpost on the left", "dsl": "add prop:signpost side:w"}
+{"text": "um put a workbench at the back", "dsl": "add prop:workbench side:n"}
+{"text": "add the toy soldier next to the workbench", "dsl": "add hero:toy-soldier near:prop:workbench"}
+{"text": "put a clue on the workbench", "dsl": "add token:clue on:prop:workbench"}
+{"text": "add an exit on the right side", "dsl": "add token:exit side:e"}
+{"text": "scatter some gumdrop bushes about", "dsl": "add 3 prop:gumdrop_bush spread"}
+{"text": "pile up five presents in the corner", "dsl": "add 5 token:goal corner cluster"}
+{"text": "two wind-up rats in front of the toy train", "dsl": "add 2 foe:wind-up-rat front_of:prop:toy_train"}
+{"text": "put a lamp post to the left of the bench", "dsl": "add prop:lamp_post left_of:prop:bench"}
+{"text": "add a wreath stand to the right of the door", "dsl": "add prop:wreath_stand right_of:prop:workshop_door"}
+{"text": "secretly put a coal imp behind the chimney", "dsl": "add foe:coal-imp behind:prop:chimney hidden"}
+{"text": "add a big christmas tree in the centre", "dsl": "add prop:great_tree center"}
+{"text": "put the polar bear baker by the cocoa stand", "dsl": "move hero:polar-bear-baker near:prop:cocoa_stand"}
+{"text": "a gift sack on the sleigh please", "dsl": "add prop:gift_sack on:prop:sleigh"}
+{"text": "add a snowball next to the snowman", "dsl": "add prop:snowball near:prop:snowman"}
+{"text": "chuck some rocks around the water hole", "dsl": "add 3 prop:rock around:prop:water_hole"}
+{"text": "add six icicles along the top", "dsl": "add 6 prop:icicles side:n"}
+{"text": "put grumbleweed at the back of the cave", "dsl": "add foe:grumbleweed side:n"}
+{"text": "add a snow golem facing the middle", "dsl": "add foe:snow-golem face:center"}
+{"text": "drop a cookie near the gingerbread scout", "dsl": "add item:cookie near:hero:gingerbread-scout"}
+{"text": "put a jingle bell on the shelves", "dsl": "add item:jingle-bell on:prop:shelves"}
+{"text": "add a star on top of the great tree", "dsl": "add token:star on:prop:great_tree"}
+{"text": "can we get a hero start spot in the bottom left corner", "dsl": "add token:start corner:sw"}
+{"text": "make the snowman huge", "dsl": "edit prop:snowman scale:up"}
+{"text": "make all the rocks smaller", "dsl": "edit all prop:rock scale:down"}
+{"text": "shrink the crates", "dsl": "edit all prop:crate scale:down"}
+{"text": "make this one double size", "dsl": "edit selected scale:x2"}
+{"text": "half the size of the golem", "dsl": "edit foe:snow-golem scale:x0.5"}
+{"text": "make the sleigh 20% bigger", "dsl": "edit prop:sleigh scale:+20%"}
+{"text": "put the fence back to normal size", "dsl": "edit prop:fence scale:reset"}
+{"text": "turn the bench to the right", "dsl": "edit prop:bench turn:90"}
+{"text": "rotate it 90 degrees", "dsl": "edit selected turn:90"}
+{"text": "turn the signpost around", "dsl": "edit prop:signpost turn:180"}
+{"text": "spin the sled to the left", "dsl": "edit prop:sled turn:-90"}
+{"text": "make the snow golem face the door", "dsl": "edit foe:snow-golem face:prop:workshop_door"}
+{"text": "turn all the imps to face the middle", "dsl": "edit all foe:coal-imp face:center"}
+{"text": "raise the lantern", "dsl": "edit prop:lantern y:up"}
+{"text": "lift the star as high as it goes", "dsl": "edit prop:star y:max"}
+{"text": "put the bell back down on the ground", "dsl": "edit prop:jingle_bell y:floor"}
+{"text": "hide this one", "dsl": "hide selected"}
+{"text": "hide all the grumplings", "dsl": "hide all foe:grumpling"}
+{"text": "show the snow golem", "dsl": "show foe:snow-golem"}
+{"text": "show everything", "dsl": "show all"}
+{"text": "make the presents visible", "dsl": "edit all token:goal shown"}
+{"text": "remove the sleigh", "dsl": "remove prop:sleigh"}
+{"text": "take away all the trees", "dsl": "remove all prop:pine_tree"}
+{"text": "get rid of that", "dsl": "remove selected"}
+{"text": "delete the rock behind the cabin", "dsl": "remove prop:rock behind:prop:gingerbread_house"}
+{"text": "remove all the coal imps", "dsl": "remove all foe:coal-imp"}
+{"text": "move the mailbox to the corner", "dsl": "move prop:mailbox corner"}
+{"text": "move the sleigh to the middle", "dsl": "move prop:sleigh center"}
+{"text": "put the bench next to the lamp post", "dsl": "move prop:bench near:prop:lamp_post"}
+{"text": "move it behind the tree", "dsl": "move selected behind:prop:pine_tree"}
+{"text": "move the golem to the back", "dsl": "move foe:snow-golem side:n"}
+{"text": "move all the crates to the right side", "dsl": "move all prop:crate side:e"}
+{"text": "start a new scene", "dsl": "scene add"}
+{"text": "new rooftop scene called Chimney Hop", "dsl": "scene add \"Chimney Hop\" ground:roof"}
+{"text": "make a small icy scene", "dsl": "scene add 6x6 ground:ice"}
+{"text": "add a scene 12 by 12 with snow", "dsl": "scene add 12x12 ground:snow"}
+{"text": "make this scene bigger", "dsl": "scene set up"}
+{"text": "make the scene smaller", "dsl": "scene set down"}
+{"text": "change the floor to ice", "dsl": "scene set ground:ice"}
+{"text": "call this scene The Toy Shop", "dsl": "scene set \"The Toy Shop\""}
+{"text": "duplicate the scene", "dsl": "scene copy"}
+{"text": "get rid of this scene", "dsl": "scene delete"}
+{"text": "go back a scene", "dsl": "goto prev"}
+{"text": "go to the first scene", "dsl": "goto first"}
+{"text": "jump to the last scene", "dsl": "goto last"}
+{"text": "take me to the frozen lake", "dsl": "goto scene:frozen-lake"}
+{"text": "open the ice cave scene", "dsl": "goto scene:ice-cave"}
+{"text": "go to scene two", "dsl": "goto 2"}
+{"text": "set up a workshop", "dsl": "recipe recipe:workshop"}
+{"text": "make a village square, not too busy", "dsl": "recipe recipe:village_square sparse"}
+{"text": "build a boss arena", "dsl": "recipe recipe:boss_arena"}
+{"text": "give me a frozen pond", "dsl": "recipe recipe:frozen_pond"}
+{"text": "rooftops scene with lots of stuff", "dsl": "recipe recipe:rooftops dense"}
+{"text": "put two snowmen by the door and hide a grumpling behind the crates", "dsl": "add 2 prop:snowman near:prop:workshop_door\nadd foe:grumpling behind:prop:crate hidden"}
+{"text": "add a fireplace at the back then put a log pile next to it", "dsl": "add prop:fireplace side:n\nadd prop:log_pile near:last"}
+{"text": "remove the rocks and make the trees bigger", "dsl": "remove all prop:rock\nedit all prop:pine_tree scale:up"}
+{"text": "add a sleigh in the middle and turn it around", "dsl": "add prop:sleigh center\nedit last turn:180"}
+{"text": "go to the next scene and hide everything", "dsl": "goto next\nhide all"}
+{"text": "make a forest path, then add three hidden coal imps", "dsl": "recipe recipe:forest_path\nadd 3 foe:coal-imp hidden"}
+{"text": "new snowy scene, a snowman in the middle and two lamp posts on the left", "dsl": "scene add ground:snow\nadd prop:snowman center\nadd 2 prop:lamp_post side:w"}
+{"text": "hide the golem and show the imps", "dsl": "hide foe:snow-golem\nshow all foe:coal-imp"}
+{"text": "put a cocoa stand on the right and a carol singer next to it", "dsl": "add prop:cocoa_stand side:e\nadd hero:carol-singer near:last"}
+{"text": "add a fence and a signpost at the front", "dsl": "add prop:fence side:s\nadd prop:signpost side:s"}
+{"text": "um can you like put a rat behind the shelves and hide it", "dsl": "add foe:wind-up-rat behind:prop:shelves\nhide last"}
+{"text": "plz add 3 crates top right", "dsl": "add 3 prop:crate corner:ne"}
+{"text": "put a snowmann by the mailbox", "dsl": "add prop:snowman near:prop:mailbox"}
+{"text": "make the gingerbred house smaller", "dsl": "edit prop:gingerbread_house scale:down"}
+{"text": "add two blizard wisps in the middle", "dsl": "add 2 foe:blizzard-wisp center"}
+{"text": "put the presents round the tree", "dsl": "move all token:goal around:prop:pine_tree"}
+{"text": "rotate the sleigh 45 degrees left", "dsl": "edit prop:sleigh turn:-45"}
