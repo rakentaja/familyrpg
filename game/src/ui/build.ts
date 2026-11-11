@@ -82,7 +82,7 @@ export function buildTools(d: BuildDeps) {
   const doneBtn = btn([icon('check'), ' Done'], () => setOn(false), 'small ghost lib-done');
   const ask = askCard({
     pack, state: d.state, dispatch, selected: () => sel, placeHidden: () => placeHidden,
-    done: (t) => { const p = t[t.length - 1]; if (p) { sel = p; armed = null; paintStrip(); } ask.close(); paintAsk(); paintPanel(true); },
+    done: (t) => { const p = t[t.length - 1]; if (p) { sel = p; armed = null; paintStrip(); } },   // the card stays open: the next request can say "it"
   });
   const askBtn = btn([icon('sparkle'), ' Ask'], () => { ask.toggle(); if (ask.isOpen) { armed = null; paintStrip(); } paintAsk(); paintPanel(true); }, 'small lib-ask', { 'aria-label': 'Ask the helper' });
   const paintAsk = () => { askBtn.classList.toggle('on', ask.isOpen); askBtn.hidden = !store.isHost(); };

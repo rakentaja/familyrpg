@@ -90,8 +90,11 @@ export function askCard(d: AskDeps) {
     const msg = !p.cmds.length
       ? h('p', { class: 'ask-err' }, p.unknown.length ? `I don’t have “${p.unknown.join('”, “')}”. Try another word.` : 'Sorry, I didn’t catch that. Try saying it another way.')
       : h('p', { class: 'ask-note' }, p.sure ? 'I will:' : 'Not quite sure — is this right?');
+    const doIt = btn([icon('check'), ' Do it'], apply, 'small primary');
     replaceKids(el, head, row, msg, p.cmds.length ? h('ul', { class: 'ask-plan' }, items) : null,
-      p.cmds.length ? h('div', { class: 'pc-row' }, btn([icon('check'), ' Do it'], apply, 'small primary'), btn('Cancel', () => { plan = null; state = 'ready'; paint(); }, 'small ghost')) : null);
+      p.cmds.length ? h('div', { class: 'pc-row' }, doIt, btn('Cancel', () => { plan = null; state = 'ready'; paint(); }, 'small ghost')) : null);
+    // Enter again runs it; with nothing to do, keep typing
+    setTimeout(() => (p.cmds.length ? doIt : input)?.focus(), 0);
   }
 
   function open() { el.hidden = false; if (state === 'loading' && !bar) start(); else paint(); }
