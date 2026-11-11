@@ -180,6 +180,7 @@ export function options(state: GameState, me: string, heroId: string | null, hit
           G({ id: 'g:turn', label: 'Turn', icon: 'rotr', action: { t: 'guide', op: { k: 'edit', what: 'prop', id: pl.uid, rot: (pl.rot ?? 0) + 45 } } });
           G({ id: 'g:remove', label: 'Remove', icon: 'trash', action: { t: 'guide', op: { k: 'remove', what: 'prop', id: pl.uid } } });
           G({ id: 'g:build', label: 'Edit', icon: 'edit', hint: 'Move, turn, resize, hide or remove it' });
+          if (s.mode === 'edit') G({ id: 'g:clone', label: 'Clone', icon: 'copy', hint: 'Make another one beside it', action: { t: 'guide', op: { k: 'add', what: 'prop', model: pl.model, at: { x: pl.x + 0.5, z: pl.z + 0.5 }, rot: pl.rot, scale: pl.scale, y: pl.y, hidden: pl.hidden === true } } });
         }
         if (hidden?.hidden) G({ id: 'g:reveal', label: 'Reveal', icon: 'reveal', hint: tokenName(pack, hidden), action: { t: 'guide', op: { k: 'reveal', tokenUid: hidden.uid } } });
         break;
@@ -212,7 +213,7 @@ export function options(state: GameState, me: string, heroId: string | null, hit
         if (playing || s.phase === 'intro') G({ id: 'g:end', label: 'End scene', icon: 'flag', action: { t: 'guide', op: { k: 'endScene', result: 'won' } } });
         break;
     }
-    G({ id: 'g:camera', label: 'Cameras here', icon: 'camera', action: { t: 'guide', op: { k: 'camera', at: hit.at } } });
+    if (!(s.mode === 'edit' && hit.kind === 'prop' && sc?.props[hit.index]?.uid)) G({ id: 'g:camera', label: 'Cameras here', icon: 'camera', action: { t: 'guide', op: { k: 'camera', at: hit.at } } });
   }
   out.push({ id: 'inspect', label: 'Look closer', icon: 'inspect', hint: describe(s, hit, pack, guide) });
   return out;

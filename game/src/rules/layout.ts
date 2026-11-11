@@ -272,6 +272,8 @@ function addPiece(c: Ctx, op: Extract<GuideOp, { k: 'add' }>) {
     const p = snap(at);
     const pl: PackScene['props'][number] = { uid: newUid(c, 'p'), model: op.model!, x: p.x, z: p.z };
     if (rot) pl.rot = rot;
+    if (op.scale !== undefined) { const k = r2(num(op.scale, 0.25, 4, 1)); if (k !== 1) pl.scale = k; }
+    if (op.y !== undefined) { const y = r2(num(op.y, 0, MAX_Y, 0)); if (y > 0) pl.y = y; }
     if (hidden) pl.hidden = true;
     sc.props.push(pl);
     fx(c, { k: 'place', id: pl.uid!, at: p });

@@ -203,7 +203,7 @@ export type GuideOp =
   | { k: 'camera'; at: P }
   | { k: 'endScene'; result: 'won' | 'lost' }
   // layout (the host only): new pieces go into the scene's layout too, hidden unless hidden: false
-  | { k: 'add'; what: 'prop' | 'foe' | 'token'; at: P; model?: string; foe?: string; kind?: TokenKind; item?: string; label?: string; text?: string; rot?: number; hidden?: boolean }
+  | { k: 'add'; what: 'prop' | 'foe' | 'token'; at: P; model?: string; foe?: string; kind?: TokenKind; item?: string; label?: string; text?: string; rot?: number; scale?: number; y?: number; hidden?: boolean }
   | { k: 'edit'; what: 'prop' | 'foe' | 'token'; id: string; rot?: number; scale?: number; y?: number; hidden?: boolean; label?: string; text?: string }
   | { k: 'hideAll'; hidden: boolean }                                                     // show / hide every piece in the scene
   | { k: 'scene'; op: 'goto' | 'add' | 'copy' | 'delete' | 'up' | 'down' | 'set'; index?: number;
