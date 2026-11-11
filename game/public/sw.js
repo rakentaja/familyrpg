@@ -62,6 +62,7 @@ self.addEventListener('fetch', (e) => {
   if (!url.href.startsWith(BASE)) return;                       // relays, other sites: straight to network
   const rel = url.href.slice(BASE.length);
   if (rel.startsWith('v2/')) return;                              // the v2 preview has its own service worker
+  if (rel.startsWith('ai/')) return;                              // the optional helper model: the browser keeps it (transformers.js cache)
   if (rel.startsWith('assets/')) { e.respondWith(cacheFirst(req, ASSET_CACHE)); return; }
   if (rel.startsWith('packs/')) { e.respondWith(networkFirst(req, PACK_CACHE)); return; }
   if (req.mode === 'navigate') { e.respondWith(shellNavigate(req)); return; }

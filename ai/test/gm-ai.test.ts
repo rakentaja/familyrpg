@@ -19,6 +19,10 @@ describe('dsl', () => {
     for (const bad of ['add', 'add 99 prop:crate', 'edit prop:crate', 'move prop:crate', 'goto nowhere', 'scene paint', 'add prop:crate scale:huge'])
       expect(() => parseCmd(bad)).toThrow();
   });
+  test('every recipe body is canonical DSL', () => {
+    const ai = JSON.parse(readFileSync(join(AI, 'packs/sleighbound.ai.json'), 'utf8'));
+    for (const r of Object.values<any>(ai.recipes)) for (const l of r.body) expect(canon(l)).toBe(l);
+  });
   test('decoding regex accepts every held-out answer', () => {
     const re = new RegExp(`^${dslRegex(lex)}$`);
     for (const r of heldout) expect(re.test(r.dsl)).toBe(true);

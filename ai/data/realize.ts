@@ -101,7 +101,14 @@ export class Realiser {
     const plural = count > 1;
     const mods: Mods = {};
     const pre: Seg[] = [], post: Seg[] = [];
-    if (noun.type === 'foe' ? g.chance(0.45) : g.chance(0.08)) { mods.hidden = true; post.push(S(g.pick(P.hidden), 'MOD-hidden')); }
+    let hideVerb = false;
+    if (noun.type === 'foe' ? g.chance(0.45) : g.chance(0.08)) {
+      mods.hidden = true;
+      const h = g.next();
+      if (h < 0.3) pre.push(S(g.pick(P.hiddenPre), 'MOD-hidden'));
+      else if (h < 0.5) hideVerb = true;
+      else post.push(S(g.pick(P.hidden), 'MOD-hidden'));
+    }
     else if (g.chance(0.03)) { mods.hidden = false; post.push(S(g.pick(P.shown), 'MOD-shown')); }
     if (plural && g.chance(0.15)) { mods.cluster = true; post.push(S(g.pick(P.cluster), 'MOD-cluster')); }
     if (g.chance(0.07)) { mods.scale = 'up'; pre.push(S(g.pick(['big', 'large', 'tall', 'extra big']), 'MOD-scale_up')); }
@@ -115,7 +122,9 @@ export class Realiser {
     const hasCount = subj.some((s) => s.label === 'COUNT');
     let segs: Seg[];
     const v = g.next();
-    if (place && 'region' in place && place.region === 'spread' && g.chance(0.3)) {
+    if (hideVerb && (place || hasCount)) segs = [S(g.pick(P.hideAdd), 'MOD-hidden'), ...subj, ...post, ...placeSegs, ...faceSegs];   // "hide a grumpling behind the crates"
+    else if (hideVerb) segs = [verb, ...subj, ...post, S(g.pick(P.hidden), 'MOD-hidden'), ...placeSegs, ...faceSegs];
+    else if (place && 'region' in place && place.region === 'spread' && g.chance(0.3)) {
       segs = [S(g.pick(P.scatterVerb), 'REG-spread'), ...subj.filter((s) => s.label !== 'O' || plural), ...post, ...faceSegs];
     } else if (v < 0.25 && (place || hasCount)) segs = [...subj, ...post, ...placeSegs, ...faceSegs];           // no verb
     else if (v < 0.35 && place) segs = [...placeSegs, S(g.pick([',', ''])), verb, ...subj, ...post, ...faceSegs];
@@ -159,7 +168,7 @@ export class Realiser {
     const g = this.g;
     const [sel, ss] = this.sel(itRef);
     const mods: Mods = {};
-    const kind = g.weighted<string>([['scale', 45], ['turn', 25], ['lift', 15], ['face', 15]]);
+    const kind = g.weighted<string>([['scale', 42], ['turn', 25], ['lift', 15], ['face', 13], ['vis', 6]]);
     const make = S(g.pick(P.edit), 'ACT-edit');
     let segs: Seg[] = [];
     if (kind === 'scale') {
@@ -183,8 +192,8 @@ export class Realiser {
       }
     } else if (kind === 'turn') {
       const t = g.weighted<string>([['right', 30], ['left', 20], ['around', 30], ['deg', 20]]);
-      if (t === 'right') { mods.turn = 90; segs = [S(g.pick(P.turn_right), 'MOD-turn_right'), ...ss]; }
-      else if (t === 'left') { mods.turn = -90; segs = g.chance(0.5) ? [S(g.pick(P.turn_left), 'MOD-turn_left'), ...ss] : [S(g.pick(['turn', 'rotate', 'spin']), 'MOD-turn_left'), ...ss, S(g.pick(['left', 'to the left', 'anticlockwise']), 'MOD-turn_left')]; }
+      if (t === 'right') { mods.turn = 90; segs = g.chance(0.5) ? [S(g.pick(P.turn_right), 'MOD-turn_right'), ...ss] : [S(g.pick(['turn', 'rotate', 'spin']), 'MOD-turn_right'), ...ss, S(g.pick(['right', 'to the right', 'clockwise', 'to the right a bit']), 'MOD-turn_right')]; }
+      else if (t === 'left') { mods.turn = -90; segs = g.chance(0.5) ? [S(g.pick(P.turn_left), 'MOD-turn_left'), ...ss] : [S(g.pick(['turn', 'rotate', 'spin']), 'MOD-turn_left'), ...ss, S(g.pick(['left', 'to the left', 'anticlockwise', 'to the left a bit']), 'MOD-turn_left')]; }
       else if (t === 'around') { mods.turn = 180; segs = g.chance(0.5) ? [S(g.pick(P.turn_around), 'MOD-turn_around'), ...ss] : [S(g.pick(['turn', 'spin', 'flip']), 'MOD-turn_around'), ...ss, S(g.pick(P.turn_around_after), 'MOD-turn_around')]; }
       else {
         const n = g.pick([15, 30, 45, 60, 90, 120, 135]);
@@ -200,6 +209,10 @@ export class Realiser {
       else if (l === 'max') { mods.y = 'max'; segs = [S(g.pick(['lift', 'raise', 'put', 'move'])), ...ss, S(g.pick(P.lift_max), 'MOD-lift_max')].map((s, i) => (i === 0 ? { ...s, label: 'MOD-lift_max' } : s)); }
       else if (l === 'down') { mods.y = 'down'; segs = [S(g.pick(['lower', 'bring down', 'drop'])), ...ss].map((s, i) => (i === 0 ? { ...s, label: 'MOD-lift_down' } : s)); }
       else { mods.y = 'floor'; segs = [S(g.pick(['put', 'set', 'drop'])), ...ss, S(g.pick(P.lift_floor), 'MOD-lift_floor')].map((s, i) => (i === 0 ? { ...s, label: 'MOD-lift_floor' } : s)); }
+    } else if (kind === 'vis') {
+      const hid = g.chance(0.5);
+      mods.hidden = hid;
+      segs = [make, ...ss, S(g.pick(hid ? P.hiddenAdj : P.shownAdj), hid ? 'MOD-hidden' : 'MOD-shown')];
     } else {
       const [f, fs] = this.face(itRef);
       mods.face = f;
@@ -233,7 +246,13 @@ export class Realiser {
     const g = this.g;
     const op = g.weighted<string>([['add', 45], ['ground', 15], ['rename', 10], ['resize', 10], ['copy', 10], ['delete', 10]]);
     const nameSeg = (): [string, Seg[]] => {
-      const name = g.chance(0.6) ? g.pick(this.sceneNames()) : `${g.pick(['Snowy', 'Frosty', 'Sparkly', 'Quiet', 'Gloomy', 'Merry', 'Hidden', 'Old', 'Little', 'Windy'])} ${g.pick(['Hollow', 'Lane', 'Meadow', 'Garden', 'Hall', 'Hill', 'Corner', 'Yard', 'Path', 'Den'])}`;
+      const r = g.next();
+      const cap = (x: string) => x.replace(/\b\w/g, (c) => c.toUpperCase());
+      const tail = () => g.pick(['Hollow', 'Lane', 'Meadow', 'Garden', 'Hall', 'Hill', 'Corner', 'Yard', 'Path', 'Den', 'Hop', 'Shop', 'Town', 'Square', 'Run']);
+      let name = r < 0.45 ? g.pick(this.sceneNames())
+        : r < 0.75 ? `${g.pick(['Snowy', 'Frosty', 'Sparkly', 'Quiet', 'Gloomy', 'Merry', 'Hidden', 'Old', 'Little', 'Windy'])} ${tail()}`
+        : `${cap(this.name(this.thing(g.chance(0.7) ? 'prop' : undefined), false).split(' ').pop()!)} ${tail()}`;   // names that contain pack words: "Chimney Hop"
+      if (g.chance(0.15) && !name.startsWith('The ')) name = `The ${name}`;
       return [name, [S(g.pick(P.called)), S(g.chance(0.15) ? `"${name}"` : name, 'NAME')]];
     };
     const sizeSeg = (): [string, Seg[]] => {

@@ -39,14 +39,14 @@ export const P = {
   around: ['around', 'round', 'surrounding', 'in a circle around', 'in a ring around', 'all around', 'circling'],
   on: ['on', 'on top of', 'onto', 'up on', 'sitting on', 'resting on'],
 
-  center: ['in the middle', 'in the center', 'in the centre', 'in the middle of the room', 'at the center', 'in the middle of the board', 'centre stage', 'dead centre', 'in the very middle'],
+  center: ['in the middle', 'in the center', 'in the centre', 'in the middle of the room', 'at the center', 'in the middle of the board', 'centre stage', 'dead centre', 'in the very middle', 'to the middle', 'to the center', 'to the centre', 'into the middle', 'in the middle of the scene'],
   spread: ['all over', 'everywhere', 'around the place', 'scattered about', 'here and there', 'randomly', 'all over the place', 'scattered around', 'dotted around'],
   side: ['against a wall', 'along the walls', 'by the wall', 'against the wall', 'along the edge', 'around the edges', 'on the sides'],
   corner: ['in the corner', 'in a corner', 'into a corner', 'in one corner', 'tucked in a corner'],
-  side_n: ['along the north wall', 'on the north side', 'at the back', 'along the back wall', 'at the top', 'on the far side', 'by the back wall', 'at the far end', 'along the top'],
-  side_s: ['along the south wall', 'on the south side', 'at the front', 'on the near side', 'at the bottom', 'along the front', 'by the front edge', 'near the bottom'],
-  side_e: ['on the right', 'along the right side', 'on the east side', 'by the right wall', 'along the right edge', 'on the right hand side', 'along the east wall'],
-  side_w: ['on the left', 'along the left wall', 'on the west side', 'along the left edge', 'on the left hand side', 'by the left wall', 'along the west wall'],
+  side_n: ['along the north wall', 'on the north side', 'at the back', 'along the back wall', 'at the top', 'on the far side', 'by the back wall', 'at the far end', 'along the top', 'to the back', 'to the back wall', 'at the back of the room', 'at the back of the scene', 'at the back of the map'],
+  side_s: ['along the south wall', 'on the south side', 'at the front', 'on the near side', 'at the bottom', 'along the front', 'by the front edge', 'near the bottom', 'to the front', 'to the front edge', 'at the front of the room'],
+  side_e: ['on the right', 'along the right side', 'on the east side', 'by the right wall', 'along the right edge', 'on the right hand side', 'along the east wall', 'to the right', 'over to the right', 'to the right side'],
+  side_w: ['on the left', 'along the left wall', 'on the west side', 'along the left edge', 'on the left hand side', 'by the left wall', 'along the west wall', 'to the left', 'over to the left', 'to the left side'],
   corner_ne: ['in the north east corner', 'in the top right corner', 'in the back right corner', 'in the far right corner', 'top right'],
   corner_nw: ['in the north west corner', 'in the top left corner', 'in the back left corner', 'in the far left corner', 'top left'],
   corner_se: ['in the south east corner', 'in the bottom right corner', 'in the front right corner', 'in the near right corner', 'bottom right'],
@@ -55,6 +55,10 @@ export const P = {
 
   cluster: ['in a pile', 'in a group', 'in a cluster', 'huddled together', 'bunched up', 'stacked up', 'together', 'in a heap', 'in a little group'],
   hidden: ['hidden', 'hiding', 'out of sight', 'secretly', 'in secret', 'lurking', 'invisible', 'that the players can\'t see yet', 'kept hidden', 'sneaking'],
+  hiddenPre: ['hidden', 'secret', 'sneaky', 'invisible', 'lurking', 'hiding'],
+  hideAdd: ['hide', 'sneak', 'tuck', 'hide away', 'secretly put', 'sneak in'],
+  hiddenAdj: ['hidden', 'invisible', 'secret', 'hidden again', 'invisible to the players'],
+  shownAdj: ['visible', 'visible again', 'seen', 'not hidden', 'visible to everyone', 'show up'],
   shown: ['visible', 'showing', 'in plain sight', 'that everyone can see', 'not hidden', 'out in the open'],
 
   scale_up: ['bigger', 'larger', 'taller', 'a bit bigger', 'a little bigger', 'larger please', 'grow', 'scale up', 'enlarge', 'more big', 'bigger than now'],
@@ -99,7 +103,7 @@ export const P = {
   } as Record<string, string[]>,
   sceneWord: ['scene', 'scene number', 'map', 'room'],
   param: { dense: ['thick', 'dense', 'crowded', 'packed', 'busy', 'full'], sparse: ['sparse', 'thin', 'open', 'empty', 'quiet', 'simple'] },
-  paramAfter: { dense: ['thick trees', 'with thick trees', 'lots of trees', 'dense trees', 'packed full', 'loads of stuff'], sparse: ['not many trees', 'few trees', 'thin trees', 'nice and open', 'not much in it'] } as Record<string, string[]>,
+  paramAfter: { dense: ['thick trees', 'with thick trees', 'lots of trees', 'dense trees', 'packed full', 'loads of stuff', 'lots of stuff', 'with lots of stuff', 'plenty of stuff', 'loads of things', 'lots going on'], sparse: ['not many trees', 'few trees', 'thin trees', 'nice and open', 'not much in it', 'not much stuff', 'with not much stuff'] } as Record<string, string[]>,
   recipeWith: ['with', 'that has', 'and put in', 'including', 'plus'],
 };
 

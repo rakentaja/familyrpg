@@ -9,6 +9,7 @@ import { icon } from './icons';
 import { sceneDef, thingName, twoTap } from './common';
 import { sfx, toast } from './feedback';
 import { saveAdventure } from './adventures';
+import { askCard } from './ask';
 
 type Tab = 'creatures' | 'props' | 'tokens';
 type AddOp = Extract<GuideOp, { k: 'add' }>;
@@ -79,11 +80,17 @@ export function buildTools(d: BuildDeps) {
     h('input', { type: 'checkbox', checked: true, onchange: (e: Event) => { placeHidden = (e.target as HTMLInputElement).checked; paintTabs(); } }),
     h('span', null, 'Place hidden'));
   const doneBtn = btn([icon('check'), ' Done'], () => setOn(false), 'small ghost lib-done');
-  const drawer = h('div', { class: 'lib-drawer paper', hidden: true }, h('div', { class: 'lib-top' }, tabsEl, hideToggle, doneBtn), strip);
+  const ask = askCard({
+    pack, state: d.state, dispatch, selected: () => sel, placeHidden: () => placeHidden,
+    done: (t) => { const p = t[t.length - 1]; if (p) { sel = p; armed = null; paintStrip(); } ask.close(); paintAsk(); paintPanel(true); },
+  });
+  const askBtn = btn([icon('sparkle'), ' Ask'], () => { ask.toggle(); if (ask.isOpen) { armed = null; paintStrip(); } paintAsk(); paintPanel(true); }, 'small lib-ask', { 'aria-label': 'Ask the helper' });
+  const paintAsk = () => { askBtn.classList.toggle('on', ask.isOpen); askBtn.hidden = !store.isHost(); };
+  const drawer = h('div', { class: 'lib-drawer paper', hidden: true }, h('div', { class: 'lib-top' }, tabsEl, askBtn, hideToggle, doneBtn), strip);
   const panel = h('div', { class: 'piece-card paper', hidden: true });
   const bar = h('div', { class: 'ed-bar', hidden: true });
   const sheet = h('div', { class: 'ed-sheet paper', hidden: true });
-  d.host.append(bar, sheet, panel, drawer);
+  d.host.append(bar, sheet, panel, ask.el, drawer);
 
   const ro = new ResizeObserver(() => d.onLayoutChange());
   ro.observe(drawer); ro.observe(bar);
@@ -103,7 +110,7 @@ export function buildTools(d: BuildDeps) {
       if (c.model) void scene.thumbnail(c.model).then((url) => { if (url) pic.replaceChildren(h('img', { src: url, alt: '', draggable: 'false' })); else if (c.icon) pic.replaceChildren(icon(c.icon)); });
       return h('button', {
         type: 'button', class: 'lib-card' + (armed?.key === c.key ? ' armed' : ''), 'aria-pressed': String(armed?.key === c.key), title: c.name,
-        onclick: () => { armed = armed?.key === c.key ? null : c; rot = 0; sel = null; paintPanel(); paintStrip(); if (armed) { sfx.tap(); toast(`Tap the table to place: ${c.name}`); } },
+        onclick: () => { armed = armed?.key === c.key ? null : c; rot = 0; sel = null; if (armed) { ask.close(); paintAsk(); } paintPanel(); paintStrip(); if (armed) { sfx.tap(); toast(`Tap the table to place: ${c.name}`); } },
       }, pic, h('span', { class: 'lib-name' }, c.name));
     }));
   }
@@ -127,7 +134,7 @@ export function buildTools(d: BuildDeps) {
   let dialActive = false;
   function paintPanel(force = false) {
     if (dialActive) return;                 // never rebuild under a finger
-    const x = on ? pieceOf(sel) : null;
+    const x = on && !ask.isOpen ? pieceOf(sel) : null;
     panel.hidden = !x;
     const key = x ? JSON.stringify([sel, x, textOpen]) : '';
     if (!x || (!force && key === panelKey)) { panelKey = key; if (!x) textBox = null; return; }
@@ -355,8 +362,9 @@ export function buildTools(d: BuildDeps) {
     if (v && !isHost()) return;
     if (v === on) return;
     on = v;
-    if (!on) { armed = null; sel = null; }
+    if (!on) { armed = null; sel = null; ask.close(); }
     drawer.hidden = !on;
+    paintAsk();
     doneBtn.hidden = editMode();          // the editor has its own Done
     if (on) { d.closeOthers(); paintTabs(); paintStrip(); }
     paintPanel(true);

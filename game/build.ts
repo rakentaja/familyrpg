@@ -48,7 +48,7 @@ for (const u of urls) {
 const files: string[] = [];
 const walk = (d: string) => { for (const f of readdirSync(d)) { const p = join(d, f); statSync(p).isDirectory() ? walk(p) : files.push(p.slice(DIST.length + 1)); } };
 walk(DIST);
-const shell = files.filter((f) => !f.startsWith('assets/') && !f.endsWith('.map') && f !== 'sw.js');
+const shell = files.filter((f) => !f.startsWith('assets/') && !f.startsWith('ai/') && !f.endsWith('.map') && f !== 'sw.js');   // ai/: the optional helper model, fetched only when turned on
 const assets = files.filter((f) => f.startsWith('assets/'));
 const version = createHash('sha1').update(files.join('|') + appFile).digest('hex').slice(0, 10);
 const sw = readFileSync(join(GAME, 'public/sw.js'), 'utf8')

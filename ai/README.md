@@ -239,20 +239,31 @@ of the tagger; the word list is all that changes.
 A new theme pack needs a new `<pack>.ai.json`. Running the pipeline with `--pack <id>` makes the
 generator teach the same labels with the new names.
 
-## Using it in the game (next step, not done yet)
+## Using it in the game
 
-1. **Hosting the model:** the GM opts in, then the game fetches `out/models/gm-tagger/` (about 14 MB)
-   into the service-worker cache, or from Blossom by hash.
-2. **Loading:** load `createOnnxTagger(..., { device: 'wasm', dtype: 'q8' })` lazily, and build the
-   word list with `buildLexicon(pack, ai, currentScenes)`.
-3. **Parsing:** call `parseRequest(text, lex, tagger)` to get commands, a `minConf` value and
-   `unknown` (names the word list doesn't know). Show the commands as editable chips; apply them
-   directly when confidence is high.
-4. **Solver:** write `game/src/rules/solve.ts`, which turns commands into `GuideOp`s (free cells,
-   relations, facing, recipes). It also needs a footprint (w×d) and a "front" direction for each
-   prop model.
-5. **Logging corrections:** save each confirmed or corrected request to `eval/real.jsonl`. That file
-   feeds step 3 of the pipeline.
+The Guide's build drawer has an **Ask** button (host only). Nothing is downloaded until the Guide taps
+"Turn on the helper"; after that the browser keeps the model and it loads on the next visit.
+
+- `game/public/ai/<model>/`: the shipped tagger (config, tokenizer, `onnx/model_quantized.onnx`, 14 MB).
+  The folder name is `MODEL` in `game/src/ai/helper.ts`; use a new name for every new model so caches
+  never mix versions. `build.ts` keeps `ai/` out of the offline precache, and the service worker leaves
+  it to transformers.js's own cache.
+- `game/src/ai/helper.ts`: loads transformers.js 3.7.6 from jsDelivr (never bundled), builds the
+  word list from the pack plus the adventure's scene names, and runs `parseRequest`.
+- `game/src/ai/solve.ts`: runs the commands as ordinary Guide ops, one at a time, so "it" and "them"
+  refer to pieces made earlier in the same request. Regions and relations become spaced points
+  (back = -z, away from the players). Edits are relative (bigger = ×1.25, turn adds degrees).
+  Recipes run their DSL body; outside the editor, the scene lines are skipped and the pieces go into
+  the current scene. Missing targets fall back to the middle with a note.
+- `game/src/ui/ask.ts`: the card. It shows the plan in plain English, then "Do it". Below 0.6
+  confidence it says "Not quite sure — is this right?".
+
+**Shipping a new model:** train and export, then copy `out/models/gm-tagger/{config.json,tokenizer.json,
+tokenizer_config.json,special_tokens_map.json,added_tokens.json}` and `onnx/model_quantized.onnx`
+into `game/public/ai/gm-tagger-<date>/`, change `MODEL`, delete the old folder.
+
+**Still to do:** log confirmed and corrected requests to `eval/real.jsonl` (step 3 of the pipeline),
+and a footprint and "front" direction per prop model for tighter placement.
 
 ## Time and cost on the M4 (24 GB)
 
@@ -277,6 +288,9 @@ generator teach the same labels with the new names.
   exact match; 14 MB int8; about 1 ms median latency (Bun, CPU).
 - After general generator fixes: dev **98.9%**, starter held-out **100%** (50/50). The second number
   is optimistic: the fixes were prompted by that set's failures.
+- With the 8.5k checked rewrites plus a second round of generator fixes (the shipped model): new
+  held-out set **95/100**, starter set **50/50**, dev **98.9%**. Two of the 5 misses are disputed
+  answers (star prop vs star token; "back of the cave").
 - ONNX int8 matches PyTorch on about 98% of sentences.
 - Pruning `prajjwal1/bert-mini` gives 5.6M params, and every corpus word tokenises identically (not
   trained yet).
@@ -285,7 +299,7 @@ generator teach the same labels with the new names.
 - the paraphrase run (needs your OpenRouter key)
 - the Gemma fallback scripts
 - vocabulary pruning
-- browser and phone latency (only Bun on the laptop was measured)
+- phone latency (the browser path was checked on the laptop only)
 
 Note: I looked at the starter held-out failures while fixing general generator gaps, so that set is
 no longer truly unseen. Write fresh test requests before trusting the ship gate.

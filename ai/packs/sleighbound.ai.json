@@ -182,8 +182,7 @@
     ],
     "prop:roof_segment": [
       "roof",
-      "roof piece",
-      "rooftop"
+      "roof piece"
     ],
     "prop:roof_gap_edge": [
       "roof edge",
@@ -470,7 +469,7 @@
         "add prop:fireplace side:n",
         "add prop:rocking_horse near:prop:fireplace",
         "add 2 prop:shelves side:w",
-        "add 3 prop:crate cluster corner:se",
+        "add 3 prop:crate corner:se cluster",
         "add prop:log_pile near:prop:fireplace"
       ]
     },
@@ -537,6 +536,7 @@
     "rooftops": {
       "names": [
         "rooftops",
+        "rooftop",
         "roofs",
         "rooftop run"
       ],
