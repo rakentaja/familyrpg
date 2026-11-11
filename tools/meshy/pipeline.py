@@ -31,6 +31,7 @@ ASSETS = [
     ("coal-imp",          "biped", 0.75, 8000),
     ("snow-golem",        "biped", 1.80, 10000),
     ("blizzard-wisp",     "static",1.10, 8000),
+    ("santa",            "biped", 1.45, 14000),
 ]
 COST = {"mesh": 30, "rig": 5, "anim": 3}
 

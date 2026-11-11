@@ -29,6 +29,11 @@ function catalog(pack: Pack): Card[] {
   const out: Card[] = [];
   for (const f of pack.foes) out.push({ key: 'foe:' + f.id, tab: 'creatures', name: f.name, model: f.model, op: { what: 'foe', foe: f.id } });
   for (const r of pack.roles) out.push({ key: 'npc:' + r.id, tab: 'creatures', name: `${r.name} (friend)`, model: r.model, op: { what: 'token', kind: 'npc', model: r.model, label: r.name } });
+  const known = new Set([...pack.roles, ...pack.foes].map((x) => x.model));
+  for (const m of Object.keys(pack.models).filter((k) => k.startsWith('char:') && !known.has(k)).sort()) {   // other characters (Santa …) as friends
+    const name = m.slice(5).replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    out.push({ key: 'npc:' + m, tab: 'creatures', name: `${name} (friend)`, model: m, op: { what: 'token', kind: 'npc', model: m, label: name } });
+  }
   for (const m of Object.keys(pack.models).filter((k) => k.startsWith('prop:') && !NOT_IN_LIBRARY.has(k)).sort()) {
     out.push({ key: m, tab: 'props', name: propName(m), model: m, op: { what: 'prop', model: m } });
   }
@@ -80,13 +85,24 @@ export function buildTools(d: BuildDeps) {
     h('input', { type: 'checkbox', checked: true, onchange: (e: Event) => { placeHidden = (e.target as HTMLInputElement).checked; paintTabs(); } }),
     h('span', null, 'Place hidden'));
   const doneBtn = btn([icon('check'), ' Done'], () => setOn(false), 'small ghost lib-done');
+  const showAllBtn = btn([icon('eye'), ' Show all'], () => { sfx.tap(); dispatch({ k: 'hideAll', hidden: false }); }, 'small primary lib-showall');
+  showAllBtn.hidden = true;
+  /** Pieces still hidden from the players in this scene (starts are never hidden). */
+  function paintShowAll(s: GameState) {
+    const sc = sceneDef(pack, s);
+    const n = (sc?.props.filter((p) => p.hidden).length ?? 0) + s.foes.filter((f) => f.hidden && !f.down).length
+      + s.tokens.filter((t) => t.hidden && t.kind !== 'start').length;
+    showAllBtn.hidden = n === 0;
+    showAllBtn.replaceChildren(icon('eye'), ` Show all (${n})`);
+    showAllBtn.title = `${n} hidden piece${n === 1 ? '' : 's'}: players can't see them`;
+  }
   const ask = askCard({
     pack, state: d.state, dispatch, selected: () => sel, placeHidden: () => placeHidden,
     done: (t) => { const p = t[t.length - 1]; if (p) { sel = p; armed = null; paintStrip(); } },   // the card stays open: the next request can say "it"
   });
   const askBtn = btn([icon('sparkle'), ' Ask'], () => { ask.toggle(); if (ask.isOpen) { armed = null; paintStrip(); } paintAsk(); paintPanel(true); }, 'small lib-ask', { 'aria-label': 'Ask the helper' });
   const paintAsk = () => { askBtn.classList.toggle('on', ask.isOpen); askBtn.hidden = !store.isHost(); };
-  const drawer = h('div', { class: 'lib-drawer paper', hidden: true }, h('div', { class: 'lib-top' }, tabsEl, askBtn, hideToggle, doneBtn), strip);
+  const drawer = h('div', { class: 'lib-drawer paper', hidden: true }, h('div', { class: 'lib-top' }, tabsEl, askBtn, showAllBtn, hideToggle, doneBtn), strip);
   const panel = h('div', { class: 'piece-card paper', hidden: true });
   const bar = h('div', { class: 'ed-bar', hidden: true });
   const sheet = h('div', { class: 'ed-sheet paper', hidden: true });
@@ -419,6 +435,7 @@ export function buildTools(d: BuildDeps) {
     if (sel && !pieceOf(sel)) sel = null;
     paintPanel();
     paintBar();
+    paintShowAll(s);
     autosave(s);
   }
 

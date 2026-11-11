@@ -115,5 +115,15 @@
     "mesh_task": "01a1c5f6-4eb4-7760-b697-4fd072a49fd9",
     "mesh_glb": "assets/characters-source/sb_blizzard-wisp_mesh.glb",
     "final": "assets/characters-source/sb_blizzard-wisp_mesh.glb"
+  },
+  "santa": {
+    "mesh_task": "01a1cba1-b1f5-7188-973e-a9c65ac2cba7",
+    "mesh_glb": "/Users/htolgasahin/Developer/family-rpg/assets/characters-source/sb_santa_mesh.glb",
+    "rig_task": "01a1cba3-a31a-72b6-a2ad-6b89598ed47e",
+    "rig_glb": "/Users/htolgasahin/Developer/family-rpg/assets/characters-source/sb_santa_rig.glb",
+    "walk_glb": "/Users/htolgasahin/Developer/family-rpg/assets/characters-source/sb_santa_walk.glb",
+    "anim_task": "01a1cba4-04ae-76af-9861-d31cebb6a462",
+    "idle_glb": "/Users/htolgasahin/Developer/family-rpg/assets/characters-source/sb_santa_idle.glb",
+    "final": "/Users/htolgasahin/Developer/family-rpg/assets/characters-source/sb_santa_idle.glb"
   }
 }

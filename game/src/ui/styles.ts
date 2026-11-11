@@ -479,6 +479,7 @@ body[data-screen=play] .toasts{bottom:calc(var(--sab) + 42dvh)}
 .lib-tabs{display:flex;gap:4px;flex:1 0 auto}
 .lib-tab{border:2px solid var(--ink);background:var(--paper);border-radius:12px;padding:3px 10px;font:inherit;font-size:.85em;cursor:pointer;min-height:36px}
 .lib-tab.on{background:var(--lav);font-weight:700}
+.lib-showall{order:2;white-space:nowrap}
 .lib-hide{order:3;display:flex;align-items:center;gap:4px;font-size:.8em;color:var(--mute);white-space:nowrap}
 .lib-hide input{width:20px;height:20px;accent-color:var(--lavInk)}
 .lib-done{order:2;min-height:36px}

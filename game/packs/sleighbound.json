@@ -476,6 +476,22 @@
     "prop:lantern": {
       "url": "assets/props/sb_lantern.glb",
       "block": 0.18
+    },
+    "char:santa": {
+      "url": "assets/characters/sb_santa.glb",
+      "anim": {
+        "idle": "@model",
+        "walk": "assets/animations/sb_santa_walk.glb",
+        "run": "assets/animations/sb_santa_run.glb",
+        "wave": "assets/animations/sb_santa_wave.glb",
+        "cheer": "assets/animations/sb_santa_cheer.glb",
+        "jump": "assets/animations/sb_santa_jump.glb",
+        "victory": "assets/animations/sb_santa_victory.glb",
+        "hit": "assets/animations/sb_santa_hit.glb",
+        "throw": "assets/animations/sb_santa_throw.glb",
+        "pick_up": "assets/animations/sb_santa_pick_up.glb",
+        "sleep": "assets/animations/sb_santa_sleep.glb"
+      }
     }
   },
   "roles": [
