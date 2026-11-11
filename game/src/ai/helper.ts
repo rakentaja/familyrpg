@@ -9,7 +9,12 @@ import type { GameState, Pack } from '../rules/types';
 
 export const MODEL = 'gm-tagger-20261111';        // folder under dist/ai/ — a new name for every new model
 export const MODEL_MB = 14;
-const TRANSFORMERS = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.6/dist/transformers.min.js';
+// 2.17.2 first: its ONNX Runtime (1.14) works on iPhones; newer runtimes hit "RangeError: Out of memory" in
+// iOS Safari's WebAssembly. 3.7.6 is the backup.
+const LIBS = [
+  'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js',
+  'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.6/dist/transformers.min.js',
+];
 const KEY = 'sb2.ai';
 
 export const ai = aiPack as AiPack;
@@ -20,13 +25,23 @@ let loading: Promise<Tagger> | null = null;
 export function loadTagger(progress?: (f: number) => void): Promise<Tagger> {
   if (!loading) {
     loading = (async () => {
-      const url = TRANSFORMERS;
-      const T: any = await import(/* @vite-ignore */ url);
-      T.env.backends.onnx.wasm.numThreads = 1;
-      return taggerFrom(T, MODEL, {
-        localPath: new URL('ai/', document.baseURI).href, device: 'wasm', dtype: 'q8',
-        progress: progress ? (a, b) => { if (b) progress(Math.min(1, a / b)); } : undefined,
-      });
+      const errors: string[] = [];
+      for (const url of LIBS) {
+        try {
+          const T: any = await import(/* @vite-ignore */ url);
+          T.env.backends.onnx.wasm.numThreads = 1;
+          const tag = await taggerFrom(T, MODEL, {
+            localPath: new URL('ai/', document.baseURI).href, device: 'wasm', dtype: 'q8',
+            progress: progress ? (a, b) => { if (b) progress(Math.min(1, a / b)); } : undefined,
+          });
+          await tag(['hello']);                                   // make sure it really runs here
+          return tag;
+        } catch (e) {
+          console.warn('helper: could not load with', url, e);
+          errors.push(String((e as Error)?.message ?? e).slice(0, 160));
+        }
+      }
+      throw new Error(errors.join(' · '));
     })();
     loading.catch(() => { loading = null; });
   }

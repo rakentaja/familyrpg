@@ -32,7 +32,7 @@ export function askCard(d: AskDeps) {
     state = 'loading'; err = ''; paint();
     loadTagger((f) => { pct = f; if (state === 'loading') paintProgress(); })
       .then(() => { setWanted(true); if (state === 'loading') { state = 'ready'; paint(); } })
-      .catch((e) => { console.warn('helper', e); state = 'off'; err = 'Could not download the helper. Check the connection and try again.'; paint(); });
+      .catch((e) => { console.warn('helper', e); state = 'off'; err = `Could not start the helper on this device. Check the connection and try again. (${String((e as Error)?.message ?? e).slice(0, 200)})`; paint(); });
   }
   let bar: HTMLElement | null = null;
   function paintProgress() { if (bar) bar.style.width = `${Math.round(pct * 100)}%`; }
@@ -65,7 +65,7 @@ export function askCard(d: AskDeps) {
     if (state === 'off') {
       replaceKids(el, head,
         h('p', { class: 'ask-note' }, 'Type what you want on the table, like “', h('i', null, EXAMPLES[0]), '”, and the helper sets it up. It runs on this device and downloads once (', String(MODEL_MB), ' MB).'),
-        note, h('div', { class: 'pc-row' }, btn([icon('down'), ' Turn on the helper'], start, 'small primary')));
+        note, h('div', { class: 'pc-row' }, btn([icon('down'), err ? ' Try again' : ' Turn on the helper'], start, 'small primary')));
       return;
     }
     if (state === 'loading') {

@@ -13,6 +13,8 @@ export interface TaggerOpts {
 
 export async function taggerFrom(T: any, name: string, o: TaggerOpts = {}): Promise<Tagger> {
   const { AutoTokenizer, AutoModelForTokenClassification, Tensor, env } = T;
+  const v2 = String(env?.version ?? '').startsWith('2.');     // @xenova/transformers 2.x (ONNX Runtime 1.14: the one that works on iPhones)
+  const encode = (text: string, special: boolean): number[] => Array.from((v2 ? tok.encode(text, null, { add_special_tokens: special }) : tok.encode(text, { add_special_tokens: special })) as number[]);
   if (o.localPath) { env.localModelPath = o.localPath; env.allowLocalModels = true; env.allowRemoteModels = !!o.remoteHost; }
   if (o.remoteHost) { env.remoteHost = o.remoteHost; env.remotePathTemplate = '{model}/'; }
   const tok = await AutoTokenizer.from_pretrained(name);
@@ -23,13 +25,14 @@ export async function taggerFrom(T: any, name: string, o: TaggerOpts = {}): Prom
     let a = 0, b = 0; for (const [l, t] of files.values()) { a += l; b += t; }
     o.progress!(a, b);
   } : undefined;
-  const model = await AutoModelForTokenClassification.from_pretrained(name, { dtype: o.dtype ?? 'q8', device: o.device ?? 'wasm', progress_callback });
-  const special: number[] = Array.from(tok.encode('', { add_special_tokens: true }) as number[]); // [CLS, SEP]
+  const q8 = (o.dtype ?? 'q8') === 'q8' || o.dtype === 'int8';
+  const model = await AutoModelForTokenClassification.from_pretrained(name, v2 ? { quantized: q8, progress_callback } : { dtype: o.dtype ?? 'q8', device: o.device ?? 'wasm', progress_callback });
+  const special: number[] = encode('', true); // [CLS, SEP]
   const [cls, sep] = special.length >= 2 ? special : [101, 102];
   const id2label: Record<string, string> = model.config.id2label;
   const nLabels = Object.keys(id2label).length;
   const cache = new Map<string, number[]>();
-  const piece = (w: string) => { let ids = cache.get(w); if (!ids) { ids = Array.from(tok.encode(w, { add_special_tokens: false }) as number[]); if (!ids.length) ids = Array.from(tok.encode('[UNK]', { add_special_tokens: false }) as number[]); cache.set(w, ids); } return ids; };
+  const piece = (w: string) => { let ids = cache.get(w); if (!ids) { ids = encode(w, false); if (!ids.length) ids = encode('[UNK]', false); cache.set(w, ids); } return ids; };
 
   return async (words: string[]) => {
     const ids = [cls], first: number[] = [];
